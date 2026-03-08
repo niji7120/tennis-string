@@ -247,13 +247,35 @@
 
           const getMonthlyStats = () => {
             const map = {};
-            records.forEach(r => { const m=r.date.substring(0,7); if(!map[m]) map[m]={month:m,total:0,count:0}; map[m].total+=r.total; map[m].count++; });
+            records.forEach(r => {
+              const m = r.date.substring(0,7);
+              if (!map[m]) map[m] = {month:m, total:0, stringTotal:0, laborTotal:0, count:0};
+              map[m].total += r.total;
+              map[m].count++;
+              const qty = parseInt(r.quantity) || 1;
+              let sp = parseFloat(r.stringPrice) || 0;
+              if (r.isHybrid && r.hybridPrice2) sp = (sp + (parseFloat(r.hybridPrice2)||0)) / 2;
+              const hybrid = r.isHybrid ? 2000 : 0;
+              map[m].stringTotal += (sp + hybrid) * qty;
+              map[m].laborTotal += (parseFloat(r.labor)||0) * qty;
+            });
             return Object.values(map).sort((a,b)=>b.month.localeCompare(a.month));
           };
 
           const getYearlyStats = () => {
             const map = {};
-            records.forEach(r => { const y=r.date.substring(0,4); if(!map[y]) map[y]={year:y,total:0,count:0}; map[y].total+=r.total; map[y].count++; });
+            records.forEach(r => {
+              const y = r.date.substring(0,4);
+              if (!map[y]) map[y] = {year:y, total:0, stringTotal:0, laborTotal:0, count:0};
+              map[y].total += r.total;
+              map[y].count++;
+              const qty = parseInt(r.quantity) || 1;
+              let sp = parseFloat(r.stringPrice) || 0;
+              if (r.isHybrid && r.hybridPrice2) sp = (sp + (parseFloat(r.hybridPrice2)||0)) / 2;
+              const hybrid = r.isHybrid ? 2000 : 0;
+              map[y].stringTotal += (sp + hybrid) * qty;
+              map[y].laborTotal += (parseFloat(r.labor)||0) * qty;
+            });
             return Object.values(map).sort((a,b)=>b.year.localeCompare(a.year));
           };
 
@@ -559,14 +581,24 @@
                   <div className="space-y-2">
                     {getMonthlyStats().length === 0 && <p className="text-center text-gray-400 py-8">데이터가 없습니다.</p>}
                     {getMonthlyStats().map(stat => (
-                      <div key={stat.month} className="border border-gray-200 rounded-lg p-3 flex justify-between items-center">
-                        <div>
+                      <div key={stat.month} className="border border-gray-200 rounded-lg p-3">
+                        <div className="flex justify-between items-center mb-2">
                           <p className="font-bold text-gray-800">{stat.month}</p>
-                          <p className="text-xs text-gray-500">{stat.count}건</p>
+                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{stat.count}건</span>
                         </div>
-                        <div className="text-right">
-                          <p className={`font-bold ${statColor}`}>{stat.total.toLocaleString()}원</p>
-                          <p className="text-xs text-gray-500">평균 {Math.round(stat.total/stat.count).toLocaleString()}원</p>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="bg-orange-50 rounded-lg p-2">
+                            <p className="text-xs text-gray-500 mb-0.5">스트링비</p>
+                            <p className="text-sm font-bold text-orange-600">{stat.stringTotal.toLocaleString()}원</p>
+                          </div>
+                          <div className="bg-blue-50 rounded-lg p-2">
+                            <p className="text-xs text-gray-500 mb-0.5">공임비</p>
+                            <p className="text-sm font-bold text-blue-600">{stat.laborTotal.toLocaleString()}원</p>
+                          </div>
+                          <div className={`rounded-lg p-2 ${color==='green'?'bg-green-50':'bg-blue-50'}`}>
+                            <p className="text-xs text-gray-500 mb-0.5">합계</p>
+                            <p className={`text-sm font-bold ${statColor}`}>{stat.total.toLocaleString()}원</p>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -578,17 +610,26 @@
               {viewMode === 'yearly' && (
                 <div className="bg-white rounded-xl shadow-lg p-4 mt-3">
                   <h2 className="text-base font-bold text-gray-800 mb-3">📈 연도별 매출 현황</h2>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {getYearlyStats().length === 0 && <p className="text-center text-gray-400 py-8">데이터가 없습니다.</p>}
                     {getYearlyStats().map(stat => (
-                      <div key={stat.year} className="border border-gray-200 rounded-lg p-4 flex justify-between items-center">
-                        <div>
-                          <p className="text-lg font-bold text-gray-800">{stat.year}년</p>
-                          <p className="text-xs text-gray-500">총 {stat.count}건</p>
-                        </div>
-                        <div className="text-right">
+                      <div key={stat.year} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-3">
+                          <div>
+                            <p className="text-lg font-bold text-gray-800">{stat.year}년</p>
+                            <p className="text-xs text-gray-500">총 {stat.count}건 · 월평균 {Math.round(stat.total/12).toLocaleString()}원</p>
+                          </div>
                           <p className="text-xl font-bold text-purple-600">{stat.total.toLocaleString()}원</p>
-                          <p className="text-xs text-gray-500">월평균 {Math.round(stat.total/12).toLocaleString()}원</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-orange-50 rounded-lg p-3 text-center">
+                            <p className="text-xs text-gray-500 mb-1">🎯 스트링비 합계</p>
+                            <p className="text-base font-bold text-orange-600">{stat.stringTotal.toLocaleString()}원</p>
+                          </div>
+                          <div className="bg-blue-50 rounded-lg p-3 text-center">
+                            <p className="text-xs text-gray-500 mb-1">🔧 공임비 합계</p>
+                            <p className="text-base font-bold text-blue-600">{stat.laborTotal.toLocaleString()}원</p>
+                          </div>
                         </div>
                       </div>
                     ))}
