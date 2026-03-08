@@ -113,7 +113,7 @@
           const color = config.color;
 
           const [records, setRecords] = useState([]);
-          const [customStrings, setCustomStrings] = useState({});
+          const [customStrings, setCustomStrings] = useState(config.defaultStrings);
           const [showForm, setShowForm] = useState(false);
           const [editingId, setEditingId] = useState(null);
           const [searchTerm, setSearchTerm] = useState('');
@@ -125,8 +125,11 @@
           const [showHybridDropdown, setShowHybridDropdown] = useState(false);
           const [showNameDropdown, setShowNameDropdown] = useState(false);
           const [showRacketDropdown, setShowRacketDropdown] = useState(false);
+          const [showAddModal, setShowAddModal] = useState(false);
+          const [modalStringName, setModalStringName] = useState('');
+          const [modalStringPrice, setModalStringPrice] = useState('');
 
-          const stringPrices = { ...config.defaultStrings, ...customStrings };
+          const stringPrices = Object.keys(customStrings).length > 0 ? customStrings : config.defaultStrings;
 
           const emptyForm = () => ({
             date: new Date().toISOString().split('T')[0],
@@ -140,16 +143,50 @@
 
           const [formData, setFormData] = useState(emptyForm());
 
+          // localStorage 키 (스포츠별 분리)
+          const storageKey = 'stringing-records-' + sport;
+          const stringsKey = 'stringing-all-strings-' + sport;
+
           useEffect(() => {
-            const data = config.initialData.map((r, i) => ({
-              ...r,
-              id: Date.now() + i,
-              total: (parseFloat(r.stringPrice) + parseFloat(r.labor)) * parseInt(r.quantity),
-              createdAt: new Date(r.date).getTime() + i,
-            }));
-            setRecords(data);
+            try {
+              const saved = localStorage.getItem(storageKey);
+              if (saved) {
+                setRecords(JSON.parse(saved));
+              } else {
+                const data = config.initialData.map((r, i) => ({
+                  ...r,
+                  id: Date.now() + i,
+                  total: (parseFloat(r.stringPrice) + parseFloat(r.labor)) * parseInt(r.quantity),
+                  createdAt: new Date(r.date).getTime() + i,
+                }));
+                setRecords(data);
+                localStorage.setItem(storageKey, JSON.stringify(data));
+              }
+              const savedStrings = localStorage.getItem(stringsKey);
+              if (savedStrings) {
+                setCustomStrings(JSON.parse(savedStrings));
+              } else {
+                // 최초: 기본 스트링을 customStrings에 복사해서 편집 가능하게
+                localStorage.setItem(stringsKey, JSON.stringify(config.defaultStrings));
+                setCustomStrings(config.defaultStrings);
+              }
+            } catch(e) {
+              console.log('데이터 로드 오류:', e);
+            }
             setFormData(emptyForm());
           }, [sport]);
+
+          // records 저장
+          const saveRecords = (newRecords) => {
+            setRecords(newRecords);
+            try { localStorage.setItem(storageKey, JSON.stringify(newRecords)); } catch(e) {}
+          };
+
+          // strings 저장
+          const saveCustomStrings = (newStrings) => {
+            setCustomStrings(newStrings);
+            try { localStorage.setItem(stringsKey, JSON.stringify(newStrings)); } catch(e) {}
+          };
 
           // ── 계산 ─────────────────────────────────────
           const calculateTotal = (fd = formData) => {
@@ -165,7 +202,7 @@
           const handleSubmit = (e) => {
             e.preventDefault();
             const rec = { id: editingId || Date.now(), ...formData, total: calculateTotal(), createdAt: editingId ? records.find(r=>r.id===editingId)?.createdAt : Date.now() };
-            setRecords(editingId ? records.map(r=>r.id===editingId?rec:r) : [...records, rec]);
+            saveRecords(editingId ? records.map(r=>r.id===editingId?rec:r) : [...records, rec]);
             resetForm();
           };
 
@@ -183,7 +220,7 @@
           };
 
           const handleDelete = (id) => {
-            if (window.confirm('정말 삭제하시겠습니까?')) setRecords(records.filter(r=>r.id!==id));
+            if (window.confirm('정말 삭제하시겠습니까?')) saveRecords(records.filter(r=>r.id!==id));
           };
 
           // ── 드롭다운 핸들러 ───────────────────────────
@@ -213,14 +250,33 @@
           };
 
           const handleStringChange = (val, isSecond=false) => {
-            if (isSecond) { setFormData({...formData, hybridString2:val}); setShowHybridDropdown(val.length > 0); }
-            else { setFormData({...formData, stringType:val}); setShowStringDropdown(val.length > 0); }
+            // 직접 타이핑 시 가격은 건드리지 않음 (선택 시에만 가격 자동입력)
+            if (isSecond) {
+              setFormData(prev => ({...prev, hybridString2:val}));
+              setShowHybridDropdown(val.length > 0);
+            } else {
+              setFormData(prev => ({...prev, stringType:val}));
+              setShowStringDropdown(val.length > 0);
+            }
           };
 
           const handleAddCustomString = () => {
-            if (newStringName.trim() && newStringPrice) {
-              setCustomStrings({...customStrings, [newStringName.trim()]: parseFloat(newStringPrice)});
-              setNewStringName(''); setNewStringPrice(''); setShowAddString(false);
+            if (newStringName.trim() && newStringPrice !== '') {
+              saveCustomStrings({...customStrings, [newStringName.trim()]: parseFloat(newStringPrice) || 0});
+              setNewStringName('');
+              setNewStringPrice('');
+              setShowAddString(false);
+              setShowStringDropdown(false);
+              setShowHybridDropdown(false);
+            }
+          };
+
+          const handleAddModal = () => {
+            if (modalStringName.trim() && modalStringPrice !== '') {
+              saveCustomStrings({...customStrings, [modalStringName.trim()]: parseFloat(modalStringPrice) || 0});
+              setModalStringName('');
+              setModalStringPrice('');
+              setShowAddModal(false);
             }
           };
 
@@ -290,8 +346,11 @@
           const statColor = color==='green' ? 'text-green-600' : 'text-blue-600';
 
           // ── 드롭다운 컴포넌트 ─────────────────────────
-          const StringDropdown = ({ strings, onSelect, showAddString, setShowAddString }) => (
-            <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-56 overflow-y-auto">
+          const StringDropdown = ({ strings, onSelect }) => (
+            <div
+              className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-64 overflow-y-auto"
+              onMouseDown={e => e.preventDefault()}
+            >
               {strings.map(s => (
                 <button key={s} type="button" onClick={()=>onSelect(s)}
                   className={`w-full text-left px-4 py-3 ${hoverBgClass} flex justify-between items-center border-b border-gray-100 last:border-0`}>
@@ -300,25 +359,63 @@
                 </button>
               ))}
               <div className="p-2 border-t border-gray-200">
-                {!showAddString ? (
-                  <button type="button" onClick={()=>setShowAddString(true)}
-                    className="w-full px-3 py-2 bg-blue-500 text-white rounded-lg text-sm">+ 새 스트링 추가</button>
-                ) : (
-                  <div className="space-y-2">
-                    <input type="text" value={newStringName} onChange={e=>setNewStringName(e.target.value)} placeholder="스트링 이름" className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm"/>
-                    <input type="number" value={newStringPrice} onChange={e=>setNewStringPrice(e.target.value)} placeholder="가격" className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm"/>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={handleAddCustomString} className="flex-1 py-2 bg-green-500 text-white rounded-lg text-sm">추가</button>
-                      <button type="button" onClick={()=>{setShowAddString(false);setNewStringName('');setNewStringPrice('');}} className="flex-1 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm">취소</button>
-                    </div>
-                  </div>
-                )}
+                <button type="button"
+                  onMouseDown={e=>e.preventDefault()}
+                  onClick={()=>{ setShowStringDropdown(false); setShowHybridDropdown(false); setShowAddModal(true); }}
+                  className="w-full px-3 py-2 bg-yellow-500 text-white rounded-lg text-sm font-medium">
+                  ➕ 새 스트링 추가
+                </button>
               </div>
             </div>
           );
 
           return (
             <div>
+              {/* ── 스트링 추가 모달 ── */}
+              {showAddModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                  style={{backgroundColor:'rgba(0,0,0,0.5)'}}>
+                  <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">➕ 새 스트링 추가</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">스트링 이름</label>
+                        <input
+                          type="text"
+                          value={modalStringName}
+                          onChange={e=>setModalStringName(e.target.value)}
+                          placeholder="예) 요넥스 폴리투어스핀"
+                          className="w-full px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                          autoFocus
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">가격 (원)</label>
+                        <input
+                          type="number"
+                          value={modalStringPrice}
+                          onChange={e=>setModalStringPrice(e.target.value)}
+                          placeholder="예) 13000"
+                          className="w-full px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={()=>{ setShowAddModal(false); setModalStringName(''); setModalStringPrice(''); }}
+                          className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium">
+                          취소
+                        </button>
+                        <button
+                          onClick={handleAddModal}
+                          className="flex-1 py-3 bg-yellow-500 text-white rounded-xl font-medium">
+                          추가
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* ── 상단 탭 바 ── */}
               <div className="grid grid-cols-3 gap-1 mb-3">
                 <button onClick={()=>setViewMode('customers')}
@@ -418,12 +515,11 @@
                         <input type="text" value={formData.stringType}
                           onChange={e=>handleStringChange(e.target.value)}
                           onFocus={()=>setShowStringDropdown(true)}
-                          onBlur={()=>setTimeout(()=>setShowStringDropdown(false),200)}
+                          onBlur={()=>setTimeout(()=>{ if(!showAddString) setShowStringDropdown(false); },500)}
                           placeholder="스트링 선택"
                           className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
                         {showStringDropdown && (
-                          <StringDropdown strings={getFilteredStrings(formData.stringType)} onSelect={handleStringSelect}
-                            showAddString={showAddString} setShowAddString={setShowAddString}/>
+                          <StringDropdown strings={getFilteredStrings(formData.stringType)} onSelect={handleStringSelect}/>
                         )}
                       </div>
                       <div>
@@ -448,12 +544,11 @@
                             <input type="text" value={formData.hybridString2}
                               onChange={e=>handleStringChange(e.target.value,true)}
                               onFocus={()=>setShowHybridDropdown(true)}
-                              onBlur={()=>setTimeout(()=>setShowHybridDropdown(false),200)}
+                              onBlur={()=>setTimeout(()=>{ if(!showAddString) setShowHybridDropdown(false); },500)}
                               placeholder="스트링 선택"
                               className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required={formData.isHybrid}/>
                             {showHybridDropdown && (
-                              <StringDropdown strings={getFilteredStrings(formData.hybridString2)} onSelect={s=>handleStringSelect(s,true)}
-                                showAddString={showAddString} setShowAddString={setShowAddString}/>
+                              <StringDropdown strings={getFilteredStrings(formData.hybridString2)} onSelect={s=>handleStringSelect(s,true)}/>
                             )}
                           </div>
                           <div>
