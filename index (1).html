@@ -3,1056 +3,633 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>테니스 스트링 작업 관리</title>
+    <title>스트링 작업 관리</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-                sans-serif;
+            margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
+        input, select, textarea { font-size: 16px !important; }
+        button { min-height: 40px; touch-action: manipulation; }
+        * { -webkit-overflow-scrolling: touch; }
     </style>
 </head>
 <body>
     <div id="root"></div>
-    
+
     <script type="text/babel">
         const { useState, useEffect } = React;
-        const { Search, Plus, Edit2, Trash2, TrendingUp, Calendar } = lucide;
 
-        // 초성 검색 유틸리티
+        // ── 초성 검색 유틸 ──────────────────────────────
         const getChosung = (str) => {
-          const chosungList = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-          let result = '';
-          for (let i = 0; i < str.length; i++) {
-            const code = str.charCodeAt(i) - 44032;
-            if (code > -1 && code < 11172) {
-              result += chosungList[Math.floor(code / 588)];
-            } else {
-              result += str.charAt(i);
-            }
-          }
-          return result;
+          const list = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+          return [...str].map(c => { const code = c.charCodeAt(0) - 44032; return (code > -1 && code < 11172) ? list[Math.floor(code/588)] : c; }).join('');
         };
-
         const matchChosung = (str, search) => {
           if (!search) return true;
-          const chosung = getChosung(str.toLowerCase());
-          const searchLower = search.toLowerCase();
-          return str.toLowerCase().includes(searchLower) || chosung.includes(searchLower);
+          return str.toLowerCase().includes(search.toLowerCase()) || getChosung(str).includes(search);
         };
 
-        const TennisStringingManager = () => {
+        // ── 스포츠별 설정 ────────────────────────────────
+        const SPORTS_CONFIG = {
+          tennis: {
+            label: '🎾 테니스',
+            color: 'green',
+            racketLabel: '라켓명',
+            racketPlaceholder: '헤드 스피드 MP 300g',
+            patterns: ['오픈', '덴스'],
+            defaultLabors: ['12000', '15000'],
+            defaultStrings: {
+              '럭실론 4G': 21000,
+              '알루파워': 21000,
+              '헤드 링스투어': 13000,
+              '링스': 13000,
+              '바볼랏 RPM블라스트': 13000,
+              '폴리파이버 TCS': 13000,
+              '레피드': 13000,
+              '솔린코 하이퍼G': 13000,
+              '그레이플스네이크 투어 스나이퍼': 15000,
+              '요넥스 폴리투어프로': 11000,
+              '투나 프리미엄 폴리': 5000,
+              '쿠폰': 10000,
+              '범퍼 값': 15000,
+            },
+            initialData: [
+              { date: '2026-01-02', name: '김병수', racket: '헤드 스피드 MP 300g', pattern: '오픈', stringType: '요넥스 폴리투어프로', stringPrice: '11000', labor: '12000', quantity: 2, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-04', name: '최치영', racket: '헤드 레디컬 프로 310g', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-06', name: '김수산', racket: '윌슨 블레이드 98 305g 16/19', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '12000', quantity: 2, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-07', name: '김삼기', racket: '던롭 다이아클러스터 10.0 골드 250g 16/18', pattern: '오픈', stringType: '투나 프리미엄 폴리', stringPrice: '5000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-14', name: '최관표', racket: '던롭 26 FX500 300g 16/19', pattern: '오픈', stringType: '쿠폰', stringPrice: '10000', labor: '12000', quantity: 2, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-14', name: '홍기현', racket: '바볼랏 퓨어 에어로 300g', pattern: '오픈', stringType: '투나 프리미엄 폴리', stringPrice: '5000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-16', name: '제임스', racket: '윌슨 2023 쉬프트 99 v1.0 300g', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-18', name: '윤은철', racket: '요넥스 이죤 100 300g', pattern: '오픈', stringType: '럭실론 4G', stringPrice: '21000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-27', name: '홍미선', racket: '바볼랏 2023 퓨어 에어로 TEAM 285g', pattern: '오픈', stringType: '헤드 링스투어', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-28', name: '홍미선', racket: '바볼랏 2021 퓨어 드라이브 라이트 100 270g', pattern: '오픈', stringType: '헤드 링스투어', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-31', name: '홍미선', racket: '바볼랏 2021 퓨어 드라이브 라이트 100 270g', pattern: '오픈', stringType: '헤드 링스투어', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-01', name: '김용선', racket: '헤드 익스트림 MP 300g', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '0', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-01', name: '최길희', racket: '윌슨 2022 블레이드 98 PRO v8.0 98sqin / 305g', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '0', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-04', name: '이민홍', racket: '헤드 레디컬 MP 300g', pattern: '오픈', stringType: '바볼랏 RPM블라스트', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-04', name: '황두영', racket: '헤드 레디컬 프로 200 315g', pattern: '오픈', stringType: '럭실론 4G', stringPrice: '21000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-04', name: '황두영', racket: '헤드 레디컬 MP 300g', pattern: '오픈', stringType: '럭실론 4G', stringPrice: '21000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-05', name: '김삼기', racket: '바볼랏 퓨어드라이브 100 300g', pattern: '오픈', stringType: '투나 프리미엄 폴리', stringPrice: '5000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-08', name: '김민정', racket: '헤드 2025 그래비티 팀 270g', pattern: '오픈', stringType: '바볼랏 RPM블라스트', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-08', name: '김민정', racket: '헤드 2025 그래비티 팀 270g', pattern: '오픈', stringType: '범퍼 값', stringPrice: '15000', labor: '5000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+            ],
+          },
+          badminton: {
+            label: '🏸 배드민턴',
+            color: 'blue',
+            racketLabel: '라켓명',
+            racketPlaceholder: '요넥스 아스트록스 88S',
+            patterns: ['오픈', '덴스'],
+            defaultLabors: ['8000', '10000', '12000'],
+            defaultStrings: {
+              '요넥스 BG65': 6000,
+              '요넥스 BG65Ti': 7000,
+              '요넥스 BG80': 9000,
+              '요넥스 BG80파워': 9000,
+              '요넥스 에어론 65': 6000,
+              '요넥스 에어론 파워': 8000,
+              '빅터 VBS-66': 6000,
+              '빅터 VBS-68P': 7000,
+              '빅터 VBS-70': 7000,
+              '리닝 N65': 6000,
+              '자가 스트링': 0,
+              '쿠폰': 8000,
+            },
+            initialData: [],
+          },
+        };
+
+        // ── 스트링 관리 앱 (스포츠별 공용) ──────────────
+        const StringingApp = ({ sport }) => {
+          const config = SPORTS_CONFIG[sport];
+          const color = config.color;
+
           const [records, setRecords] = useState([]);
+          const [customStrings, setCustomStrings] = useState({});
           const [showForm, setShowForm] = useState(false);
           const [editingId, setEditingId] = useState(null);
           const [searchTerm, setSearchTerm] = useState('');
           const [viewMode, setViewMode] = useState('customers');
-          
-          const defaultStringPrices = {
-            '럭실론 4G': 21000,
-            '알루파워': 21000,
-            '헤드 링스투어': 13000,
-            '링스': 13000,
-            '바볼랏 RPM블라스트': 13000,
-            '폴리파이버 TCS': 13000,
-            '레피드': 13000,
-            '솔린코 하이퍼G': 13000,
-            '그레이플스네이크 투어 스나이퍼': 15000,
-            '요넥스 폴리투어프로': 11000,
-            '투나 프리미엄 폴리': 5000,
-            '쿠폰': 10000,
-            '범퍼 값': 15000
-          };
-
-          // 초기 데이터
-          const initialData = [
-            { date: '2026-01-02', name: '김병수', racket: '헤드 스피드 MP 300g', pattern: '오픈', stringType: '요넥스 폴리투어프로', stringPrice: '11000', labor: '12000', quantity: 2, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-01-04', name: '최치영', racket: '헤드 레디컬 프로 310g', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-01-06', name: '김수산', racket: '윌슨 블레이드 98 305g 16/19', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '12000', quantity: 2, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-01-07', name: '김삼기', racket: '던롭 다이아클러스터 10.0 골드 250g 16/18', pattern: '오픈', stringType: '투나 프리미엄 폴리', stringPrice: '5000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-01-14', name: '최관표', racket: '던롭 26 FX500 300g 16/19', pattern: '오픈', stringType: '쿠폰', stringPrice: '10000', labor: '12000', quantity: 2, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-01-14', name: '홍기현', racket: '바볼랏 퓨어 에어로 300g', pattern: '오픈', stringType: '투나 프리미엄 폴리', stringPrice: '5000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-01-16', name: '제임스', racket: '윌슨 2023 쉬프트 99 v1.0 300g', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-01-18', name: '윤은철', racket: '요넥스 이죤 100 300g', pattern: '오픈', stringType: '럭실론 4G', stringPrice: '21000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-01-27', name: '홍미선', racket: '바볼랏 2023 퓨어 에어로 TEAM 285g', pattern: '오픈', stringType: '헤드 링스투어', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-01-28', name: '홍미선', racket: '바볼랏 2021 퓨어 드라이브 라이트 100 270g', pattern: '오픈', stringType: '헤드 링스투어', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-01-31', name: '홍미선', racket: '바볼랏 2021 퓨어 드라이브 라이트 100 270g', pattern: '오픈', stringType: '헤드 링스투어', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-02-01', name: '김용선', racket: '헤드 익스트림 MP 300g', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '0', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-02-01', name: '최길희', racket: '윌슨 2022 블레이드 98 PRO v8.0 98sqin / 305g', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '0', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-02-04', name: '이민홍', racket: '헤드 레디컬 MP 300g', pattern: '오픈', stringType: '바볼랏 RPM블라스트', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-02-04', name: '황두영', racket: '헤드 레디컬 프로 200 315g', pattern: '오픈', stringType: '럭실론 4G', stringPrice: '21000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-02-04', name: '황두영', racket: '헤드 레디컬 MP 300g', pattern: '오픈', stringType: '럭실론 4G', stringPrice: '21000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-02-05', name: '김삼기', racket: '바볼랏 퓨어드라이브 100 300g', pattern: '오픈', stringType: '투나 프리미엄 폴리', stringPrice: '5000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-02-08', name: '김민정', racket: '헤드 2025 그래비티 팀 270g', pattern: '오픈', stringType: '바볼랏 RPM블라스트', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
-            { date: '2026-02-08', name: '김민정', racket: '헤드 2025 그래비티 팀 270g', pattern: '오픈', stringType: '범퍼 값', stringPrice: '15000', labor: '5000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' }
-          ];
-
-          const [customStrings, setCustomStrings] = useState({});
           const [showAddString, setShowAddString] = useState(false);
           const [newStringName, setNewStringName] = useState('');
           const [newStringPrice, setNewStringPrice] = useState('');
-
-          const stringPrices = { ...defaultStringPrices, ...customStrings };
-
-          const [formData, setFormData] = useState({
-            date: new Date().toISOString().split('T')[0],
-            name: '',
-            racket: '',
-            pattern: '오픈',
-            stringType: '',
-            stringPrice: '',
-            labor: '12000',
-            quantity: 1,
-            isHybrid: false,
-            hybridString2: '',
-            hybridPrice2: ''
-          });
-
           const [showStringDropdown, setShowStringDropdown] = useState(false);
           const [showHybridDropdown, setShowHybridDropdown] = useState(false);
           const [showNameDropdown, setShowNameDropdown] = useState(false);
           const [showRacketDropdown, setShowRacketDropdown] = useState(false);
 
+          const stringPrices = { ...config.defaultStrings, ...customStrings };
+
+          const emptyForm = () => ({
+            date: new Date().toISOString().split('T')[0],
+            name: '', racket: '',
+            pattern: config.patterns[0],
+            stringType: '', stringPrice: '',
+            labor: config.defaultLabors[0],
+            quantity: 1,
+            isHybrid: false, hybridString2: '', hybridPrice2: '',
+          });
+
+          const [formData, setFormData] = useState(emptyForm());
+
           useEffect(() => {
-            const loadData = () => {
-              try {
-                const data = localStorage.getItem('tennis-records');
-                if (data) {
-                  setRecords(JSON.parse(data));
-                } else {
-                  // 처음 실행 시 초기 데이터 로드
-                  const recordsWithId = initialData.map((record, index) => ({
-                    ...record,
-                    id: Date.now() + index,
-                    total: (parseFloat(record.stringPrice) + parseFloat(record.labor)) * parseInt(record.quantity),
-                    createdAt: new Date(record.date).getTime() + index
-                  }));
-                  setRecords(recordsWithId);
-                  localStorage.setItem('tennis-records', JSON.stringify(recordsWithId));
-                }
-                const stringsData = localStorage.getItem('custom-strings');
-                if (stringsData) setCustomStrings(JSON.parse(stringsData));
-              } catch (error) {
-                console.log('데이터 로드 실패:', error);
-              }
-            };
-            loadData();
-          }, []);
+            const data = config.initialData.map((r, i) => ({
+              ...r,
+              id: Date.now() + i,
+              total: (parseFloat(r.stringPrice) + parseFloat(r.labor)) * parseInt(r.quantity),
+              createdAt: new Date(r.date).getTime() + i,
+            }));
+            setRecords(data);
+            setFormData(emptyForm());
+          }, [sport]);
 
-          const saveData = (newRecords) => {
-            try {
-              localStorage.setItem('tennis-records', JSON.stringify(newRecords));
-            } catch (error) {
-              console.log('데이터 저장 실패:', error);
-            }
+          // ── 계산 ─────────────────────────────────────
+          const calculateTotal = (fd = formData) => {
+            let sp = parseFloat(fd.stringPrice) || 0;
+            const labor = parseFloat(fd.labor) || 0;
+            const qty = parseInt(fd.quantity) || 1;
+            const hybrid = fd.isHybrid ? 2000 : 0;
+            if (fd.isHybrid && fd.hybridPrice2) sp = (sp + (parseFloat(fd.hybridPrice2) || 0)) / 2;
+            return (sp + labor + hybrid) * qty;
           };
 
-          const calculateTotal = () => {
-            let stringPrice = parseFloat(formData.stringPrice) || 0;
-            const labor = parseFloat(formData.labor) || 0;
-            const quantity = parseInt(formData.quantity) || 1;
-            const hybridCost = formData.isHybrid ? 2000 : 0;
-            
-            if (formData.isHybrid && formData.hybridPrice2) {
-              const price2 = parseFloat(formData.hybridPrice2) || 0;
-              stringPrice = (stringPrice + price2) / 2;
-            }
-            
-            return ((stringPrice + labor + hybridCost) * quantity);
-          };
-
+          // ── CRUD ─────────────────────────────────────
           const handleSubmit = (e) => {
             e.preventDefault();
-            const newRecord = {
-              id: editingId || Date.now(),
-              ...formData,
-              total: calculateTotal(),
-              createdAt: editingId ? records.find(r => r.id === editingId)?.createdAt : Date.now()
-            };
-
-            let newRecords;
-            if (editingId) {
-              newRecords = records.map(r => r.id === editingId ? newRecord : r);
-            } else {
-              newRecords = [...records, newRecord];
-            }
-
-            setRecords(newRecords);
-            saveData(newRecords);
+            const rec = { id: editingId || Date.now(), ...formData, total: calculateTotal(), createdAt: editingId ? records.find(r=>r.id===editingId)?.createdAt : Date.now() };
+            setRecords(editingId ? records.map(r=>r.id===editingId?rec:r) : [...records, rec]);
             resetForm();
           };
 
           const resetForm = () => {
-            const currentName = formData.name;
-            setFormData({
-              date: new Date().toISOString().split('T')[0],
-              name: currentName,
-              racket: '',
-              pattern: '오픈',
-              stringType: '',
-              stringPrice: '',
-              labor: '12000',
-              quantity: 1,
-              isHybrid: false,
-              hybridString2: '',
-              hybridPrice2: ''
-            });
+            const name = formData.name;
+            setFormData({ ...emptyForm(), name });
             setShowForm(false);
             setEditingId(null);
           };
 
-          const handleEdit = (record) => {
-            setFormData({
-              date: record.date,
-              name: record.name,
-              racket: record.racket,
-              pattern: record.pattern,
-              stringType: record.stringType,
-              stringPrice: record.stringPrice,
-              labor: record.labor,
-              quantity: record.quantity,
-              isHybrid: record.isHybrid || false,
-              hybridString2: record.hybridString2 || '',
-              hybridPrice2: record.hybridPrice2 || ''
-            });
-            setEditingId(record.id);
+          const handleEdit = (rec) => {
+            setFormData({ date:rec.date, name:rec.name, racket:rec.racket, pattern:rec.pattern, stringType:rec.stringType, stringPrice:rec.stringPrice, labor:rec.labor, quantity:rec.quantity, isHybrid:rec.isHybrid||false, hybridString2:rec.hybridString2||'', hybridPrice2:rec.hybridPrice2||'' });
+            setEditingId(rec.id);
             setShowForm(true);
           };
 
           const handleDelete = (id) => {
-            if (window.confirm('정말 삭제하시겠습니까?')) {
-              const newRecords = records.filter(r => r.id !== id);
-              setRecords(newRecords);
-              saveData(newRecords);
-            }
+            if (window.confirm('정말 삭제하시겠습니까?')) setRecords(records.filter(r=>r.id!==id));
           };
 
-          const handleStringSelect = (stringName, isSecondString = false) => {
-            const price = stringPrices[stringName];
-            if (isSecondString) {
-              setFormData({
-                ...formData,
-                hybridString2: stringName,
-                hybridPrice2: price.toString()
-              });
-              setShowHybridDropdown(false);
-            } else {
-              setFormData({
-                ...formData,
-                stringType: stringName,
-                stringPrice: price.toString()
-              });
-              setShowStringDropdown(false);
-            }
+          // ── 드롭다운 핸들러 ───────────────────────────
+          const handleStringSelect = (name, isSecond=false) => {
+            const price = (stringPrices[name] || 0).toString();
+            if (isSecond) { setFormData({...formData, hybridString2:name, hybridPrice2:price}); setShowHybridDropdown(false); }
+            else { setFormData({...formData, stringType:name, stringPrice:price}); setShowStringDropdown(false); }
           };
 
-          const handleHybridToggle = (checked) => {
-            setFormData({
-              ...formData,
-              isHybrid: checked,
-              hybridString2: checked ? formData.hybridString2 : '',
-              hybridPrice2: checked ? formData.hybridPrice2 : ''
-            });
-          };
-
-          const handleNameChange = (name) => {
-            setFormData({ ...formData, name });
-            
-            // 초성만 입력했는지 확인
-            const isOnlyChosung = /^[ㄱ-ㅎ]+$/.test(name);
-            
-            if (isOnlyChosung && name.length > 0) {
-              const matches = getUniqueNames().filter(n => matchChosung(n, name));
-              if (matches.length === 1) {
-                // 매칭되는 이름이 1개면 자동 선택
-                handleNameSelect(matches[0]);
-                return;
-              } else if (matches.length > 0) {
-                setShowNameDropdown(true);
-              }
-            } else if (name.length > 0) {
-              setShowNameDropdown(true);
-            } else {
-              setShowNameDropdown(false);
-            }
-          };
-
-          const handleNameSelect = (selectedName) => {
-            const customerRecords = records.filter(r => r.name === selectedName);
-            if (customerRecords.length > 0) {
-              const lastRecord = customerRecords.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-              
-              setFormData({
-                date: new Date().toISOString().split('T')[0],
-                name: selectedName,
-                racket: lastRecord.racket,
-                pattern: lastRecord.pattern,
-                stringType: lastRecord.stringType,
-                stringPrice: lastRecord.stringPrice,
-                labor: lastRecord.labor,
-                quantity: lastRecord.quantity,
-                isHybrid: lastRecord.isHybrid || false,
-                hybridString2: lastRecord.hybridString2 || '',
-                hybridPrice2: lastRecord.hybridPrice2 || ''
-              });
-            } else {
-              setFormData({ ...formData, name: selectedName });
-            }
+          const handleNameSelect = (name) => {
+            const last = [...records].filter(r=>r.name===name).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+            if (last) setFormData({ date:new Date().toISOString().split('T')[0], name, racket:last.racket, pattern:last.pattern, stringType:last.stringType, stringPrice:last.stringPrice, labor:last.labor, quantity:last.quantity, isHybrid:last.isHybrid||false, hybridString2:last.hybridString2||'', hybridPrice2:last.hybridPrice2||'' });
+            else setFormData({...formData, name});
             setShowNameDropdown(false);
           };
 
+          const handleNameChange = (name) => {
+            setFormData({...formData, name});
+            const matches = getUniqueNames(name);
+            if (name.length > 0 && matches.length === 1 && /^[ㄱ-ㅎ]+$/.test(name)) { handleNameSelect(matches[0]); return; }
+            setShowNameDropdown(name.length > 0 && matches.length > 0);
+          };
+
           const handleRacketChange = (racket) => {
-            setFormData({ ...formData, racket });
-            
-            // 초성만 입력했는지 확인
-            const isOnlyChosung = /^[ㄱ-ㅎ]+$/.test(racket);
-            
-            if (isOnlyChosung && racket.length > 0) {
-              const matches = getUniqueRackets().filter(r => matchChosung(r, racket));
-              if (matches.length === 1) {
-                // 매칭되는 라켓이 1개면 자동 선택
-                handleRacketSelect(matches[0]);
-                return;
-              } else if (matches.length > 0) {
-                setShowRacketDropdown(true);
-              }
-            } else if (racket.length > 0) {
-              setShowRacketDropdown(true);
-            } else {
-              setShowRacketDropdown(false);
-            }
+            setFormData({...formData, racket});
+            setShowRacketDropdown(racket.length > 0);
           };
 
-          const handleRacketSelect = (selectedRacket) => {
-            setFormData({ ...formData, racket: selectedRacket });
-            setShowRacketDropdown(false);
-          };
-
-          const handleStringChange = (stringType) => {
-            setFormData({ ...formData, stringType });
-            
-            // 초성만 입력했는지 확인
-            const isOnlyChosung = /^[ㄱ-ㅎ]+$/.test(stringType);
-            
-            if (isOnlyChosung && stringType.length > 0) {
-              const matches = getFilteredStrings(stringType);
-              if (matches.length === 1) {
-                // 매칭되는 스트링이 1개면 자동 선택
-                handleStringSelect(matches[0]);
-                return;
-              } else if (matches.length > 0) {
-                setShowStringDropdown(true);
-              }
-            } else if (stringType.length > 0) {
-              setShowStringDropdown(true);
-            } else {
-              setShowStringDropdown(false);
-            }
-          };
-
-          const handleHybridStringChange = (stringType) => {
-            setFormData({ ...formData, hybridString2: stringType });
-            
-            // 초성만 입력했는지 확인
-            const isOnlyChosung = /^[ㄱ-ㅎ]+$/.test(stringType);
-            
-            if (isOnlyChosung && stringType.length > 0) {
-              const matches = getFilteredStrings(stringType);
-              if (matches.length === 1) {
-                // 매칭되는 스트링이 1개면 자동 선택
-                handleStringSelect(matches[0], true);
-                return;
-              } else if (matches.length > 0) {
-                setShowHybridDropdown(true);
-              }
-            } else if (stringType.length > 0) {
-              setShowHybridDropdown(true);
-            } else {
-              setShowHybridDropdown(false);
-            }
-          };
-
-          // 고유한 고객명 목록
-          const getUniqueNames = () => {
-            const names = [...new Set(records.map(r => r.name))];
-            return names.filter(name => matchChosung(name, formData.name));
-          };
-
-          // 고유한 라켓명 목록
-          const getUniqueRackets = () => {
-            const rackets = [...new Set(records.map(r => r.racket))];
-            return rackets.filter(racket => matchChosung(racket, formData.racket));
-          };
-
-          // 스트링 필터링 (초성 검색)
-          const getFilteredStrings = (searchTerm) => {
-            return Object.keys(stringPrices).filter(string => matchChosung(string, searchTerm)).sort();
+          const handleStringChange = (val, isSecond=false) => {
+            if (isSecond) { setFormData({...formData, hybridString2:val}); setShowHybridDropdown(val.length > 0); }
+            else { setFormData({...formData, stringType:val}); setShowStringDropdown(val.length > 0); }
           };
 
           const handleAddCustomString = () => {
             if (newStringName.trim() && newStringPrice) {
-              const newStrings = {
-                ...customStrings,
-                [newStringName.trim()]: parseFloat(newStringPrice)
-              };
-              setCustomStrings(newStrings);
-              
-              try {
-                localStorage.setItem('custom-strings', JSON.stringify(newStrings));
-              } catch (error) {
-                console.log('스트링 저장 실패:', error);
-              }
-              
-              setNewStringName('');
-              setNewStringPrice('');
-              setShowAddString(false);
+              setCustomStrings({...customStrings, [newStringName.trim()]: parseFloat(newStringPrice)});
+              setNewStringName(''); setNewStringPrice(''); setShowAddString(false);
             }
           };
 
-          const getCustomerStats = () => {
-            const customerMap = {};
-            
-            records.forEach(record => {
-              if (!customerMap[record.name]) {
-                customerMap[record.name] = {
-                  name: record.name,
-                  visits: [],
-                  totalAmount: 0
-                };
-              }
-              customerMap[record.name].visits.push(record);
-              customerMap[record.name].totalAmount += record.total;
-            });
+          // ── 필터 헬퍼 ─────────────────────────────────
+          const getUniqueNames = (term='') => [...new Set(records.map(r=>r.name))].filter(n=>matchChosung(n, term||formData.name));
+          const getUniqueRackets = () => [...new Set(records.map(r=>r.racket))].filter(r=>matchChosung(r, formData.racket));
+          const getFilteredStrings = (term) => Object.keys(stringPrices).filter(s=>matchChosung(s,term)).sort();
 
-            return Object.values(customerMap).map(customer => ({
-              ...customer,
-              visitCount: customer.visits.length,
-              lastVisit: customer.visits.sort((a, b) => new Date(b.date) - new Date(a.date))[0],
-              yearlyVisits: customer.visits.filter(v => {
-                const visitDate = new Date(v.date);
-                const oneYearAgo = new Date();
-                oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-                return visitDate >= oneYearAgo;
-              }).length
-            })).sort((a, b) => new Date(b.lastVisit.date) - new Date(a.lastVisit.date));
+          // ── 통계 ─────────────────────────────────────
+          const getCustomerStats = () => {
+            const map = {};
+            records.forEach(r => {
+              if (!map[r.name]) map[r.name] = {name:r.name, visits:[], totalAmount:0};
+              map[r.name].visits.push(r);
+              map[r.name].totalAmount += r.total;
+            });
+            return Object.values(map).map(c => ({
+              ...c,
+              visitCount: c.visits.length,
+              lastVisit: [...c.visits].sort((a,b)=>new Date(b.date)-new Date(a.date))[0],
+              yearlyVisits: c.visits.filter(v=>new Date(v.date)>=new Date(new Date().setFullYear(new Date().getFullYear()-1))).length,
+            })).sort((a,b)=>new Date(b.lastVisit.date)-new Date(a.lastVisit.date));
           };
 
           const getMonthlyStats = () => {
-            const monthMap = {};
-            records.forEach(record => {
-              const month = record.date.substring(0, 7);
-              if (!monthMap[month]) {
-                monthMap[month] = { month, total: 0, count: 0 };
-              }
-              monthMap[month].total += record.total;
-              monthMap[month].count += 1;
-            });
-            return Object.values(monthMap).sort((a, b) => b.month.localeCompare(a.month));
+            const map = {};
+            records.forEach(r => { const m=r.date.substring(0,7); if(!map[m]) map[m]={month:m,total:0,count:0}; map[m].total+=r.total; map[m].count++; });
+            return Object.values(map).sort((a,b)=>b.month.localeCompare(a.month));
           };
 
           const getYearlyStats = () => {
-            const yearMap = {};
-            records.forEach(record => {
-              const year = record.date.substring(0, 4);
-              if (!yearMap[year]) {
-                yearMap[year] = { year, total: 0, count: 0 };
-              }
-              yearMap[year].total += record.total;
-              yearMap[year].count += 1;
-            });
-            return Object.values(yearMap).sort((a, b) => b.year.localeCompare(a.year));
+            const map = {};
+            records.forEach(r => { const y=r.date.substring(0,4); if(!map[y]) map[y]={year:y,total:0,count:0}; map[y].total+=r.total; map[y].count++; });
+            return Object.values(map).sort((a,b)=>b.year.localeCompare(a.year));
           };
 
-          const filteredCustomers = getCustomerStats().filter(customer =>
-            customer.name.toLowerCase().includes(searchTerm.toLowerCase())
-          );
+          const filteredCustomers = getCustomerStats().filter(c=>matchChosung(c.name, searchTerm));
+          const [expandedCustomer, setExpandedCustomer] = useState(null);
+          const toggleCustomer = (name) => setExpandedCustomer(prev => prev === name ? null : name);
 
-          return (
-            <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4">
-              <div className="max-w-7xl mx-auto">
-                <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-                  <h1 className="text-3xl font-bold text-gray-800 mb-4">🎾 테니스 스트링 작업 관리</h1>
-                  
-                  <div className="flex gap-2 mb-4 flex-wrap">
-                    <button
-                      onClick={() => setViewMode('customers')}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        viewMode === 'customers'
-                          ? 'bg-green-500 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      고객 관리
-                    </button>
-                    <button
-                      onClick={() => setViewMode('monthly')}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        viewMode === 'monthly'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      월별 매출
-                    </button>
-                    <button
-                      onClick={() => setViewMode('yearly')}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        viewMode === 'yearly'
-                          ? 'bg-purple-500 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      연도별 매출
-                    </button>
-                  </div>
+          // ── 색상 클래스 ───────────────────────────────
+          const activeBtnClass = color==='green' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white';
+          const ringClass = color==='green' ? 'focus:ring-green-500' : 'focus:ring-blue-500';
+          const hoverBgClass = color==='green' ? 'hover:bg-green-50' : 'hover:bg-blue-50';
+          const statColor = color==='green' ? 'text-green-600' : 'text-blue-600';
 
-                  {viewMode === 'customers' && (
-                    <div className="flex gap-3 flex-wrap">
-                      <div className="flex-1 min-w-[200px]">
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="고객 이름 검색..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setShowForm(!showForm)}
-                        className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
-                      >
-                        {showForm ? '취소' : '새 작업 등록'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {showForm && viewMode === 'customers' && (
-                  <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">
-                      {editingId ? '작업 수정' : '새 작업 등록'}
-                    </h2>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">날짜</label>
-                          <input
-                            type="date"
-                            value={formData.date}
-                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                            required
-                          />
-                        </div>
-                        <div className="relative">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">고객명</label>
-                          <input
-                            type="text"
-                            value={formData.name}
-                            onChange={(e) => handleNameChange(e.target.value)}
-                            onFocus={() => setShowNameDropdown(formData.name.length > 0)}
-                            onBlur={() => setTimeout(() => setShowNameDropdown(false), 200)}
-                            placeholder="홍길동 (초성: ㅎㄱㄷ)"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                            required
-                          />
-                          {showNameDropdown && getUniqueNames().length > 0 && (
-                            <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                              {getUniqueNames().map((name) => (
-                                <button
-                                  key={name}
-                                  type="button"
-                                  onClick={() => handleNameSelect(name)}
-                                  className="w-full text-left px-4 py-2 hover:bg-green-50"
-                                >
-                                  {name}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                          {formData.name && records.filter(r => r.name === formData.name).length > 0 && !editingId && (
-                            <p className="text-xs text-green-600 mt-1">✓ 지난 작업 내역이 자동 입력되었습니다</p>
-                          )}
-                        </div>
-                        <div className="relative">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">라켓명</label>
-                          <input
-                            type="text"
-                            value={formData.racket}
-                            onChange={(e) => handleRacketChange(e.target.value)}
-                            onFocus={() => setShowRacketDropdown(formData.racket.length > 0)}
-                            onBlur={() => setTimeout(() => setShowRacketDropdown(false), 200)}
-                            placeholder="Wilson Pro Staff (초성: ㅇㅅ)"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                            required
-                          />
-                          {showRacketDropdown && getUniqueRackets().length > 0 && (
-                            <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                              {getUniqueRackets().map((racket) => (
-                                <button
-                                  key={racket}
-                                  type="button"
-                                  onClick={() => handleRacketSelect(racket)}
-                                  className="w-full text-left px-4 py-2 hover:bg-green-50 text-sm"
-                                >
-                                  {racket}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">패턴</label>
-                          <select
-                            value={formData.pattern}
-                            onChange={(e) => setFormData({ ...formData, pattern: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                          >
-                            <option>오픈</option>
-                            <option>덴스</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="relative">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">스트링 종류</label>
-                          <input
-                            type="text"
-                            value={formData.stringType}
-                            onChange={(e) => handleStringChange(e.target.value)}
-                            onFocus={() => setShowStringDropdown(true)}
-                            onBlur={() => setTimeout(() => setShowStringDropdown(false), 200)}
-                            placeholder="스트링을 선택하세요 (초성: ㄹㅅㄹ)"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                            required
-                          />
-                          {showStringDropdown && (
-                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                              {getFilteredStrings(formData.stringType).map((string) => (
-                                <button
-                                  key={string}
-                                  type="button"
-                                  onClick={() => handleStringSelect(string)}
-                                  className="w-full text-left px-4 py-2 hover:bg-green-50 flex justify-between items-center"
-                                >
-                                  <span>{string}</span>
-                                  <span className="text-sm text-gray-600">{stringPrices[string].toLocaleString()}원</span>
-                                </button>
-                              ))}
-                              <div className="border-t border-gray-200 p-2">
-                                {!showAddString ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => setShowAddString(true)}
-                                    className="w-full px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-                                  >
-                                    + 새 스트링 추가
-                                  </button>
-                                ) : (
-                                  <div className="space-y-2">
-                                    <input
-                                      type="text"
-                                      value={newStringName}
-                                      onChange={(e) => setNewStringName(e.target.value)}
-                                      placeholder="스트링 이름"
-                                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                                    />
-                                    <input
-                                      type="number"
-                                      value={newStringPrice}
-                                      onChange={(e) => setNewStringPrice(e.target.value)}
-                                      placeholder="가격"
-                                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                                    />
-                                    <div className="flex gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={handleAddCustomString}
-                                        className="flex-1 px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-                                      >
-                                        추가
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setShowAddString(false);
-                                          setNewStringName('');
-                                          setNewStringPrice('');
-                                        }}
-                                        className="flex-1 px-2 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 text-sm"
-                                      >
-                                        취소
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">스트링 가격 (원)</label>
-                          <input
-                            type="number"
-                            value={formData.stringPrice}
-                            onChange={(e) => setFormData({ ...formData, stringPrice: e.target.value })}
-                            placeholder="25000"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                        <label className="flex items-center gap-2 mb-3">
-                          <input
-                            type="checkbox"
-                            checked={formData.isHybrid}
-                            onChange={(e) => handleHybridToggle(e.target.checked)}
-                            className="w-4 h-4 text-green-500 rounded focus:ring-2 focus:ring-green-500"
-                          />
-                          <span className="font-medium text-gray-700">하이브리드 (+2,000원)</span>
-                        </label>
-                        
-                        {formData.isHybrid && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="relative">
-                              <label className="block text-sm font-medium text-gray-700 mb-1">두번째 스트링</label>
-                              <input
-                                type="text"
-                                value={formData.hybridString2}
-                                onChange={(e) => handleHybridStringChange(e.target.value)}
-                                onFocus={() => setShowHybridDropdown(true)}
-                                onBlur={() => setTimeout(() => setShowHybridDropdown(false), 200)}
-                                placeholder="스트링을 선택하세요"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                                required={formData.isHybrid}
-                              />
-                              {showHybridDropdown && (
-                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                  {getFilteredStrings(formData.hybridString2).map((string) => (
-                                    <button
-                                      key={string}
-                                      type="button"
-                                      onClick={() => handleStringSelect(string, true)}
-                                      className="w-full text-left px-4 py-2 hover:bg-green-50 flex justify-between items-center"
-                                    >
-                                      <span>{string}</span>
-                                      <span className="text-sm text-gray-600">{stringPrices[string].toLocaleString()}원</span>
-                                    </button>
-                                  ))}
-                                  <div className="border-t border-gray-200 p-2">
-                                    {!showAddString ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => setShowAddString(true)}
-                                        className="w-full px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-                                      >
-                                        + 새 스트링 추가
-                                      </button>
-                                    ) : (
-                                      <div className="space-y-2">
-                                        <input
-                                          type="text"
-                                          value={newStringName}
-                                          onChange={(e) => setNewStringName(e.target.value)}
-                                          placeholder="스트링 이름"
-                                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                                        />
-                                        <input
-                                          type="number"
-                                          value={newStringPrice}
-                                          onChange={(e) => setNewStringPrice(e.target.value)}
-                                          placeholder="가격"
-                                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                                        />
-                                        <div className="flex gap-2">
-                                          <button
-                                            type="button"
-                                            onClick={handleAddCustomString}
-                                            className="flex-1 px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-                                          >
-                                            추가
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setShowAddString(false);
-                                              setNewStringName('');
-                                              setNewStringPrice('');
-                                            }}
-                                            className="flex-1 px-2 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 text-sm"
-                                          >
-                                            취소
-                                          </button>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">두번째 스트링 가격 (원)</label>
-                              <input
-                                type="number"
-                                value={formData.hybridPrice2}
-                                onChange={(e) => setFormData({ ...formData, hybridPrice2: e.target.value })}
-                                placeholder="25000"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                                required={formData.isHybrid}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">공임</label>
-                          <select
-                            value={formData.labor}
-                            onChange={(e) => setFormData({ ...formData, labor: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                            required
-                          >
-                            <option value="12000">12,000원</option>
-                            <option value="15000">15,000원</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">수량</label>
-                          <input
-                            type="number"
-                            value={formData.quantity}
-                            onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                            min="1"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <div className="space-y-1">
-                          {formData.isHybrid && formData.stringPrice && formData.hybridPrice2 && (
-                            <p className="text-sm text-gray-600">
-                              스트링 평균가: {((parseFloat(formData.stringPrice) + parseFloat(formData.hybridPrice2)) / 2).toLocaleString()}원
-                            </p>
-                          )}
-                          {formData.isHybrid && (
-                            <p className="text-sm text-gray-600">
-                              하이브리드 추가: +2,000원
-                            </p>
-                          )}
-                          <p className="text-lg font-bold text-gray-800">
-                            합계: {calculateTotal().toLocaleString()}원
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <button
-                          type="submit"
-                          className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-medium transition-colors"
-                        >
-                          {editingId ? '수정 완료' : '등록하기'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={resetForm}
-                          className="px-6 bg-gray-300 hover:bg-gray-400 text-gray-800 py-3 rounded-lg font-medium transition-colors"
-                        >
-                          취소
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                )}
-
-                {viewMode === 'customers' && (
-                  <div className="space-y-4">
-                    {filteredCustomers.length === 0 ? (
-                      <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-                        <p className="text-gray-500 text-lg">등록된 고객이 없습니다.</p>
-                        <p className="text-gray-400 mt-2">새 작업 등록 버튼을 눌러 시작하세요.</p>
-                      </div>
-                    ) : (
-                      filteredCustomers.map((customer) => (
-                        <div key={customer.name} className="bg-white rounded-xl shadow-lg p-6">
-                          <div className="flex justify-between items-start mb-4">
-                            <div>
-                              <h3 className="text-2xl font-bold text-gray-800">{customer.name}</h3>
-                              <div className="flex gap-4 mt-2 text-sm text-gray-600 flex-wrap">
-                                <span className="bg-green-100 px-3 py-1 rounded-full">
-                                  연간 방문: {customer.yearlyVisits}회
-                                </span>
-                                <span className="bg-blue-100 px-3 py-1 rounded-full">
-                                  총 방문: {customer.visitCount}회
-                                </span>
-                                <span className="bg-purple-100 px-3 py-1 rounded-full">
-                                  누적 금액: {customer.totalAmount.toLocaleString()}원
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-3">
-                            {customer.visits.sort((a, b) => new Date(b.date) - new Date(a.date)).map((visit) => (
-                              <div
-                                key={visit.id}
-                                className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                              >
-                                <div className="flex justify-between items-start flex-wrap gap-3">
-                                  <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    <div>
-                                      <p className="text-xs text-gray-500">날짜</p>
-                                      <p className="font-medium">{visit.date}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-500">라켓</p>
-                                      <p className="font-medium">{visit.racket} ({visit.pattern})</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-500">스트링</p>
-                                      <p className="font-medium">
-                                        {visit.stringType}
-                                        {visit.isHybrid && visit.hybridString2 && (
-                                          <span className="text-xs text-purple-600"> + {visit.hybridString2} (하이브리드)</span>
-                                        )}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-500">금액</p>
-                                      <p className="font-bold text-green-600">
-                                        {visit.total.toLocaleString()}원
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => handleEdit(visit)}
-                                      className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                                      title="수정"
-                                    >
-                                      ✏️
-                                    </button>
-                                    <button
-                                      onClick={() => handleDelete(visit.id)}
-                                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                      title="삭제"
-                                    >
-                                      🗑️
-                                    </button>
-                                  </div>
-                                </div>
-                                <div className="mt-2 text-sm text-gray-600">
-                                  <span>스트링: {parseInt(visit.stringPrice).toLocaleString()}원</span>
-                                  {visit.isHybrid && visit.hybridPrice2 && (
-                                    <>
-                                      <span className="mx-2">+</span>
-                                      <span>{parseInt(visit.hybridPrice2).toLocaleString()}원</span>
-                                      <span className="mx-2">|</span>
-                                      <span className="text-purple-600">하이브리드 +2,000원</span>
-                                    </>
-                                  )}
-                                  <span className="mx-2">|</span>
-                                  <span>공임: {parseInt(visit.labor).toLocaleString()}원</span>
-                                  <span className="mx-2">|</span>
-                                  <span>수량: {visit.quantity}개</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-
-                {viewMode === 'monthly' && (
-                  <div className="bg-white rounded-xl shadow-lg p-6">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                      📅 월별 매출 현황
-                    </h2>
-                    <div className="space-y-3">
-                      {getMonthlyStats().map((stat) => (
-                        <div key={stat.month} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                          <div className="flex justify-between items-center flex-wrap gap-3">
-                            <div>
-                              <p className="text-lg font-bold text-gray-800">{stat.month}</p>
-                              <p className="text-sm text-gray-600">작업 건수: {stat.count}건</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-2xl font-bold text-green-600">
-                                {stat.total.toLocaleString()}원
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                평균: {Math.round(stat.total / stat.count).toLocaleString()}원
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {getMonthlyStats().length === 0 && (
-                        <p className="text-center text-gray-500 py-8">데이터가 없습니다.</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {viewMode === 'yearly' && (
-                  <div className="bg-white rounded-xl shadow-lg p-6">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                      📈 연도별 매출 현황
-                    </h2>
-                    <div className="space-y-3">
-                      {getYearlyStats().map((stat) => (
-                        <div key={stat.year} className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors">
-                          <div className="flex justify-between items-center flex-wrap gap-3">
-                            <div>
-                              <p className="text-2xl font-bold text-gray-800">{stat.year}년</p>
-                              <p className="text-sm text-gray-600 mt-1">총 작업 건수: {stat.count}건</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-3xl font-bold text-purple-600">
-                                {stat.total.toLocaleString()}원
-                              </p>
-                              <p className="text-sm text-gray-600 mt-1">
-                                월평균: {Math.round(stat.total / 12).toLocaleString()}원
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {getYearlyStats().length === 0 && (
-                        <p className="text-center text-gray-500 py-8">데이터가 없습니다.</p>
-                      )}
+          // ── 드롭다운 컴포넌트 ─────────────────────────
+          const StringDropdown = ({ strings, onSelect, showAddString, setShowAddString }) => (
+            <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-56 overflow-y-auto">
+              {strings.map(s => (
+                <button key={s} type="button" onClick={()=>onSelect(s)}
+                  className={`w-full text-left px-4 py-3 ${hoverBgClass} flex justify-between items-center border-b border-gray-100 last:border-0`}>
+                  <span className="text-sm">{s}</span>
+                  <span className="text-xs text-gray-500">{(stringPrices[s]||0).toLocaleString()}원</span>
+                </button>
+              ))}
+              <div className="p-2 border-t border-gray-200">
+                {!showAddString ? (
+                  <button type="button" onClick={()=>setShowAddString(true)}
+                    className="w-full px-3 py-2 bg-blue-500 text-white rounded-lg text-sm">+ 새 스트링 추가</button>
+                ) : (
+                  <div className="space-y-2">
+                    <input type="text" value={newStringName} onChange={e=>setNewStringName(e.target.value)} placeholder="스트링 이름" className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm"/>
+                    <input type="number" value={newStringPrice} onChange={e=>setNewStringPrice(e.target.value)} placeholder="가격" className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm"/>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={handleAddCustomString} className="flex-1 py-2 bg-green-500 text-white rounded-lg text-sm">추가</button>
+                      <button type="button" onClick={()=>{setShowAddString(false);setNewStringName('');setNewStringPrice('');}} className="flex-1 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm">취소</button>
                     </div>
                   </div>
                 )}
               </div>
             </div>
           );
+
+          return (
+            <div>
+              {/* ── 상단 탭 바 ── */}
+              <div className="grid grid-cols-3 gap-1 mb-3">
+                <button onClick={()=>setViewMode('customers')}
+                  className={`py-2 rounded-lg font-medium text-sm transition-colors ${viewMode==='customers' ? activeBtnClass : 'bg-gray-200 text-gray-700'}`}>
+                  👥 고객
+                </button>
+                <button onClick={()=>setViewMode('monthly')}
+                  className={`py-2 rounded-lg font-medium text-sm transition-colors ${viewMode==='monthly' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                  📅 월별
+                </button>
+                <button onClick={()=>setViewMode('yearly')}
+                  className={`py-2 rounded-lg font-medium text-sm transition-colors ${viewMode==='yearly' ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                  📈 연도별
+                </button>
+              </div>
+
+              {/* ── 검색 + 등록 버튼 ── */}
+              {viewMode === 'customers' && (
+                <div className="flex gap-2">
+                  <input type="text" placeholder="고객 검색..." value={searchTerm}
+                    onChange={e=>setSearchTerm(e.target.value)}
+                    className={`flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}/>
+                  <button onClick={()=>setShowForm(!showForm)}
+                    className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap ${showForm ? 'bg-gray-400 text-white' : (color==='green' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white')}`}>
+                    {showForm ? '✕ 취소' : '➕ 등록'}
+                  </button>
+                </div>
+              )}
+
+              {/* ── 등록/수정 폼 ── */}
+              {showForm && viewMode === 'customers' && (
+                <div className="bg-white rounded-xl shadow-lg p-4 mt-3">
+                  <h2 className="text-base font-bold text-gray-800 mb-3">{editingId ? '✏️ 작업 수정' : '➕ 새 작업 등록'}</h2>
+                  <form onSubmit={handleSubmit} className="space-y-3">
+
+                    {/* 날짜 / 고객명 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">날짜</label>
+                        <input type="date" value={formData.date} onChange={e=>setFormData({...formData,date:e.target.value})}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                      </div>
+                      <div className="relative">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">고객명</label>
+                        <input type="text" value={formData.name}
+                          onChange={e=>handleNameChange(e.target.value)}
+                          onFocus={()=>setShowNameDropdown(formData.name.length>0)}
+                          onBlur={()=>setTimeout(()=>setShowNameDropdown(false),200)}
+                          placeholder="홍길동"
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                        {showNameDropdown && getUniqueNames().length > 0 && (
+                          <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                            {getUniqueNames().map(n=>(
+                              <button key={n} type="button" onClick={()=>handleNameSelect(n)}
+                                className={`w-full text-left px-4 py-3 text-sm ${hoverBgClass} border-b border-gray-100 last:border-0`}>{n}</button>
+                            ))}
+                          </div>
+                        )}
+                        {formData.name && records.filter(r=>r.name===formData.name).length>0 && !editingId && (
+                          <p className="text-xs text-green-600 mt-1">✓ 이전 기록 자동 입력</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 라켓명 / 패턴 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">{config.racketLabel}</label>
+                        <input type="text" value={formData.racket}
+                          onChange={e=>handleRacketChange(e.target.value)}
+                          onFocus={()=>setShowRacketDropdown(formData.racket.length>0)}
+                          onBlur={()=>setTimeout(()=>setShowRacketDropdown(false),200)}
+                          placeholder={config.racketPlaceholder}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                        {showRacketDropdown && getUniqueRackets().length > 0 && (
+                          <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                            {getUniqueRackets().map(r=>(
+                              <button key={r} type="button" onClick={()=>{setFormData({...formData,racket:r});setShowRacketDropdown(false);}}
+                                className={`w-full text-left px-4 py-3 text-sm ${hoverBgClass} border-b border-gray-100 last:border-0`}>{r}</button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">패턴</label>
+                        <select value={formData.pattern} onChange={e=>setFormData({...formData,pattern:e.target.value})}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}>
+                          {config.patterns.map(p=><option key={p}>{p}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* 스트링 종류 / 가격 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">스트링 종류</label>
+                        <input type="text" value={formData.stringType}
+                          onChange={e=>handleStringChange(e.target.value)}
+                          onFocus={()=>setShowStringDropdown(true)}
+                          onBlur={()=>setTimeout(()=>setShowStringDropdown(false),200)}
+                          placeholder="스트링 선택"
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                        {showStringDropdown && (
+                          <StringDropdown strings={getFilteredStrings(formData.stringType)} onSelect={handleStringSelect}
+                            showAddString={showAddString} setShowAddString={setShowAddString}/>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">스트링 가격 (원)</label>
+                        <input type="number" value={formData.stringPrice} onChange={e=>setFormData({...formData,stringPrice:e.target.value})}
+                          placeholder="0" className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                      </div>
+                    </div>
+
+                    {/* 하이브리드 */}
+                    <div className="border-2 border-dashed border-gray-200 rounded-lg p-3">
+                      <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                        <input type="checkbox" checked={formData.isHybrid}
+                          onChange={e=>setFormData({...formData,isHybrid:e.target.checked,hybridString2:e.target.checked?formData.hybridString2:'',hybridPrice2:e.target.checked?formData.hybridPrice2:''})}
+                          className="w-4 h-4 rounded"/>
+                        <span className="text-sm font-medium text-gray-700">하이브리드 (+2,000원)</span>
+                      </label>
+                      {formData.isHybrid && (
+                        <div className="grid grid-cols-2 gap-3 mt-2">
+                          <div className="relative">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">두번째 스트링</label>
+                            <input type="text" value={formData.hybridString2}
+                              onChange={e=>handleStringChange(e.target.value,true)}
+                              onFocus={()=>setShowHybridDropdown(true)}
+                              onBlur={()=>setTimeout(()=>setShowHybridDropdown(false),200)}
+                              placeholder="스트링 선택"
+                              className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required={formData.isHybrid}/>
+                            {showHybridDropdown && (
+                              <StringDropdown strings={getFilteredStrings(formData.hybridString2)} onSelect={s=>handleStringSelect(s,true)}
+                                showAddString={showAddString} setShowAddString={setShowAddString}/>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">두번째 가격 (원)</label>
+                            <input type="number" value={formData.hybridPrice2} onChange={e=>setFormData({...formData,hybridPrice2:e.target.value})}
+                              placeholder="0" className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required={formData.isHybrid}/>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 공임 / 수량 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">공임 (원)</label>
+                        <select value={formData.labor} onChange={e=>setFormData({...formData,labor:e.target.value})}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}>
+                          {config.defaultLabors.map(l=><option key={l} value={l}>{parseInt(l).toLocaleString()}원</option>)}
+                          <option value="0">0원</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">수량</label>
+                        <input type="number" value={formData.quantity} min="1"
+                          onChange={e=>setFormData({...formData,quantity:e.target.value})}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                      </div>
+                    </div>
+
+                    {/* 합계 */}
+                    <div className="bg-gray-50 rounded-lg p-3 text-center">
+                      <p className="text-lg font-bold text-gray-800">합계: {calculateTotal().toLocaleString()}원</p>
+                      {formData.isHybrid && <p className="text-xs text-gray-500">하이브리드 +2,000원 포함</p>}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button type="submit" className={`flex-1 py-3 rounded-lg font-medium text-white ${color==='green'?'bg-green-500':'bg-blue-500'}`}>
+                        {editingId ? '수정 완료' : '등록하기'}
+                      </button>
+                      <button type="button" onClick={resetForm} className="px-5 py-3 bg-gray-300 text-gray-800 rounded-lg font-medium">취소</button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* ── 고객 목록 ── */}
+              {viewMode === 'customers' && (
+                <div className="space-y-2 mt-3">
+                  {filteredCustomers.length === 0 ? (
+                    <div className="bg-white rounded-xl shadow-lg p-10 text-center">
+                      <p className="text-gray-400 text-4xl mb-3">{sport==='tennis'?'🎾':'🏸'}</p>
+                      <p className="text-gray-500">등록된 고객이 없습니다.</p>
+                      <p className="text-gray-400 text-sm mt-1">➕ 등록 버튼을 눌러 시작하세요.</p>
+                    </div>
+                  ) : filteredCustomers.map(customer => {
+                    const sortedVisits = [...customer.visits].sort((a,b)=>new Date(b.date)-new Date(a.date));
+                    const lastVisit = sortedVisits[0];
+                    const isExpanded = expandedCustomer === customer.name;
+                    const VisitCard = ({visit}) => (
+                      <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+                            <div><span className="text-xs text-gray-400">날짜 </span><span className="font-medium">{visit.date}</span></div>
+                            <div><span className="text-xs text-gray-400">금액 </span><span className={`font-bold ${statColor}`}>{visit.total.toLocaleString()}원</span></div>
+                            <div className="col-span-2"><span className="text-xs text-gray-400">라켓 </span><span className="font-medium text-xs">{visit.racket} ({visit.pattern})</span></div>
+                            <div className="col-span-2"><span className="text-xs text-gray-400">스트링 </span><span className="font-medium text-xs">{visit.stringType}{visit.isHybrid&&visit.hybridString2&&<span className="text-purple-600"> + {visit.hybridString2}</span>}</span></div>
+                            <div><span className="text-xs text-gray-400">공임 </span><span className="text-xs">{parseInt(visit.labor).toLocaleString()}원</span></div>
+                            <div><span className="text-xs text-gray-400">수량 </span><span className="text-xs">{visit.quantity}개</span></div>
+                          </div>
+                          <div className="flex flex-col gap-1 ml-2">
+                            <button onClick={()=>handleEdit(visit)} className="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg text-lg">✏️</button>
+                            <button onClick={()=>handleDelete(visit.id)} className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg text-lg">🗑️</button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                    return (
+                      <div key={customer.name} className="bg-white rounded-xl shadow-lg overflow-hidden">
+                        {/* 이름 헤더 - 탭으로 열고 닫기 */}
+                        <button onClick={()=>toggleCustomer(customer.name)}
+                          className="w-full px-4 py-3 flex justify-between items-center active:bg-gray-50">
+                          <div className="text-left">
+                            <p className="text-base font-bold text-gray-800">{customer.name}</p>
+                            <div className="flex gap-1 mt-1 flex-wrap">
+                              <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">연간 {customer.yearlyVisits}회</span>
+                              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">총 {customer.visitCount}회</span>
+                              <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs">누적 {customer.totalAmount.toLocaleString()}원</span>
+                            </div>
+                          </div>
+                          <span className="text-gray-400 text-lg ml-2">{isExpanded ? '▲' : '▼'}</span>
+                        </button>
+
+                        {/* 최근 작업 1건 - 항상 표시 */}
+                        <div className="px-3 pb-3">
+                          <p className="text-xs text-gray-400 mb-1 px-1">최근 작업</p>
+                          <VisitCard visit={lastVisit} />
+                        </div>
+
+                        {/* 이전 작업들 - 펼치면 표시 */}
+                        {isExpanded && sortedVisits.length > 1 && (
+                          <div className="px-3 pb-3 space-y-2 border-t border-gray-100 pt-3">
+                            <p className="text-xs text-gray-400 px-1">이전 작업 ({sortedVisits.length - 1}건)</p>
+                            {sortedVisits.slice(1).map(visit => (
+                              <VisitCard key={visit.id} visit={visit} />
+                            ))}
+                          </div>
+                        )}
+
+                        {/* 이전 기록 없을 때 펼치면 */}
+                        {isExpanded && sortedVisits.length === 1 && (
+                          <div className="px-4 pb-3 text-xs text-gray-400 border-t border-gray-100 pt-2">
+                            이전 작업 기록이 없습니다.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── 월별 매출 ── */}
+              {viewMode === 'monthly' && (
+                <div className="bg-white rounded-xl shadow-lg p-4 mt-3">
+                  <h2 className="text-base font-bold text-gray-800 mb-3">📅 월별 매출 현황</h2>
+                  <div className="space-y-2">
+                    {getMonthlyStats().length === 0 && <p className="text-center text-gray-400 py-8">데이터가 없습니다.</p>}
+                    {getMonthlyStats().map(stat => (
+                      <div key={stat.month} className="border border-gray-200 rounded-lg p-3 flex justify-between items-center">
+                        <div>
+                          <p className="font-bold text-gray-800">{stat.month}</p>
+                          <p className="text-xs text-gray-500">{stat.count}건</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-bold ${statColor}`}>{stat.total.toLocaleString()}원</p>
+                          <p className="text-xs text-gray-500">평균 {Math.round(stat.total/stat.count).toLocaleString()}원</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── 연도별 매출 ── */}
+              {viewMode === 'yearly' && (
+                <div className="bg-white rounded-xl shadow-lg p-4 mt-3">
+                  <h2 className="text-base font-bold text-gray-800 mb-3">📈 연도별 매출 현황</h2>
+                  <div className="space-y-2">
+                    {getYearlyStats().length === 0 && <p className="text-center text-gray-400 py-8">데이터가 없습니다.</p>}
+                    {getYearlyStats().map(stat => (
+                      <div key={stat.year} className="border border-gray-200 rounded-lg p-4 flex justify-between items-center">
+                        <div>
+                          <p className="text-lg font-bold text-gray-800">{stat.year}년</p>
+                          <p className="text-xs text-gray-500">총 {stat.count}건</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-purple-600">{stat.total.toLocaleString()}원</p>
+                          <p className="text-xs text-gray-500">월평균 {Math.round(stat.total/12).toLocaleString()}원</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
         };
 
-        ReactDOM.render(<TennisStringingManager />, document.getElementById('root'));
-    </script>
-    
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        lucide.createIcons();
+        // ── 최상위 앱 (스포츠 탭 전환) ──────────────────
+        const App = () => {
+          const [sport, setSport] = useState('tennis');
+          return (
+            <div className="min-h-screen bg-gray-100">
+              {/* 스포츠 탭 헤더 */}
+              <div className={`${sport==='tennis' ? 'bg-green-600' : 'bg-blue-600'} text-white px-4 pt-4 pb-0 shadow-md`}>
+                <h1 className="text-lg font-bold mb-3">🏆 스트링 작업 관리</h1>
+                <div className="flex">
+                  <button
+                    onClick={()=>setSport('tennis')}
+                    className={`flex-1 py-2 text-sm font-bold rounded-t-xl transition-colors ${sport==='tennis' ? 'bg-white text-green-600' : 'bg-green-700 text-green-100'}`}>
+                    🎾 테니스
+                  </button>
+                  <button
+                    onClick={()=>setSport('badminton')}
+                    className={`flex-1 py-2 text-sm font-bold rounded-t-xl transition-colors ${sport==='badminton' ? 'bg-white text-blue-600' : 'bg-blue-700 text-blue-100'}`}>
+                    🏸 배드민턴
+                  </button>
+                </div>
+              </div>
+
+              {/* 콘텐츠 */}
+              <div className="p-3 max-w-2xl mx-auto">
+                <StringingApp key={sport} sport={sport} />
+              </div>
+            </div>
+          );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
 </html>
