@@ -105,6 +105,12 @@
           const [editStringName, setEditStringName] = useState('');
           const [editStringPrice, setEditStringPrice] = useState('');
           const [photoViewer, setPhotoViewer] = useState(null);
+          const [coupons, setCoupons] = useState([]);
+          const [couponForm, setCouponForm] = useState({code:'', discount:'', expiry:'', note:''});
+          const [showCouponForm, setShowCouponForm] = useState(false);
+          const [appliedCoupon, setAppliedCoupon] = useState(null);
+          const [couponInput, setCouponInput] = useState('');
+          const [couponMsg, setCouponMsg] = useState('');
 
           const stringPrices = {...config.defaultStrings, ...customStrings};
 
@@ -124,6 +130,7 @@
           // localStorage 키 (스포츠별 분리)
           const storageKey = 'stringing-records-' + sport;
           const stringsKey = 'stringing-all-strings-v2-' + sport;
+          const couponKey = 'stringing-coupons-' + sport;
 
           useEffect(() => {
             try {
@@ -147,16 +154,27 @@
                 // 최초: 기본 스트링으로 초기화 (배드민턴은 빈 객체)
                 setCustomStrings({...config.defaultStrings});
               }
+              const savedCoupons = localStorage.getItem(couponKey);
+              if (savedCoupons) setCoupons(JSON.parse(savedCoupons));
             } catch(e) {
               console.log('데이터 로드 오류:', e);
             }
             setFormData(emptyForm());
+            setAppliedCoupon(null);
+            setCouponInput('');
+            setCouponMsg('');
           }, [sport]);
 
           // records 저장
           const saveRecords = (newRecords) => {
             setRecords(newRecords);
             try { localStorage.setItem(storageKey, JSON.stringify(newRecords)); } catch(e) {}
+          };
+
+          // coupons 저장
+          const saveCoupons = (arr) => {
+            setCoupons(arr);
+            try { localStorage.setItem(couponKey, JSON.stringify(arr)); } catch(e) {}
           };
 
           // strings 저장
@@ -178,8 +196,24 @@
           // ── CRUD ─────────────────────────────────────
           const handleSubmit = (e) => {
             e.preventDefault();
-            const rec = { id: editingId || Date.now(), ...formData, total: calculateTotal(), createdAt: editingId ? records.find(r=>r.id===editingId)?.createdAt : Date.now() };
+            const finalTotal = calculateTotalWithCoupon();
+            const rec = {
+              id: editingId || Date.now(),
+              ...formData,
+              total: finalTotal,
+              couponCode: appliedCoupon ? appliedCoupon.code : '',
+              couponDiscount: appliedCoupon ? appliedCoupon.discount : 0,
+              createdAt: editingId ? records.find(r=>r.id===editingId)?.createdAt : Date.now()
+            };
             saveRecords(editingId ? records.map(r=>r.id===editingId?rec:r) : [...records, rec]);
+            // 쿠폰 사용 처리
+            if (appliedCoupon && !editingId) {
+              const updated = coupons.map(c => c.code === appliedCoupon.code
+                ? {...c, used: true, usedDate: new Date().toISOString().split('T')[0], usedFor: formData.name}
+                : c);
+              saveCoupons(updated);
+            }
+            setAppliedCoupon(null); setCouponInput(''); setCouponMsg('');
             resetForm();
           };
 
@@ -255,6 +289,24 @@
               setModalStringPrice('');
               setShowAddModal(false);
             }
+          };
+
+          // 쿠폰 적용 (폼에서)
+          const handleApplyCoupon = () => {
+            const code = couponInput.trim().toUpperCase();
+            const today = new Date().toISOString().split('T')[0];
+            const found = coupons.find(c => c.code.toUpperCase() === code);
+            if (!found) { setCouponMsg('❌ 쿠폰번호를 찾을 수 없습니다.'); setAppliedCoupon(null); return; }
+            if (found.used) { setCouponMsg('❌ 이미 사용된 쿠폰입니다.'); setAppliedCoupon(null); return; }
+            if (found.expiry && found.expiry < today) { setCouponMsg('❌ 만료된 쿠폰입니다.'); setAppliedCoupon(null); return; }
+            setAppliedCoupon(found);
+            setCouponMsg('✅ 쿠폰이 적용되었습니다! ' + parseInt(found.discount).toLocaleString() + '원 할인');
+          };
+
+          const calculateTotalWithCoupon = () => {
+            const base = calculateTotal();
+            if (!appliedCoupon) return base;
+            return Math.max(0, base - parseFloat(appliedCoupon.discount));
           };
 
           const handleEditString = (key, name, price) => {
@@ -431,10 +483,14 @@
               )}
 
               {/* ── 상단 탭 바 ── */}
-              <div className="grid grid-cols-4 gap-1 mb-3">
+              <div className="grid grid-cols-5 gap-1 mb-3">
                 <button onClick={()=>setViewMode('customers')}
                   className={`py-2 rounded-lg font-medium text-xs transition-colors ${viewMode==='customers' ? activeBtnClass : 'bg-gray-200 text-gray-700'}`}>
                   👥 고객
+                </button>
+                <button onClick={()=>setViewMode('coupons')}
+                  className={`py-2 rounded-lg font-medium text-xs transition-colors ${viewMode==='coupons' ? 'bg-pink-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                  🎫 쿠폰
                 </button>
                 <button onClick={()=>setViewMode('strings')}
                   className={`py-2 rounded-lg font-medium text-xs transition-colors ${viewMode==='strings' ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
@@ -624,9 +680,34 @@
                       </div>
                     </div>
 
+                    {/* 쿠폰 적용 */}
+                    {!editingId && coupons.filter(c=>!c.used).length > 0 && (
+                      <div className="border border-pink-200 bg-pink-50 rounded-lg p-3 space-y-2">
+                        <p className="text-xs font-medium text-pink-700">🎫 쿠폰 적용</p>
+                        <div className="flex gap-2">
+                          <input type="text" value={couponInput}
+                            onChange={e=>{setCouponInput(e.target.value.toUpperCase()); setCouponMsg(''); setAppliedCoupon(null);}}
+                            placeholder="쿠폰번호 입력"
+                            className="flex-1 px-3 py-2 border border-pink-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 uppercase"
+                          />
+                          <button type="button" onClick={handleApplyCoupon}
+                            className="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm font-medium">적용</button>
+                        </div>
+                        {couponMsg && <p className="text-xs font-medium text-pink-700">{couponMsg}</p>}
+                      </div>
+                    )}
+
                     {/* 합계 */}
                     <div className="bg-gray-50 rounded-lg p-3 text-center">
-                      <p className="text-lg font-bold text-gray-800">합계: {calculateTotal().toLocaleString()}원</p>
+                      {appliedCoupon ? (
+                        <div>
+                          <p className="text-sm text-gray-500 line-through">{calculateTotal().toLocaleString()}원</p>
+                          <p className="text-xs text-pink-600">🎫 쿠폰 -{parseInt(appliedCoupon.discount).toLocaleString()}원</p>
+                          <p className="text-xl font-bold text-pink-600">{calculateTotalWithCoupon().toLocaleString()}원</p>
+                        </div>
+                      ) : (
+                        <p className="text-lg font-bold text-gray-800">합계: {calculateTotal().toLocaleString()}원</p>
+                      )}
                       {formData.isHybrid && <p className="text-xs text-gray-500">하이브리드 +2,000원 포함</p>}
                     </div>
 
@@ -663,6 +744,7 @@
                             <div className="col-span-2"><span className="text-xs text-gray-400">스트링 </span><span className="font-medium text-xs">{visit.stringType}{visit.isHybrid&&visit.hybridString2&&<span className="text-purple-600"> + {visit.hybridString2}</span>}</span></div>
                             <div><span className="text-xs text-gray-400">공임 </span><span className="text-xs">{parseInt(visit.labor).toLocaleString()}원</span></div>
                             <div><span className="text-xs text-gray-400">수량 </span><span className="text-xs">{visit.quantity}개</span></div>
+                            {visit.couponCode && <div className="col-span-2"><span className="text-xs text-gray-400">쿠폰 </span><span className="text-xs text-pink-600">🎫 {visit.couponCode} (-{parseInt(visit.couponDiscount).toLocaleString()}원)</span></div>}
                           </div>
                           <div className="flex flex-col gap-1 ml-2">
                             {visit.photo && (
@@ -752,6 +834,130 @@
               )}
 
               {/* ── 연도별 매출 ── */}
+              {/* ── 쿠폰 관리 ── */}
+              {viewMode === 'coupons' && (
+                <div className="mt-3 space-y-3">
+                  {/* 쿠폰 등록 버튼 */}
+                  <button onClick={()=>setShowCouponForm(!showCouponForm)}
+                    className="w-full py-3 bg-pink-500 text-white rounded-xl font-medium text-sm shadow">
+                    {showCouponForm ? '✕ 취소' : '➕ 쿠폰 등록'}
+                  </button>
+
+                  {/* 등록 폼 */}
+                  {showCouponForm && (
+                    <div className="bg-white rounded-xl shadow-lg p-4 space-y-3">
+                      <h3 className="text-sm font-bold text-gray-800">🎫 새 쿠폰 등록</h3>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">쿠폰번호 *</label>
+                        <input type="text" value={couponForm.code}
+                          onChange={e=>setCouponForm({...couponForm, code:e.target.value.toUpperCase()})}
+                          placeholder="예) KAKAO-2024-ABCD"
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 uppercase"/>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">할인금액 (원) *</label>
+                          <input type="number" value={couponForm.discount}
+                            onChange={e=>setCouponForm({...couponForm, discount:e.target.value})}
+                            placeholder="예) 5000"
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">만료일</label>
+                          <input type="date" value={couponForm.expiry}
+                            onChange={e=>setCouponForm({...couponForm, expiry:e.target.value})}
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">메모</label>
+                        <input type="text" value={couponForm.note}
+                          onChange={e=>setCouponForm({...couponForm, note:e.target.value})}
+                          placeholder="예) 카카오 이벤트 쿠폰"
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/>
+                      </div>
+                      <button onClick={()=>{
+                        if (!couponForm.code.trim() || !couponForm.discount) return;
+                        const newCoupon = {
+                          id: Date.now(),
+                          code: couponForm.code.trim().toUpperCase(),
+                          discount: parseFloat(couponForm.discount),
+                          expiry: couponForm.expiry,
+                          note: couponForm.note,
+                          used: false,
+                          usedDate: '',
+                          usedFor: '',
+                          createdAt: new Date().toISOString().split('T')[0],
+                        };
+                        saveCoupons([...coupons, newCoupon]);
+                        setCouponForm({code:'', discount:'', expiry:'', note:''});
+                        setShowCouponForm(false);
+                      }}
+                        className="w-full py-3 bg-pink-500 text-white rounded-xl font-medium text-sm">
+                        등록하기
+                      </button>
+                    </div>
+                  )}
+
+                  {/* 미사용 쿠폰 */}
+                  <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 flex justify-between">
+                      <span className="text-sm font-bold text-gray-800">미사용 쿠폰</span>
+                      <span className="text-xs text-pink-600 font-medium">{coupons.filter(c=>!c.used).length}개</span>
+                    </div>
+                    {coupons.filter(c=>!c.used).length === 0 && (
+                      <p className="text-center text-gray-400 py-8 text-sm">미사용 쿠폰이 없습니다.</p>
+                    )}
+                    {coupons.filter(c=>!c.used).map(c => {
+                      const today = new Date().toISOString().split('T')[0];
+                      const expired = c.expiry && c.expiry < today;
+                      return (
+                        <div key={c.id} className={`border-b border-gray-100 last:border-0 px-4 py-3 flex items-center gap-3 ${expired?'opacity-50':''}`}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-bold text-gray-800 font-mono">{c.code}</p>
+                              {expired && <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">만료</span>}
+                            </div>
+                            <p className="text-base font-bold text-pink-600">{parseInt(c.discount).toLocaleString()}원 할인</p>
+                            <div className="flex gap-3 mt-0.5">
+                              {c.expiry && <p className="text-xs text-gray-400">~{c.expiry}</p>}
+                              {c.note && <p className="text-xs text-gray-400">{c.note}</p>}
+                            </div>
+                          </div>
+                          <button onClick={()=>{if(window.confirm('쿠폰을 삭제할까요?')) saveCoupons(coupons.filter(x=>x.id!==c.id));}}
+                            className="p-2 text-red-400 hover:bg-red-50 rounded-lg">🗑️</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* 사용완료 쿠폰 */}
+                  {coupons.filter(c=>c.used).length > 0 && (
+                    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                      <div className="px-4 py-3 border-b border-gray-100 flex justify-between">
+                        <span className="text-sm font-bold text-gray-800">사용완료 쿠폰</span>
+                        <span className="text-xs text-gray-400">{coupons.filter(c=>c.used).length}개</span>
+                      </div>
+                      {coupons.filter(c=>c.used).map(c => (
+                        <div key={c.id} className="border-b border-gray-100 last:border-0 px-4 py-3 opacity-60">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-sm font-medium text-gray-600 font-mono line-through">{c.code}</p>
+                              <p className="text-sm text-gray-500">{parseInt(c.discount).toLocaleString()}원 할인</p>
+                              {c.note && <p className="text-xs text-gray-400">{c.note}</p>}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-gray-400">{c.usedDate} 사용</p>
+                              {c.usedFor && <p className="text-xs text-gray-500">{c.usedFor} 고객</p>}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* ── 스트링 관리 ── */}
               {viewMode === 'strings' && (
                 <div className="mt-3 space-y-3">
