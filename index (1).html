@@ -104,8 +104,6 @@
           const [editingStringKey, setEditingStringKey] = useState(null);
           const [editStringName, setEditStringName] = useState('');
           const [editStringPrice, setEditStringPrice] = useState('');
-          const [photoViewer, setPhotoViewer] = useState(null);
-          const [photos, setPhotos] = useState({});
           const [coupons, setCoupons] = useState([]);
           const [couponForm, setCouponForm] = useState({code:'', discount:'', expiry:'', note:''});
           const [showCouponForm, setShowCouponForm] = useState(false);
@@ -123,7 +121,6 @@
             labor: config.defaultLabors[0],
             quantity: 1,
             isHybrid: false, hybridString2: '', hybridPrice2: '',
-            photo: '',
           });
 
           const [formData, setFormData] = useState(emptyForm());
@@ -132,7 +129,6 @@
           const storageKey = 'stringing-records-' + sport;
           const stringsKey = 'stringing-all-strings-v2-' + sport;
           const couponKey = 'stringing-coupons-' + sport;
-          const photoKey = 'stringing-photos-' + sport;
 
           useEffect(() => {
             try {
@@ -158,8 +154,6 @@
               }
               const savedCoupons = localStorage.getItem(couponKey);
               if (savedCoupons) setCoupons(JSON.parse(savedCoupons));
-              const savedPhotos = localStorage.getItem(photoKey);
-              if (savedPhotos) setPhotos(JSON.parse(savedPhotos));
             } catch(e) {
               console.log('데이터 로드 오류:', e);
             }
@@ -169,24 +163,11 @@
             setCouponMsg('');
           }, [sport]);
 
-          // photos 별도 저장
-          const savePhotos = (newPhotos) => {
-            setPhotos(newPhotos);
-            try { localStorage.setItem(photoKey, JSON.stringify(newPhotos)); } catch(e) {
-              alert('사진 저장 실패: 용량이 부족합니다. 오래된 사진을 삭제해주세요.');
-            }
-          };
-
-          // records 저장 - 사진은 photo 필드 제거하고 photoId로만 참조
+          // records 저장
           const saveRecords = (newRecords) => {
             setRecords(newRecords);
-            // records에서 photo(base64) 제거하고 저장 (photos 별도 저장소 사용)
-            const slim = newRecords.map(r => {
-              const {photo, ...rest} = r;
-              return rest;
-            });
             try {
-              localStorage.setItem(storageKey, JSON.stringify(slim));
+              localStorage.setItem(storageKey, JSON.stringify(newRecords));
             } catch(e) {
               alert('저장 실패: 데이터 용량이 초과됐습니다.');
             }
@@ -227,16 +208,6 @@
               couponDiscount: appliedCoupon ? appliedCoupon.discount : 0,
               createdAt: editingId ? records.find(r=>r.id===editingId)?.createdAt : Date.now()
             };
-            // 사진은 photos 별도 저장소에 보관
-            if (formData.photo) {
-              const newPhotos = {...photos, [recId]: formData.photo};
-              savePhotos(newPhotos);
-            } else if (editingId && !formData.photo) {
-              // 수정 시 사진 삭제했으면 photos에서도 제거
-              const newPhotos = {...photos};
-              delete newPhotos[recId];
-              savePhotos(newPhotos);
-            }
             saveRecords(editingId ? records.map(r=>r.id===editingId?rec:r) : [...records, rec]);
             // 쿠폰 사용 처리
             if (appliedCoupon && !editingId) {
@@ -257,7 +228,7 @@
           };
 
           const handleEdit = (rec) => {
-            setFormData({ date:rec.date, name:rec.name, racket:rec.racket, pattern:rec.pattern, stringType:rec.stringType, stringPrice:rec.stringPrice, labor:rec.labor, quantity:rec.quantity, isHybrid:rec.isHybrid||false, hybridString2:rec.hybridString2||'', hybridPrice2:rec.hybridPrice2||'', photo: photos[rec.id] || '' });
+            setFormData({ date:rec.date, name:rec.name, racket:rec.racket, pattern:rec.pattern, stringType:rec.stringType, stringPrice:rec.stringPrice, labor:rec.labor, quantity:rec.quantity, isHybrid:rec.isHybrid||false, hybridString2:rec.hybridString2||'', hybridPrice2:rec.hybridPrice2||'' });
             setEditingId(rec.id);
             setShowForm(true);
           };
@@ -265,11 +236,6 @@
           const handleDelete = (id) => {
             if (window.confirm('정말 삭제하시겠습니까?')) {
               saveRecords(records.filter(r=>r.id!==id));
-              if (photos[id]) {
-                const newPhotos = {...photos};
-                delete newPhotos[id];
-                savePhotos(newPhotos);
-              }
             }
           };
 
@@ -507,21 +473,7 @@
                 </div>
               )}
 
-              {/* ── 사진 전체화면 뷰어 ── */}
-              {photoViewer && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                  style={{backgroundColor:'rgba(0,0,0,0.9)'}}
-                  onClick={()=>setPhotoViewer(null)}>
-                  <div className="relative w-full max-w-lg" onClick={e=>e.stopPropagation()}>
-                    <img src={photoViewer} className="w-full rounded-xl object-contain max-h-screen" style={{maxHeight:'80vh'}}/>
-                    <button
-                      onClick={()=>setPhotoViewer(null)}
-                      className="absolute top-2 right-2 w-9 h-9 bg-black bg-opacity-60 text-white rounded-full text-lg flex items-center justify-center">✕</button>
-                  </div>
-                </div>
-              )}
-
-              {/* ── 상단 탭 바 ── */}
+{/* ── 상단 탭 바 ── */}
               <div className="grid grid-cols-5 gap-1 mb-3">
                 <button onClick={()=>setViewMode('customers')}
                   className={`py-2 rounded-lg font-medium text-xs transition-colors ${viewMode==='customers' ? activeBtnClass : 'bg-gray-200 text-gray-700'}`}>
@@ -691,34 +643,6 @@
                       </div>
                     </div>
 
-                    {/* 사진 등록 */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">📷 라켓 사진 (선택)</label>
-                      <div className="flex items-center gap-2">
-                        <label className={`flex-1 flex items-center justify-center gap-2 py-2.5 border-2 border-dashed rounded-lg cursor-pointer text-sm transition-colors ${formData.photo ? 'border-green-400 bg-green-50 text-green-700' : 'border-gray-300 bg-gray-50 text-gray-500 hover:border-gray-400'}`}>
-                          <input type="file" accept="image/*" className="hidden"
-                            onChange={e=>{
-                              const file = e.target.files[0];
-                              if (!file) return;
-                              const reader = new FileReader();
-                              reader.onload = ev => setFormData(prev=>({...prev, photo: ev.target.result}));
-                              reader.readAsDataURL(file);
-                            }}
-                          />
-                          {formData.photo ? '✅ 사진 등록됨 (변경하려면 탭)' : '📷 사진 선택'}
-                        </label>
-                        {formData.photo && (
-                          <div className="relative">
-                            <img src={formData.photo} className="w-14 h-14 object-cover rounded-lg border border-gray-200 cursor-pointer"
-                              onClick={()=>setPhotoViewer(formData.photo)}/>
-                            <button type="button"
-                              onClick={()=>setFormData(prev=>({...prev,photo:''}))}
-                              className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">✕</button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
                     {/* 쿠폰 적용 */}
                     {!editingId && coupons.filter(c=>!c.used).length > 0 && (
                       <div className="border border-pink-200 bg-pink-50 rounded-lg p-3 space-y-2">
@@ -786,10 +710,7 @@
                             {visit.couponCode && <div className="col-span-2"><span className="text-xs text-gray-400">쿠폰 </span><span className="text-xs text-pink-600">🎫 {visit.couponCode} (-{parseInt(visit.couponDiscount).toLocaleString()}원)</span></div>}
                           </div>
                           <div className="flex flex-col gap-1 ml-2">
-                            {photos[visit.id] && (
-                              <img src={photos[visit.id]} className="w-14 h-14 object-cover rounded-lg border border-gray-200 cursor-pointer mb-1"
-                                onClick={()=>setPhotoViewer(photos[visit.id])}/>
-                            )}
+
                             <button onClick={()=>handleEdit(visit)} className="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg text-lg">✏️</button>
                             <button onClick={()=>handleDelete(visit.id)} className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg text-lg">🗑️</button>
                           </div>
