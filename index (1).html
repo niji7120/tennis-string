@@ -105,6 +105,7 @@
           const [editStringName, setEditStringName] = useState('');
           const [editStringPrice, setEditStringPrice] = useState('');
           const [photoViewer, setPhotoViewer] = useState(null);
+          const [photos, setPhotos] = useState({});
           const [coupons, setCoupons] = useState([]);
           const [couponForm, setCouponForm] = useState({code:'', discount:'', expiry:'', note:''});
           const [showCouponForm, setShowCouponForm] = useState(false);
@@ -131,6 +132,7 @@
           const storageKey = 'stringing-records-' + sport;
           const stringsKey = 'stringing-all-strings-v2-' + sport;
           const couponKey = 'stringing-coupons-' + sport;
+          const photoKey = 'stringing-photos-' + sport;
 
           useEffect(() => {
             try {
@@ -156,6 +158,8 @@
               }
               const savedCoupons = localStorage.getItem(couponKey);
               if (savedCoupons) setCoupons(JSON.parse(savedCoupons));
+              const savedPhotos = localStorage.getItem(photoKey);
+              if (savedPhotos) setPhotos(JSON.parse(savedPhotos));
             } catch(e) {
               console.log('데이터 로드 오류:', e);
             }
@@ -165,10 +169,27 @@
             setCouponMsg('');
           }, [sport]);
 
-          // records 저장
+          // photos 별도 저장
+          const savePhotos = (newPhotos) => {
+            setPhotos(newPhotos);
+            try { localStorage.setItem(photoKey, JSON.stringify(newPhotos)); } catch(e) {
+              alert('사진 저장 실패: 용량이 부족합니다. 오래된 사진을 삭제해주세요.');
+            }
+          };
+
+          // records 저장 - 사진은 photo 필드 제거하고 photoId로만 참조
           const saveRecords = (newRecords) => {
             setRecords(newRecords);
-            try { localStorage.setItem(storageKey, JSON.stringify(newRecords)); } catch(e) {}
+            // records에서 photo(base64) 제거하고 저장 (photos 별도 저장소 사용)
+            const slim = newRecords.map(r => {
+              const {photo, ...rest} = r;
+              return rest;
+            });
+            try {
+              localStorage.setItem(storageKey, JSON.stringify(slim));
+            } catch(e) {
+              alert('저장 실패: 데이터 용량이 초과됐습니다.');
+            }
           };
 
           // coupons 저장
@@ -197,14 +218,25 @@
           const handleSubmit = (e) => {
             e.preventDefault();
             const finalTotal = calculateTotalWithCoupon();
+            const recId = editingId || Date.now();
             const rec = {
-              id: editingId || Date.now(),
+              id: recId,
               ...formData,
               total: finalTotal,
               couponCode: appliedCoupon ? appliedCoupon.code : '',
               couponDiscount: appliedCoupon ? appliedCoupon.discount : 0,
               createdAt: editingId ? records.find(r=>r.id===editingId)?.createdAt : Date.now()
             };
+            // 사진은 photos 별도 저장소에 보관
+            if (formData.photo) {
+              const newPhotos = {...photos, [recId]: formData.photo};
+              savePhotos(newPhotos);
+            } else if (editingId && !formData.photo) {
+              // 수정 시 사진 삭제했으면 photos에서도 제거
+              const newPhotos = {...photos};
+              delete newPhotos[recId];
+              savePhotos(newPhotos);
+            }
             saveRecords(editingId ? records.map(r=>r.id===editingId?rec:r) : [...records, rec]);
             // 쿠폰 사용 처리
             if (appliedCoupon && !editingId) {
@@ -225,13 +257,20 @@
           };
 
           const handleEdit = (rec) => {
-            setFormData({ date:rec.date, name:rec.name, racket:rec.racket, pattern:rec.pattern, stringType:rec.stringType, stringPrice:rec.stringPrice, labor:rec.labor, quantity:rec.quantity, isHybrid:rec.isHybrid||false, hybridString2:rec.hybridString2||'', hybridPrice2:rec.hybridPrice2||'', photo:rec.photo||'' });
+            setFormData({ date:rec.date, name:rec.name, racket:rec.racket, pattern:rec.pattern, stringType:rec.stringType, stringPrice:rec.stringPrice, labor:rec.labor, quantity:rec.quantity, isHybrid:rec.isHybrid||false, hybridString2:rec.hybridString2||'', hybridPrice2:rec.hybridPrice2||'', photo: photos[rec.id] || '' });
             setEditingId(rec.id);
             setShowForm(true);
           };
 
           const handleDelete = (id) => {
-            if (window.confirm('정말 삭제하시겠습니까?')) saveRecords(records.filter(r=>r.id!==id));
+            if (window.confirm('정말 삭제하시겠습니까?')) {
+              saveRecords(records.filter(r=>r.id!==id));
+              if (photos[id]) {
+                const newPhotos = {...photos};
+                delete newPhotos[id];
+                savePhotos(newPhotos);
+              }
+            }
           };
 
           // ── 드롭다운 핸들러 ───────────────────────────
@@ -747,9 +786,9 @@
                             {visit.couponCode && <div className="col-span-2"><span className="text-xs text-gray-400">쿠폰 </span><span className="text-xs text-pink-600">🎫 {visit.couponCode} (-{parseInt(visit.couponDiscount).toLocaleString()}원)</span></div>}
                           </div>
                           <div className="flex flex-col gap-1 ml-2">
-                            {visit.photo && (
-                              <img src={visit.photo} className="w-14 h-14 object-cover rounded-lg border border-gray-200 cursor-pointer mb-1"
-                                onClick={()=>setPhotoViewer(visit.photo)}/>
+                            {photos[visit.id] && (
+                              <img src={photos[visit.id]} className="w-14 h-14 object-cover rounded-lg border border-gray-200 cursor-pointer mb-1"
+                                onClick={()=>setPhotoViewer(photos[visit.id])}/>
                             )}
                             <button onClick={()=>handleEdit(visit)} className="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg text-lg">✏️</button>
                             <button onClick={()=>handleDelete(visit.id)} className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg text-lg">🗑️</button>
