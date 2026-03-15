@@ -396,6 +396,16 @@
           const [expandedCustomer, setExpandedCustomer] = useState(null);
           const toggleCustomer = (name) => setExpandedCustomer(prev => prev === name ? null : name);
 
+          // 작업 순서대로 정렬된 records (최신순)
+          const sortedRecords = [...records].sort((a,b) => {
+            if (b.date !== a.date) return b.date.localeCompare(a.date);
+            return (b.createdAt||0) - (a.createdAt||0);
+          });
+          // 검색 시: 해당 고객 이력 / 미검색 시: 전체 최신순
+          const displayRecords = searchTerm
+            ? sortedRecords.filter(r => matchChosung(r.name, searchTerm))
+            : sortedRecords;
+
           // ── 색상 클래스 ───────────────────────────────
           const activeBtnClass = color==='green' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white';
           const ringClass = color==='green' ? 'focus:ring-green-500' : 'focus:ring-blue-500';
@@ -684,80 +694,70 @@
                 </div>
               )}
 
-              {/* ── 고객 목록 ── */}
+              {/* ── 작업 목록 ── */}
               {viewMode === 'customers' && (
                 <div className="space-y-2 mt-3">
-                  {filteredCustomers.length === 0 ? (
+                  {/* 검색 중일 때 - 고객 이력 헤더 */}
+                  {searchTerm && displayRecords.length > 0 && (
+                    <div className="bg-white rounded-xl shadow-lg px-4 py-3">
+                      <p className="text-sm font-bold text-gray-800">
+                        '{searchTerm}' 검색결과
+                        <span className="ml-2 text-xs font-normal text-gray-400">{displayRecords.length}건</span>
+                      </p>
+                      {(() => {
+                        const cs = getCustomerStats().find(c=>matchChosung(c.name, searchTerm));
+                        if (!cs) return null;
+                        return (
+                          <div className="flex gap-2 mt-1 flex-wrap">
+                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">연간 {cs.yearlyVisits}회</span>
+                            <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">총 {cs.visitCount}회</span>
+                            <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs">누적 {cs.totalAmount.toLocaleString()}원</span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* 빈 상태 */}
+                  {displayRecords.length === 0 && (
                     <div className="bg-white rounded-xl shadow-lg p-10 text-center">
                       <p className="text-gray-400 text-4xl mb-3">{sport==='tennis'?'🎾':'🏸'}</p>
-                      <p className="text-gray-500">등록된 고객이 없습니다.</p>
-                      <p className="text-gray-400 text-sm mt-1">➕ 등록 버튼을 눌러 시작하세요.</p>
+                      {searchTerm
+                        ? <p className="text-gray-500">'{searchTerm}' 검색 결과가 없습니다.</p>
+                        : <><p className="text-gray-500">등록된 작업이 없습니다.</p>
+                           <p className="text-gray-400 text-sm mt-1">➕ 등록 버튼을 눌러 시작하세요.</p></>
+                      }
                     </div>
-                  ) : filteredCustomers.map(customer => {
-                    const sortedVisits = [...customer.visits].sort((a,b)=>new Date(b.date)-new Date(a.date));
-                    const lastVisit = sortedVisits[0];
-                    const isExpanded = expandedCustomer === customer.name;
-                    const VisitCard = ({visit}) => (
-                      <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-                            <div><span className="text-xs text-gray-400">날짜 </span><span className="font-medium">{visit.date}</span></div>
-                            <div><span className="text-xs text-gray-400">금액 </span><span className={`font-bold ${statColor}`}>{visit.total.toLocaleString()}원</span></div>
-                            <div className="col-span-2"><span className="text-xs text-gray-400">라켓 </span><span className="font-medium text-xs">{visit.racket} ({visit.pattern})</span></div>
-                            <div className="col-span-2"><span className="text-xs text-gray-400">스트링 </span><span className="font-medium text-xs">{visit.stringType}{visit.isHybrid&&visit.hybridString2&&<span className="text-purple-600"> + {visit.hybridString2}</span>}</span></div>
-                            <div><span className="text-xs text-gray-400">공임 </span><span className="text-xs">{parseInt(visit.labor).toLocaleString()}원</span></div>
-                            <div><span className="text-xs text-gray-400">수량 </span><span className="text-xs">{visit.quantity}개</span></div>
-                            {visit.couponCode && <div className="col-span-2"><span className="text-xs text-gray-400">쿠폰 </span><span className="text-xs text-pink-600">🎫 {visit.couponCode} (-{parseInt(visit.couponDiscount).toLocaleString()}원)</span></div>}
-                          </div>
-                          <div className="flex flex-col gap-1 ml-2">
+                  )}
 
-                            <button onClick={()=>handleEdit(visit)} className="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg text-lg">✏️</button>
-                            <button onClick={()=>handleDelete(visit.id)} className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg text-lg">🗑️</button>
-                          </div>
+                  {/* 작업 카드 목록 */}
+                  {displayRecords.map(r => (
+                    <div key={r.id} className="bg-white rounded-xl shadow-lg p-3">
+                      {/* 이름 + 날짜 헤더 */}
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-bold text-gray-800">{r.name}</span>
+                          {r.couponCode && <span className="text-xs bg-pink-100 text-pink-600 px-1.5 py-0.5 rounded-full">🎫 쿠폰</span>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400">{r.date}</span>
+                          <button onClick={()=>handleEdit(r)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg">✏️</button>
+                          <button onClick={()=>handleDelete(r.id)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg">🗑️</button>
                         </div>
                       </div>
-                    );
-                    return (
-                      <div key={customer.name} className="bg-white rounded-xl shadow-lg overflow-hidden">
-                        {/* 이름 헤더 - 탭으로 열고 닫기 */}
-                        <button onClick={()=>toggleCustomer(customer.name)}
-                          className="w-full px-4 py-3 flex justify-between items-center active:bg-gray-50">
-                          <div className="text-left">
-                            <p className="text-base font-bold text-gray-800">{customer.name}</p>
-                            <div className="flex gap-1 mt-1 flex-wrap">
-                              <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">연간 {customer.yearlyVisits}회</span>
-                              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">총 {customer.visitCount}회</span>
-                              <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs">누적 {customer.totalAmount.toLocaleString()}원</span>
-                            </div>
-                          </div>
-                          <span className="text-gray-400 text-lg ml-2">{isExpanded ? '▲' : '▼'}</span>
-                        </button>
-
-                        {/* 최근 작업 1건 - 항상 표시 */}
-                        <div className="px-3 pb-3">
-                          <p className="text-xs text-gray-400 mb-1 px-1">최근 작업</p>
-                          <VisitCard visit={lastVisit} />
+                      {/* 작업 내용 */}
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm border-t border-gray-100 pt-2">
+                        <div className="col-span-2"><span className="text-xs text-gray-400">라켓 </span><span className="text-xs font-medium">{r.racket} ({r.pattern})</span></div>
+                        <div className="col-span-2"><span className="text-xs text-gray-400">스트링 </span><span className="text-xs font-medium">{r.stringType}{r.isHybrid&&r.hybridString2&&<span className="text-purple-600"> + {r.hybridString2}</span>}</span></div>
+                        <div><span className="text-xs text-gray-400">공임 </span><span className="text-xs">{parseInt(r.labor).toLocaleString()}원</span></div>
+                        <div><span className="text-xs text-gray-400">수량 </span><span className="text-xs">{r.quantity}개</span></div>
+                        {r.couponCode && <div className="col-span-2"><span className="text-xs text-gray-400">쿠폰 </span><span className="text-xs text-pink-600">🎫 -{parseInt(r.couponDiscount).toLocaleString()}원</span></div>}
+                        <div className="col-span-2 text-right">
+                          <span className={`text-base font-bold ${statColor}`}>{r.total.toLocaleString()}원</span>
                         </div>
-
-                        {/* 이전 작업들 - 펼치면 표시 */}
-                        {isExpanded && sortedVisits.length > 1 && (
-                          <div className="px-3 pb-3 space-y-2 border-t border-gray-100 pt-3">
-                            <p className="text-xs text-gray-400 px-1">이전 작업 ({sortedVisits.length - 1}건)</p>
-                            {sortedVisits.slice(1).map(visit => (
-                              <VisitCard key={visit.id} visit={visit} />
-                            ))}
-                          </div>
-                        )}
-
-                        {/* 이전 기록 없을 때 펼치면 */}
-                        {isExpanded && sortedVisits.length === 1 && (
-                          <div className="px-4 pb-3 text-xs text-gray-400 border-t border-gray-100 pt-2">
-                            이전 작업 기록이 없습니다.
-                          </div>
-                        )}
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               )}
 
