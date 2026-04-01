@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Niji String - 작업 관리</title>
+    <title>Niji String - 스트링 작업 관리</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
     <style>
-        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background-color: #f3f4f6; }
+        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background-color: #f3f4f6; -webkit-font-smoothing: antialiased; }
         input, select, textarea { font-size: 16px !important; }
+        button { min-height: 44px; touch-action: manipulation; }
         .safe-area { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
@@ -21,7 +22,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // ── 데이터베이스 관리 (IndexedDB) ──
+        // ── 데이터베이스 관리 (용량 제한 없는 IndexedDB 사용) ──
         const dbName = "NijiStringDB";
         const initDB = () => {
             return new Promise((resolve) => {
@@ -65,26 +66,20 @@
             }).join('');
         };
 
-        const matchChosung = (str, search) => {
-            if (!search) return true;
-            const target = str.toLowerCase();
-            const query = search.toLowerCase();
-            return target.includes(query) || getChosung(target).includes(query);
-        };
-
         const StringingApp = ({ sport }) => {
             const [records, setRecords] = useState([]);
             const [customStrings, setCustomStrings] = useState({});
-            const [viewMode, setViewMode] = useState('customers');
-            const [searchTerm, setSearchTerm] = useState('');
             const [showForm, setShowForm] = useState(false);
-            const [formData, setFormData] = useState({ date: new Date().toISOString().split('T')[0], name: '', racket: '', stringType: '', stringPrice: '', labor: '12000', quantity: 1 });
+            const [searchTerm, setSearchTerm] = useState('');
+            const [formData, setFormData] = useState({
+                date: new Date().toISOString().split('T')[0],
+                name: '', racket: '', stringType: '', stringPrice: '', labor: '12000', quantity: 1, memo: ''
+            });
 
-            // 데이터 불러오기
             useEffect(() => {
                 const load = async () => {
                     const allRecs = await getAllData("records");
-                    setRecords(allRecs.filter(r => r.sport === sport));
+                    setRecords(allRecs.filter(r => r.sport === sport).sort((a,b) => b.id - a.id));
                     const settings = await getAllData("settings");
                     const savedStrings = settings.find(s => s.key === `strings_${sport}`);
                     if (savedStrings) setCustomStrings(savedStrings.value);
@@ -94,95 +89,171 @@
 
             const handleSave = async (e) => {
                 e.preventDefault();
-                const newRecord = { ...formData, id: Date.now(), sport, total: (Number(formData.stringPrice) + Number(formData.labor)) * formData.quantity };
+                const total = (Number(formData.stringPrice || 0) + Number(formData.labor || 0)) * formData.quantity;
+                const newRecord = { ...formData, id: Date.now(), sport, total };
                 await saveData("records", newRecord);
                 setRecords([newRecord, ...records]);
                 setShowForm(false);
-                setFormData({ ...formData, name: '', racket: '' }); // 입력 초기화
+                setFormData({ ...formData, name: '', racket: '', memo: '' });
             };
 
-            const exportCSV = () => {
-                let csv = "\uFEFF날짜,고객명,라켓,스트링,금액\n";
-                records.forEach(r => {
-                    csv += `${r.date},${r.name},${r.racket},${r.stringType},${r.total}\n`;
-                });
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = `niji_string_${sport}_backup.csv`;
-                link.click();
-            };
+            const filteredRecords = records.filter(r => {
+                const target = r.name.toLowerCase();
+                const query = searchTerm.toLowerCase();
+                return target.includes(query) || getChosung(target).includes(query);
+            });
 
             return (
-                <div className="safe-area">
-                    {/* 상단 버튼 바 */}
-                    <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                        <button onClick={() => setViewMode('customers')} className={`px-4 py-2 rounded-full whitespace-nowrap ${viewMode === 'customers' ? 'bg-black text-white' : 'bg-white border'}`}>작업기록</button>
-                        <button onClick={exportCSV} className="px-4 py-2 rounded-full bg-green-500 text-white whitespace-nowrap">📥 백업하기</button>
-                    </div>
-
-                    {/* 검색 및 등록 */}
-                    <div className="flex gap-2 mb-4">
-                        <input 
-                            type="text" 
-                            placeholder="이름이나 초성 검색 (예: ㄱㅎ)" 
-                            className="flex-1 p-3 border rounded-xl"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <button onClick={() => setShowForm(true)} className="px-4 py-3 bg-blue-600 text-white rounded-xl font-bold">➕ 등록</button>
-                    </div>
-
-                    {/* 등록 폼 모달 */}
-                    {showForm && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-                            <div className="bg-white w-full rounded-t-3xl p-6 space-y-4">
-                                <h2 className="text-xl font-bold">새 작업 등록</h2>
-                                <input type="date" className="w-full p-3 border rounded-lg" value={formData.date} onChange={e=>setFormData({...formData, date:e.target.value})} />
-                                <input type="text" placeholder="고객명" className="w-full p-3 border rounded-lg" value={formData.name} onChange={e=>setFormData({...formData, name:e.target.value})} />
-                                <input type="text" placeholder="라켓명" className="w-full p-3 border rounded-lg" value={formData.racket} onChange={e=>setFormData({...formData, racket:e.target.value})} />
-                                <div className="flex gap-2">
-                                    <button onClick={handleSave} className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold">저장하기</button>
-                                    <button onClick={() => setShowForm(false)} className="flex-1 py-4 bg-gray-200 rounded-xl">취소</button>
-                                </div>
-                            </div>
+                <div className="space-y-4 safe-area">
+                    {/* 상단 검색 및 등록 버튼 */}
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <input 
+                                type="text" 
+                                placeholder="고객명 또는 초성 검색..." 
+                                className="w-full p-3 pl-10 border rounded-xl bg-white shadow-sm"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            <i data-lucide="search" className="absolute left-3 top-3.5 text-gray-400 w-5 h-5"></i>
                         </div>
-                    )}
+                        <button 
+                            onClick={() => setShowForm(true)}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-1 shadow-lg"
+                        >
+                            <i data-lucide="plus" className="w-5 h-5"></i> 등록
+                        </button>
+                    </div>
 
-                    {/* 리스트 출력 */}
-                    <div className="space-y-3">
-                        {records.filter(r => matchChosung(r.name, searchTerm)).map(r => (
-                            <div key={r.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                                <div className="flex justify-between items-start">
+                    {/* 작업 기록 리스트 (기존 스타일) */}
+                    <div className="grid gap-3">
+                        {filteredRecords.length === 0 && (
+                            <div className="text-center py-10 text-gray-400">기록이 없습니다.</div>
+                        )}
+                        {filteredRecords.map(r => (
+                            <div key={r.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative">
+                                <div className="flex justify-between items-start mb-2">
                                     <div>
-                                        <p className="text-xs text-gray-400">{r.date}</p>
-                                        <h3 className="text-lg font-bold">{r.name}</h3>
-                                        <p className="text-sm text-gray-600">{r.racket}</p>
+                                        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{r.date}</span>
+                                        <h3 className="text-lg font-bold text-gray-800 mt-1">{r.name}</h3>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-blue-600 font-bold">{r.total?.toLocaleString()}원</p>
-                                        <button onClick={async () => { if(confirm('삭제할까요?')) { await deleteData("records", r.id); setRecords(records.filter(x => x.id !== r.id)); }}} className="text-xs text-red-400 mt-2">삭제</button>
+                                        <p className="text-[10px] text-gray-400">{r.quantity}자루</p>
                                     </div>
                                 </div>
+                                <div className="text-sm text-gray-600 space-y-1 border-t pt-2">
+                                    <p><span className="text-gray-400">라켓:</span> {r.racket}</p>
+                                    <p><span className="text-gray-400">스트링:</span> {r.stringType}</p>
+                                    {r.memo && <p className="text-gray-400 text-xs italic mt-1">" {r.memo} "</p>}
+                                </div>
+                                <button 
+                                    onClick={async () => { if(confirm('삭제하시겠습니까?')) { await deleteData("records", r.id); setRecords(records.filter(x => x.id !== r.id)); }}}
+                                    className="absolute bottom-4 right-4 text-red-300"
+                                >
+                                    <i data-lucide="trash-2" className="w-4 h-4"></i>
+                                </button>
                             </div>
                         ))}
                     </div>
+
+                    {/* 등록 모달 (기존 입력 스타일 유지) */}
+                    {showForm && (
+                        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+                            <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 overflow-y-auto max-h-[90vh]">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-bold text-gray-800">새 작업 등록</h2>
+                                    <button onClick={() => setShowForm(false)} className="text-gray-400 p-2"><i data-lucide="x" className="w-6 h-6"></i></button>
+                                </div>
+                                
+                                <form onSubmit={handleSave} className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">날짜</label>
+                                            <input type="date" required className="w-full p-3 border rounded-xl bg-gray-50" value={formData.date} onChange={e=>setFormData({...formData, date:e.target.value})} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">고객명</label>
+                                            <input type="text" required placeholder="이름" className="w-full p-3 border rounded-xl bg-gray-50" value={formData.name} onChange={e=>setFormData({...formData, name:e.target.value})} />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">라켓 정보</label>
+                                        <input type="text" required placeholder="라켓 모델명" className="w-full p-3 border rounded-xl bg-gray-50" value={formData.racket} onChange={e=>setFormData({...formData, racket:e.target.value})} />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">줄 값</label>
+                                            <input type="number" placeholder="0" className="w-full p-3 border rounded-xl bg-gray-50" value={formData.stringPrice} onChange={e=>setFormData({...formData, stringPrice:e.target.value})} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">공임비</label>
+                                            <input type="number" placeholder="12000" className="w-full p-3 border rounded-xl bg-gray-50" value={formData.labor} onChange={e=>setFormData({...formData, labor:e.target.value})} />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">메모</label>
+                                        <textarea placeholder="특이사항 (텐션 등)" className="w-full p-3 border rounded-xl bg-gray-50 h-20" value={formData.memo} onChange={e=>setFormData({...formData, memo:e.target.value})} />
+                                    </div>
+
+                                    <div className="pt-4 border-t flex gap-3">
+                                        <div className="flex items-center gap-3 bg-gray-100 px-4 rounded-xl">
+                                            <button type="button" onClick={() => setFormData({...formData, quantity: Math.max(1, formData.quantity-1)})} className="text-xl font-bold px-2">-</button>
+                                            <span className="font-bold">{formData.quantity}자루</span>
+                                            <button type="button" onClick={() => setFormData({...formData, quantity: formData.quantity+1})} className="text-xl font-bold px-2">+</button>
+                                        </div>
+                                        <button type="submit" className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform">
+                                            저장하기 ({( (Number(formData.stringPrice || 0) + Number(formData.labor || 0)) * formData.quantity).toLocaleString()}원)
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
 
         const App = () => {
             const [sport, setSport] = useState('tennis');
+            
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [sport]);
+
             return (
                 <div className="min-h-screen">
-                    <div className={`${sport === 'tennis' ? 'bg-green-600' : 'bg-blue-600'} p-6 text-white`}>
-                        <h1 className="text-2xl font-bold mb-4 italic">Niji String</h1>
-                        <div className="flex bg-black/20 rounded-xl p-1">
-                            <button onClick={() => setSport('tennis')} className={`flex-1 py-2 rounded-lg font-bold ${sport === 'tennis' ? 'bg-white text-green-600' : ''}`}>테니스</button>
-                            <button onClick={() => setSport('badminton')} className={`flex-1 py-2 rounded-lg font-bold ${sport === 'badminton' ? 'bg-white text-blue-600' : ''}`}>배드민턴</button>
+                    {/* 상단 탭 헤더 (기존 디자인 스타일) */}
+                    <div className={`${sport === 'tennis' ? 'bg-green-600' : 'bg-blue-600'} p-5 text-white shadow-lg`}>
+                        <div className="flex justify-between items-center mb-6">
+                            <h1 className="text-xl font-black italic tracking-tighter">NIJI STRING <span className="text-[10px] not-italic font-normal opacity-70">v2.0</span></h1>
+                            <div className="flex gap-2">
+                                <i data-lucide="bell" className="w-5 h-5 opacity-70"></i>
+                                <i data-lucide="settings" className="w-5 h-5 opacity-70"></i>
+                            </div>
+                        </div>
+                        <div className="flex bg-black/20 rounded-2xl p-1.5 backdrop-blur-sm">
+                            <button 
+                                onClick={() => setSport('tennis')} 
+                                className={`flex-1 py-2.5 rounded-xl font-bold transition-all ${sport === 'tennis' ? 'bg-white text-green-600 shadow-md' : 'text-white/60'}`}
+                            >
+                                테니스
+                            </button>
+                            <button 
+                                onClick={() => setSport('badminton')} 
+                                className={`flex-1 py-2.5 rounded-xl font-bold transition-all ${sport === 'badminton' ? 'bg-white text-blue-600 shadow-md' : 'text-white/60'}`}
+                            >
+                                배드민턴
+                            </button>
                         </div>
                     </div>
-                    <div className="p-4"><StringingApp sport={sport} /></div>
+                    
+                    <div className="p-4 max-w-md mx-auto mt-2">
+                        <StringingApp key={sport} sport={sport} />
+                    </div>
                 </div>
             );
         };
