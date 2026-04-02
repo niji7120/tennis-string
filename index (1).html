@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -10,7 +11,11 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
     <style>
-        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; -webkit-font-smoothing: antialiased; background-color: #f3f4f6; }
+        body {
+            margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
         input, select, textarea { font-size: 16px !important; }
         button { min-height: 40px; touch-action: manipulation; }
         * { -webkit-overflow-scrolling: touch; }
@@ -22,43 +27,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // ── [중요] IndexedDB 설정 (용량 문제 해결용 창고) ──
-        const dbName = "NijiStringDB_v18";
-        const initDB = () => {
-            return new Promise((resolve) => {
-                const request = indexedDB.open(dbName, 1);
-                request.onupgradeneeded = (e) => {
-                    const db = e.target.result;
-                    if (!db.objectStoreNames.contains("records")) db.createObjectStore("records", { keyPath: "id" });
-                    if (!db.objectStoreNames.contains("settings")) db.createObjectStore("settings", { keyPath: "key" });
-                    if (!db.objectStoreNames.contains("coupons")) db.createObjectStore("coupons", { keyPath: "id" });
-                };
-                request.onsuccess = (e) => resolve(e.target.result);
-            });
-        };
-
-        const dbSave = async (storeName, data) => {
-            const db = await initDB();
-            const tx = db.transaction(storeName, "readwrite");
-            tx.objectStore(storeName).put(data);
-        };
-
-        const dbGetAll = async (storeName) => {
-            const db = await initDB();
-            return new Promise((resolve) => {
-                const tx = db.transaction(storeName, "readonly");
-                const request = tx.objectStore(storeName).getAll();
-                request.onsuccess = () => resolve(request.result);
-            });
-        };
-
-        const dbDelete = async (storeName, id) => {
-            const db = await initDB();
-            const tx = db.transaction(storeName, "readwrite");
-            tx.objectStore(storeName).delete(id);
-        };
-
-        // ── 기존 유틸리티 (보내주신 것과 동일) ──
+        // ── 초성 검색 유틸 ──────────────────────────────
         const getChosung = (str) => {
           const list = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
           return [...str].map(c => { const code = c.charCodeAt(0) - 44032; return (code > -1 && code < 11172) ? list[Math.floor(code/588)] : c; }).join('');
@@ -68,106 +37,156 @@
           return str.toLowerCase().includes(search.toLowerCase()) || getChosung(str).includes(search);
         };
 
+        // ── 스포츠별 설정 ────────────────────────────────
         const SPORTS_CONFIG = {
-          tennis: { label: '🎾 테니스', color: 'green', racketLabel: '라켓명', racketPlaceholder: '헤드 스피드 MP 300g', patterns: ['오픈', '덴스'], defaultLabors: ['12000', '15000'], defaultStrings: {}, initialData: [] },
-          badminton: { label: '🏸 배드민턴', color: 'blue', racketLabel: '라켓명', racketPlaceholder: '요넥스 아스트록스 88S', patterns: ['오픈', '덴스'], defaultLabors: ['10000', '12000', '8000'], defaultStrings: {}, initialData: [] }
+          tennis: {
+            label: '🎾 테니스',
+            color: 'green',
+            racketLabel: '라켓명',
+            racketPlaceholder: '헤드 스피드 MP 300g',
+            patterns: ['오픈', '덴스'],
+            defaultLabors: ['12000', '15000'],
+            defaultStrings: {},
+            initialData: [
+              { date: '2026-01-02', name: '김병수', racket: '헤드 스피드 MP 300g', pattern: '오픈', stringType: '요넥스 폴리투어프로', stringPrice: '11000', labor: '12000', quantity: 2, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-04', name: '최치영', racket: '헤드 레디컬 프로 310g', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-06', name: '김수산', racket: '윌슨 블레이드 98 305g 16/19', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '12000', quantity: 2, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-07', name: '김삼기', racket: '던롭 다이아클러스터 10.0 골드 250g 16/18', pattern: '오픈', stringType: '투나 프리미엄 폴리', stringPrice: '5000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-14', name: '최관표', racket: '던롭 26 FX500 300g 16/19', pattern: '오픈', stringType: '쿠폰', stringPrice: '10000', labor: '12000', quantity: 2, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-14', name: '홍기현', racket: '바볼랏 퓨어 에어로 300g', pattern: '오픈', stringType: '투나 프리미엄 폴리', stringPrice: '5000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-16', name: '제임스', racket: '윌슨 2023 쉬프트 99 v1.0 300g', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-18', name: '윤은철', racket: '요넥스 이죤 100 300g', pattern: '오픈', stringType: '럭실론 4G', stringPrice: '21000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-27', name: '홍미선', racket: '바볼랏 2023 퓨어 에어로 TEAM 285g', pattern: '오픈', stringType: '헤드 링스투어', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-28', name: '홍미선', racket: '바볼랏 2021 퓨어 드라이브 라이트 100 270g', pattern: '오픈', stringType: '헤드 링스투어', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-01-31', name: '홍미선', racket: '바볼랏 2021 퓨어 드라이브 라이트 100 270g', pattern: '오픈', stringType: '헤드 링스투어', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-01', name: '김용선', racket: '헤드 익스트림 MP 300g', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '0', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-01', name: '최길희', racket: '윌슨 2022 블레이드 98 PRO v8.0 98sqin / 305g', pattern: '오픈', stringType: '자가 스트링', stringPrice: '0', labor: '0', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-04', name: '이민홍', racket: '헤드 레디컬 MP 300g', pattern: '오픈', stringType: '바볼랏 RPM블라스트', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-04', name: '황두영', racket: '헤드 레디컬 프로 200 315g', pattern: '오픈', stringType: '럭실론 4G', stringPrice: '21000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-04', name: '황두영', racket: '헤드 레디컬 MP 300g', pattern: '오픈', stringType: '럭실론 4G', stringPrice: '21000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-05', name: '김삼기', racket: '바볼랏 퓨어드라이브 100 300g', pattern: '오픈', stringType: '투나 프리미엄 폴리', stringPrice: '5000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-08', name: '김민정', racket: '헤드 2025 그래비티 팀 270g', pattern: '오픈', stringType: '바볼랏 RPM블라스트', stringPrice: '13000', labor: '12000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+              { date: '2026-02-08', name: '김민정', racket: '헤드 2025 그래비티 팀 270g', pattern: '오픈', stringType: '범퍼 값', stringPrice: '15000', labor: '5000', quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '' },
+            ],
+          },
+          badminton: {
+            label: '🏸 배드민턴',
+            color: 'blue',
+            racketLabel: '라켓명',
+            racketPlaceholder: '요넥스 아스트록스 88S',
+            patterns: ['오픈', '덴스'],
+            defaultLabors: ['10000', '12000', '8000'],
+            defaultStrings: {},
+            initialData: [],
+          },
         };
 
+        // ── 스트링 관리 앱 (스포츠별 공용) ──────────────
         const StringingApp = ({ sport }) => {
           const config = SPORTS_CONFIG[sport];
           const color = config.color;
 
-          // ── 기존 상태값들 그대로 유지 ──
           const [records, setRecords] = useState([]);
-          const [customStrings, setCustomStrings] = useState({});
+          const [customStrings, setCustomStrings] = useState({...config.defaultStrings});
           const [showForm, setShowForm] = useState(false);
           const [editingId, setEditingId] = useState(null);
           const [searchTerm, setSearchTerm] = useState('');
           const [viewMode, setViewMode] = useState('customers');
-          const [showAddModal, setShowAddModal] = useState(false);
-          const [modalStringName, setModalStringName] = useState('');
-          const [modalStringPrice, setModalStringPrice] = useState('');
+          const [showAddString, setShowAddString] = useState(false);
+          const [newStringName, setNewStringName] = useState('');
+          const [newStringPrice, setNewStringPrice] = useState('');
           const [showStringDropdown, setShowStringDropdown] = useState(false);
           const [showHybridDropdown, setShowHybridDropdown] = useState(false);
           const [showNameDropdown, setShowNameDropdown] = useState(false);
           const [showRacketDropdown, setShowRacketDropdown] = useState(false);
+          const [showAddModal, setShowAddModal] = useState(false);
+          const [modalStringName, setModalStringName] = useState('');
+          const [modalStringPrice, setModalStringPrice] = useState('');
+          const [editingStringKey, setEditingStringKey] = useState(null);
+          const [editStringName, setEditStringName] = useState('');
+          const [editStringPrice, setEditStringPrice] = useState('');
           const [coupons, setCoupons] = useState([]);
           const [couponForm, setCouponForm] = useState({code:'', discount:'', expiry:'', note:''});
           const [showCouponForm, setShowCouponForm] = useState(false);
           const [appliedCoupon, setAppliedCoupon] = useState(null);
           const [couponInput, setCouponInput] = useState('');
           const [couponMsg, setCouponMsg] = useState('');
-          const [editingStringKey, setEditingStringKey] = useState(null);
-          const [editStringName, setEditStringName] = useState('');
-          const [editStringPrice, setEditStringPrice] = useState('');
 
           const stringPrices = {...config.defaultStrings, ...customStrings};
 
           const emptyForm = () => ({
             date: new Date().toISOString().split('T')[0],
-            name: '', racket: '', pattern: config.patterns[0],
-            stringType: '', stringPrice: '', labor: config.defaultLabors[0],
-            quantity: 1, isHybrid: false, hybridString2: '', hybridPrice2: '',
+            name: '', racket: '',
+            pattern: config.patterns[0],
+            stringType: '', stringPrice: '',
+            labor: config.defaultLabors[0],
+            quantity: 1,
+            isHybrid: false, hybridString2: '', hybridPrice2: '',
           });
 
           const [formData, setFormData] = useState(emptyForm());
 
-          // ── [핵심] 데이터 로드 로직 (LocalStorage 대신 DB 사용) ──
-          useEffect(() => {
-            const loadData = async () => {
-              const allRecs = await dbGetAll("records");
-              setRecords(allRecs.filter(r => r.sport === sport));
-              
-              const allStrings = await dbGetAll("settings");
-              const savedStrings = allStrings.find(s => s.key === `strings_${sport}`);
-              if (savedStrings) setCustomStrings(savedStrings.value);
+          // localStorage 키 (스포츠별 분리)
+          const storageKey = 'stringing-records-' + sport;
+          const stringsKey = 'stringing-all-strings-v2-' + sport;
+          const couponKey = 'stringing-coupons-' + sport;
 
-              const allCoupons = await dbGetAll("coupons");
-              setCoupons(allCoupons.filter(c => c.sport === sport));
-            };
-            loadData();
+          useEffect(() => {
+            try {
+              const saved = localStorage.getItem(storageKey);
+              if (saved) {
+                setRecords(JSON.parse(saved));
+              } else {
+                const data = config.initialData.map((r, i) => ({
+                  ...r,
+                  id: Date.now() + i,
+                  total: (parseFloat(r.stringPrice) + parseFloat(r.labor)) * parseInt(r.quantity),
+                  createdAt: new Date(r.date).getTime() + i,
+                }));
+                setRecords(data);
+                localStorage.setItem(storageKey, JSON.stringify(data));
+              }
+              const savedStrings = localStorage.getItem(stringsKey);
+              if (savedStrings) {
+                setCustomStrings(JSON.parse(savedStrings));
+              } else {
+                // 최초: 기본 스트링으로 초기화 (배드민턴은 빈 객체)
+                setCustomStrings({...config.defaultStrings});
+              }
+              const savedCoupons = localStorage.getItem(couponKey);
+              if (savedCoupons) setCoupons(JSON.parse(savedCoupons));
+            } catch(e) {
+              console.log('데이터 로드 오류:', e);
+            }
             setFormData(emptyForm());
             setAppliedCoupon(null);
             setCouponInput('');
             setCouponMsg('');
           }, [sport]);
 
-          // ── 기존 함수들 (DB 저장방식으로 변경) ──
-          const handleSubmit = async (e) => {
-            e.preventDefault();
-            const finalTotal = calculateTotalWithCoupon();
-            const recId = editingId || Date.now();
-            const rec = {
-              id: recId, ...formData, sport, total: finalTotal,
-              couponCode: appliedCoupon ? appliedCoupon.code : '',
-              couponDiscount: appliedCoupon ? appliedCoupon.discount : 0,
-              createdAt: editingId ? records.find(r=>r.id===editingId)?.createdAt : Date.now()
-            };
-            await dbSave("records", rec);
-            setRecords(editingId ? records.map(r=>r.id===editingId?rec:r) : [rec, ...records]);
-
-            if (appliedCoupon && !editingId) {
-              const updated = coupons.map(c => c.code === appliedCoupon.code ? {...c, used: true, usedDate: new Date().toISOString().split('T')[0], usedFor: formData.name} : c);
-              const targetCoupon = updated.find(c => c.code === appliedCoupon.code);
-              await dbSave("coupons", targetCoupon);
-              setCoupons(updated);
-            }
-            setShowForm(false); setEditingId(null); setAppliedCoupon(null); setCouponInput('');
-          };
-
-          const handleDelete = async (id) => {
-            if (window.confirm('정말 삭제하시겠습니까?')) {
-              await dbDelete("records", id);
-              setRecords(records.filter(r=>r.id!==id));
+          // records 저장
+          const saveRecords = (newRecords) => {
+            setRecords(newRecords);
+            try {
+              localStorage.setItem(storageKey, JSON.stringify(newRecords));
+            } catch(e) {
+              alert('저장 실패: 데이터 용량이 초과됐습니다.');
             }
           };
 
-          const handleSaveCustomStrings = async (newStrings) => {
+          // coupons 저장
+          const saveCoupons = (arr) => {
+            setCoupons(arr);
+            try { localStorage.setItem(couponKey, JSON.stringify(arr)); } catch(e) {}
+          };
+
+          // strings 저장
+          const saveCustomStrings = (newStrings) => {
             setCustomStrings(newStrings);
-            await dbSave("settings", { key: `strings_${sport}`, value: newStrings });
+            try { localStorage.setItem(stringsKey, JSON.stringify(newStrings)); } catch(e) {}
           };
 
-          // (그 외 기존 드롭다운/계산 로직은 보내주신 파일과 동일하게 유지...)
+          // ── 계산 ─────────────────────────────────────
           const calculateTotal = (fd = formData) => {
             let sp = parseFloat(fd.stringPrice) || 0;
             const labor = parseFloat(fd.labor) || 0;
@@ -177,11 +196,51 @@
             return (sp + labor + hybrid) * qty;
           };
 
-          const calculateTotalWithCoupon = () => {
-            const base = calculateTotal();
-            return appliedCoupon ? Math.max(0, base - parseFloat(appliedCoupon.discount)) : base;
+          // ── CRUD ─────────────────────────────────────
+          const handleSubmit = (e) => {
+            e.preventDefault();
+            const finalTotal = calculateTotalWithCoupon();
+            const recId = editingId || Date.now();
+            const rec = {
+              id: recId,
+              ...formData,
+              total: finalTotal,
+              couponCode: appliedCoupon ? appliedCoupon.code : '',
+              couponDiscount: appliedCoupon ? appliedCoupon.discount : 0,
+              createdAt: editingId ? records.find(r=>r.id===editingId)?.createdAt : Date.now()
+            };
+            saveRecords(editingId ? records.map(r=>r.id===editingId?rec:r) : [...records, rec]);
+            // 쿠폰 사용 처리
+            if (appliedCoupon && !editingId) {
+              const updated = coupons.map(c => c.code === appliedCoupon.code
+                ? {...c, used: true, usedDate: new Date().toISOString().split('T')[0], usedFor: formData.name}
+                : c);
+              saveCoupons(updated);
+            }
+            setAppliedCoupon(null); setCouponInput(''); setCouponMsg('');
+            resetForm();
           };
 
+          const resetForm = () => {
+            const name = formData.name;
+            setFormData({ ...emptyForm(), name });
+            setShowForm(false);
+            setEditingId(null);
+          };
+
+          const handleEdit = (rec) => {
+            setFormData({ date:rec.date, name:rec.name, racket:rec.racket, pattern:rec.pattern, stringType:rec.stringType, stringPrice:rec.stringPrice, labor:rec.labor, quantity:rec.quantity, isHybrid:rec.isHybrid||false, hybridString2:rec.hybridString2||'', hybridPrice2:rec.hybridPrice2||'' });
+            setEditingId(rec.id);
+            setShowForm(true);
+          };
+
+          const handleDelete = (id) => {
+            if (window.confirm('정말 삭제하시겠습니까?')) {
+              saveRecords(records.filter(r=>r.id!==id));
+            }
+          };
+
+          // ── 드롭다운 핸들러 ───────────────────────────
           const handleStringSelect = (name, isSecond=false) => {
             const price = (stringPrices[name] || 0).toString();
             if (isSecond) { setFormData({...formData, hybridString2:name, hybridPrice2:price}); setShowHybridDropdown(false); }
@@ -190,163 +249,803 @@
 
           const handleNameSelect = (name) => {
             const last = [...records].filter(r=>r.name===name).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
-            if (last) setFormData({ ...last, id: undefined, date: new Date().toISOString().split('T')[0] });
+            if (last) setFormData({ date:new Date().toISOString().split('T')[0], name, racket:last.racket, pattern:last.pattern, stringType:last.stringType, stringPrice:last.stringPrice, labor:last.labor, quantity:last.quantity, isHybrid:last.isHybrid||false, hybridString2:last.hybridString2||'', hybridPrice2:last.hybridPrice2||'' });
             else setFormData({...formData, name});
             setShowNameDropdown(false);
           };
 
-          // ── UI 렌더링 (보내주신 디자인 그대로) ──
+          const handleNameChange = (name) => {
+            setFormData({...formData, name});
+            const matches = getUniqueNames(name);
+            if (name.length > 0 && matches.length === 1 && /^[ㄱ-ㅎ]+$/.test(name)) { handleNameSelect(matches[0]); return; }
+            setShowNameDropdown(name.length > 0 && matches.length > 0);
+          };
+
+          const handleRacketChange = (racket) => {
+            setFormData({...formData, racket});
+            setShowRacketDropdown(racket.length > 0);
+          };
+
+          const handleStringChange = (val, isSecond=false) => {
+            // 직접 타이핑 시 가격은 건드리지 않음 (선택 시에만 가격 자동입력)
+            if (isSecond) {
+              setFormData(prev => ({...prev, hybridString2:val}));
+              setShowHybridDropdown(val.length > 0);
+            } else {
+              setFormData(prev => ({...prev, stringType:val}));
+              setShowStringDropdown(val.length > 0);
+            }
+          };
+
+          const handleAddCustomString = () => {
+            if (newStringName.trim() && newStringPrice !== '') {
+              saveCustomStrings({...customStrings, [newStringName.trim()]: parseFloat(newStringPrice) || 0});
+              setNewStringName('');
+              setNewStringPrice('');
+              setShowAddString(false);
+              setShowStringDropdown(false);
+              setShowHybridDropdown(false);
+            }
+          };
+
+          const handleAddModal = () => {
+            if (modalStringName.trim() && modalStringPrice !== '') {
+              saveCustomStrings({...customStrings, [modalStringName.trim()]: parseFloat(modalStringPrice) || 0});
+              setModalStringName('');
+              setModalStringPrice('');
+              setShowAddModal(false);
+            }
+          };
+
+          // 쿠폰 적용 (폼에서)
+          const handleApplyCoupon = () => {
+            const code = couponInput.trim().toUpperCase();
+            const today = new Date().toISOString().split('T')[0];
+            const found = coupons.find(c => c.code.toUpperCase() === code);
+            if (!found) { setCouponMsg('❌ 쿠폰번호를 찾을 수 없습니다.'); setAppliedCoupon(null); return; }
+            if (found.used) { setCouponMsg('❌ 이미 사용된 쿠폰입니다.'); setAppliedCoupon(null); return; }
+            if (found.expiry && found.expiry < today) { setCouponMsg('❌ 만료된 쿠폰입니다.'); setAppliedCoupon(null); return; }
+            setAppliedCoupon(found);
+            setCouponMsg('✅ 쿠폰이 적용되었습니다! ' + parseInt(found.discount).toLocaleString() + '원 할인');
+          };
+
+          const calculateTotalWithCoupon = () => {
+            const base = calculateTotal();
+            if (!appliedCoupon) return base;
+            return Math.max(0, base - parseFloat(appliedCoupon.discount));
+          };
+
+          const handleEditString = (key, name, price) => {
+            setEditingStringKey(key);
+            setEditStringName(name);
+            setEditStringPrice(price.toString());
+          };
+
+          const handleSaveEditString = () => {
+            if (!editStringName.trim() || editStringPrice === '') return;
+            const updated = {...customStrings};
+            if (editStringName.trim() !== editingStringKey) delete updated[editingStringKey];
+            updated[editStringName.trim()] = parseFloat(editStringPrice) || 0;
+            saveCustomStrings(updated);
+            setEditingStringKey(null);
+          };
+
+          const handleDeleteString = (key) => {
+            if (window.confirm(`'${key}' 스트링을 삭제할까요?`)) {
+              const updated = {...customStrings};
+              delete updated[key];
+              saveCustomStrings(updated);
+            }
+          };
+
+          // ── 필터 헬퍼 ─────────────────────────────────
+          const getUniqueNames = (term='') => [...new Set(records.map(r=>r.name))].filter(n=>matchChosung(n, term||formData.name));
+          const getUniqueRackets = () => [...new Set(records.map(r=>r.racket))].filter(r=>matchChosung(r, formData.racket));
+          const getFilteredStrings = (term) => Object.keys(stringPrices).filter(s=>matchChosung(s,term)).sort();
+
+          // ── 통계 ─────────────────────────────────────
+          const getCustomerStats = () => {
+            const map = {};
+            records.forEach(r => {
+              if (!map[r.name]) map[r.name] = {name:r.name, visits:[], totalAmount:0};
+              map[r.name].visits.push(r);
+              map[r.name].totalAmount += r.total;
+            });
+            return Object.values(map).map(c => ({
+              ...c,
+              visitCount: c.visits.length,
+              lastVisit: [...c.visits].sort((a,b)=>new Date(b.date)-new Date(a.date))[0],
+              yearlyVisits: c.visits.filter(v=>new Date(v.date)>=new Date(new Date().setFullYear(new Date().getFullYear()-1))).length,
+            })).sort((a,b)=>new Date(b.lastVisit.date)-new Date(a.lastVisit.date));
+          };
+
+          const getMonthlyStats = () => {
+            const map = {};
+            records.forEach(r => {
+              const m = r.date.substring(0,7);
+              if (!map[m]) map[m] = {month:m, total:0, stringTotal:0, laborTotal:0, count:0};
+              map[m].total += r.total;
+              map[m].count++;
+              const qty = parseInt(r.quantity) || 1;
+              let sp = parseFloat(r.stringPrice) || 0;
+              if (r.isHybrid && r.hybridPrice2) sp = (sp + (parseFloat(r.hybridPrice2)||0)) / 2;
+              const hybrid = r.isHybrid ? 2000 : 0;
+              map[m].stringTotal += (sp + hybrid) * qty;
+              map[m].laborTotal += (parseFloat(r.labor)||0) * qty;
+            });
+            return Object.values(map).sort((a,b)=>b.month.localeCompare(a.month));
+          };
+
+          const getYearlyStats = () => {
+            const map = {};
+            records.forEach(r => {
+              const y = r.date.substring(0,4);
+              if (!map[y]) map[y] = {year:y, total:0, stringTotal:0, laborTotal:0, count:0};
+              map[y].total += r.total;
+              map[y].count++;
+              const qty = parseInt(r.quantity) || 1;
+              let sp = parseFloat(r.stringPrice) || 0;
+              if (r.isHybrid && r.hybridPrice2) sp = (sp + (parseFloat(r.hybridPrice2)||0)) / 2;
+              const hybrid = r.isHybrid ? 2000 : 0;
+              map[y].stringTotal += (sp + hybrid) * qty;
+              map[y].laborTotal += (parseFloat(r.labor)||0) * qty;
+            });
+            return Object.values(map).sort((a,b)=>b.year.localeCompare(a.year));
+          };
+
+          const filteredCustomers = getCustomerStats().filter(c=>matchChosung(c.name, searchTerm));
+          const [expandedCustomer, setExpandedCustomer] = useState(null);
+          const toggleCustomer = (name) => setExpandedCustomer(prev => prev === name ? null : name);
+
+          // 작업 순서대로 정렬된 records (최신순)
+          const sortedRecords = [...records].sort((a,b) => {
+            if (b.date !== a.date) return b.date.localeCompare(a.date);
+            return (b.createdAt||0) - (a.createdAt||0);
+          });
+          // 검색 시: 해당 고객 이력 / 미검색 시: 전체 최신순
+          const displayRecords = searchTerm
+            ? sortedRecords.filter(r => matchChosung(r.name, searchTerm))
+            : sortedRecords;
+
+          // ── 색상 클래스 ───────────────────────────────
           const activeBtnClass = color==='green' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white';
           const ringClass = color==='green' ? 'focus:ring-green-500' : 'focus:ring-blue-500';
+          const hoverBgClass = color==='green' ? 'hover:bg-green-50' : 'hover:bg-blue-50';
           const statColor = color==='green' ? 'text-green-600' : 'text-blue-600';
 
-          const sortedRecords = [...records].sort((a,b) => b.date.localeCompare(a.date) || (b.createdAt - a.createdAt));
-          const displayRecords = searchTerm ? sortedRecords.filter(r => matchChosung(r.name, searchTerm)) : sortedRecords;
+          // ── 드롭다운 컴포넌트 ─────────────────────────
+          const StringDropdown = ({ strings, onSelect }) => (
+            <div
+              className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-64 overflow-y-auto"
+              onMouseDown={e => e.preventDefault()}
+            >
+              {strings.map(s => (
+                <button key={s} type="button" onClick={()=>onSelect(s)}
+                  className={`w-full text-left px-4 py-3 ${hoverBgClass} flex justify-between items-center border-b border-gray-100 last:border-0`}>
+                  <span className="text-sm">{s}</span>
+                  <span className="text-xs text-gray-500">{(stringPrices[s]||0).toLocaleString()}원</span>
+                </button>
+              ))}
+              <div className="p-2 border-t border-gray-200">
+                <button type="button"
+                  onMouseDown={e=>e.preventDefault()}
+                  onClick={()=>{ setShowStringDropdown(false); setShowHybridDropdown(false); setShowAddModal(true); }}
+                  className="w-full px-3 py-2 bg-yellow-500 text-white rounded-lg text-sm font-medium">
+                  ➕ 새 스트링 추가
+                </button>
+              </div>
+            </div>
+          );
 
           return (
-            <div className="pb-10">
-              {/* [기존 상단 탭] */}
+            <div>
+              {/* ── 스트링 추가 모달 ── */}
+              {showAddModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                  style={{backgroundColor:'rgba(0,0,0,0.5)'}}>
+                  <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">➕ 새 스트링 추가</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">스트링 이름</label>
+                        <input
+                          type="text"
+                          value={modalStringName}
+                          onChange={e=>setModalStringName(e.target.value)}
+                          placeholder="예) 요넥스 폴리투어스핀"
+                          className="w-full px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                          autoFocus
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">가격 (원)</label>
+                        <input
+                          type="number"
+                          value={modalStringPrice}
+                          onChange={e=>setModalStringPrice(e.target.value)}
+                          placeholder="예) 13000"
+                          className="w-full px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={()=>{ setShowAddModal(false); setModalStringName(''); setModalStringPrice(''); }}
+                          className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium">
+                          취소
+                        </button>
+                        <button
+                          onClick={handleAddModal}
+                          className="flex-1 py-3 bg-yellow-500 text-white rounded-xl font-medium">
+                          추가
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+{/* ── 상단 탭 바 ── */}
               <div className="grid grid-cols-5 gap-1 mb-3">
-                {['customers', 'coupons', 'strings', 'monthly', 'yearly'].map(mode => (
-                    <button key={mode} onClick={()=>setViewMode(mode)}
-                        className={`py-2 rounded-lg font-medium text-[10px] transition-colors ${viewMode===mode ? activeBtnClass : 'bg-gray-200 text-gray-700'}`}>
-                        {mode === 'customers' ? '👥 고객' : mode === 'coupons' ? '🎫 쿠폰' : mode === 'strings' ? '🎯 스트링' : mode === 'monthly' ? '📅 월별' : '📈 연도별'}
-                    </button>
-                ))}
+                <button onClick={()=>setViewMode('customers')}
+                  className={`py-2 rounded-lg font-medium text-xs transition-colors ${viewMode==='customers' ? activeBtnClass : 'bg-gray-200 text-gray-700'}`}>
+                  👥 고객
+                </button>
+                <button onClick={()=>setViewMode('coupons')}
+                  className={`py-2 rounded-lg font-medium text-xs transition-colors ${viewMode==='coupons' ? 'bg-pink-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                  🎫 쿠폰
+                </button>
+                <button onClick={()=>setViewMode('strings')}
+                  className={`py-2 rounded-lg font-medium text-xs transition-colors ${viewMode==='strings' ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                  🎯 스트링
+                </button>
+                <button onClick={()=>setViewMode('monthly')}
+                  className={`py-2 rounded-lg font-medium text-xs transition-colors ${viewMode==='monthly' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                  📅 월별
+                </button>
+                <button onClick={()=>setViewMode('yearly')}
+                  className={`py-2 rounded-lg font-medium text-xs transition-colors ${viewMode==='yearly' ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                  📈 연도별
+                </button>
               </div>
 
-              {/* [고객 관리 뷰] */}
+              {/* ── 검색 + 등록 버튼 ── */}
               {viewMode === 'customers' && (
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input type="text" placeholder="고객 검색..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
-                      className={`flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}/>
-                    <button onClick={()=>setShowForm(!showForm)} className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap ${showForm ? 'bg-gray-400 text-white' : activeBtnClass}`}>
-                      {showForm ? '✕ 취소' : '➕ 등록'}
-                    </button>
-                  </div>
+                <div className="flex gap-2">
+                  <input type="text" placeholder="고객 검색..." value={searchTerm}
+                    onChange={e=>setSearchTerm(e.target.value)}
+                    className={`flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}/>
+                  <button onClick={()=>setShowForm(!showForm)}
+                    className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap ${showForm ? 'bg-gray-400 text-white' : (color==='green' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white')}`}>
+                    {showForm ? '✕ 취소' : '➕ 등록'}
+                  </button>
+                </div>
+              )}
 
-                  {showForm && (
-                    <div className="bg-white rounded-xl shadow-lg p-4 border-2 border-blue-100">
-                      <form onSubmit={handleSubmit} className="space-y-3 text-sm">
-                        <div className="grid grid-cols-2 gap-3">
-                            <input type="date" value={formData.date} onChange={e=>setFormData({...formData, date:e.target.value})} className="p-2 border rounded-lg w-full"/>
-                            <div className="relative">
-                                <input type="text" placeholder="고객명" value={formData.name} onFocus={()=>setShowNameDropdown(true)} onBlur={()=>setTimeout(()=>setShowNameDropdown(false),200)} onChange={e=>setFormData({...formData, name:e.target.value})} className="p-2 border rounded-lg w-full"/>
-                                {showNameDropdown && (
-                                    <div className="absolute z-30 bg-white border w-full rounded-lg shadow-xl max-h-40 overflow-y-auto">
-                                        {[...new Set(records.map(r=>r.name))].filter(n=>matchChosung(n, formData.name)).map(n=>(
-                                            <div key={n} onMouseDown={()=>handleNameSelect(n)} className="p-3 border-b hover:bg-gray-100">{n}</div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+              {/* ── 등록/수정 폼 ── */}
+              {showForm && viewMode === 'customers' && (
+                <div className="bg-white rounded-xl shadow-lg p-4 mt-3">
+                  <h2 className="text-base font-bold text-gray-800 mb-3">{editingId ? '✏️ 작업 수정' : '➕ 새 작업 등록'}</h2>
+                  <form onSubmit={handleSubmit} className="space-y-3">
+
+                    {/* 날짜 / 고객명 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">날짜</label>
+                        <input type="date" value={formData.date} onChange={e=>setFormData({...formData,date:e.target.value})}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                      </div>
+                      <div className="relative">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">고객명</label>
+                        <input type="text" value={formData.name}
+                          onChange={e=>handleNameChange(e.target.value)}
+                          onFocus={()=>setShowNameDropdown(formData.name.length>0)}
+                          onBlur={()=>setTimeout(()=>setShowNameDropdown(false),200)}
+                          placeholder="홍길동"
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                        {showNameDropdown && getUniqueNames().length > 0 && (
+                          <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                            {getUniqueNames().map(n=>(
+                              <button key={n} type="button" onClick={()=>handleNameSelect(n)}
+                                className={`w-full text-left px-4 py-3 text-sm ${hoverBgClass} border-b border-gray-100 last:border-0`}>{n}</button>
+                            ))}
+                          </div>
+                        )}
+                        {formData.name && records.filter(r=>r.name===formData.name).length>0 && !editingId && (
+                          <p className="text-xs text-green-600 mt-1">✓ 이전 기록 자동 입력</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 라켓명 / 패턴 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">{config.racketLabel}</label>
+                        <input type="text" value={formData.racket}
+                          onChange={e=>handleRacketChange(e.target.value)}
+                          onFocus={()=>setShowRacketDropdown(formData.racket.length>0)}
+                          onBlur={()=>setTimeout(()=>setShowRacketDropdown(false),200)}
+                          placeholder={config.racketPlaceholder}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                        {showRacketDropdown && getUniqueRackets().length > 0 && (
+                          <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                            {getUniqueRackets().map(r=>(
+                              <button key={r} type="button" onClick={()=>{setFormData({...formData,racket:r});setShowRacketDropdown(false);}}
+                                className={`w-full text-left px-4 py-3 text-sm ${hoverBgClass} border-b border-gray-100 last:border-0`}>{r}</button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">패턴</label>
+                        <select value={formData.pattern} onChange={e=>setFormData({...formData,pattern:e.target.value})}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}>
+                          {config.patterns.map(p=><option key={p}>{p}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* 스트링 종류 / 가격 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">스트링 종류</label>
+                        <input type="text" value={formData.stringType}
+                          onChange={e=>handleStringChange(e.target.value)}
+                          onFocus={()=>setShowStringDropdown(true)}
+                          onBlur={()=>setTimeout(()=>{ if(!showAddString) setShowStringDropdown(false); },500)}
+                          placeholder="스트링 선택"
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                        {showStringDropdown && (
+                          <StringDropdown strings={getFilteredStrings(formData.stringType)} onSelect={handleStringSelect}/>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">스트링 가격 (원)</label>
+                        <input type="number" value={formData.stringPrice} onChange={e=>setFormData({...formData,stringPrice:e.target.value})}
+                          placeholder="0" className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                      </div>
+                    </div>
+
+                    {/* 하이브리드 */}
+                    <div className="border-2 border-dashed border-gray-200 rounded-lg p-3">
+                      <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                        <input type="checkbox" checked={formData.isHybrid}
+                          onChange={e=>setFormData({...formData,isHybrid:e.target.checked,hybridString2:e.target.checked?formData.hybridString2:'',hybridPrice2:e.target.checked?formData.hybridPrice2:''})}
+                          className="w-4 h-4 rounded"/>
+                        <span className="text-sm font-medium text-gray-700">하이브리드 (+2,000원)</span>
+                      </label>
+                      {formData.isHybrid && (
+                        <div className="grid grid-cols-2 gap-3 mt-2">
+                          <div className="relative">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">두번째 스트링</label>
+                            <input type="text" value={formData.hybridString2}
+                              onChange={e=>handleStringChange(e.target.value,true)}
+                              onFocus={()=>setShowHybridDropdown(true)}
+                              onBlur={()=>setTimeout(()=>{ if(!showAddString) setShowHybridDropdown(false); },500)}
+                              placeholder="스트링 선택"
+                              className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required={formData.isHybrid}/>
+                            {showHybridDropdown && (
+                              <StringDropdown strings={getFilteredStrings(formData.hybridString2)} onSelect={s=>handleStringSelect(s,true)}/>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">두번째 가격 (원)</label>
+                            <input type="number" value={formData.hybridPrice2} onChange={e=>setFormData({...formData,hybridPrice2:e.target.value})}
+                              placeholder="0" className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required={formData.isHybrid}/>
+                          </div>
                         </div>
-                        <input type="text" placeholder="라켓명" value={formData.racket} onChange={e=>setFormData({...formData, racket:e.target.value})} className="p-2 border rounded-lg w-full"/>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="relative">
-                                <input type="text" placeholder="스트링" value={formData.stringType} onFocus={()=>setShowStringDropdown(true)} onBlur={()=>setTimeout(()=>setShowStringDropdown(false),200)} onChange={e=>setFormData({...formData, stringType:e.target.value})} className="p-2 border rounded-lg w-full"/>
-                                {showStringDropdown && (
-                                    <div className="absolute z-30 bg-white border w-full rounded-lg shadow-xl">
-                                        {Object.keys(stringPrices).map(s=>(
-                                            <div key={s} onMouseDown={()=>handleStringSelect(s)} className="p-3 border-b hover:bg-gray-100 flex justify-between"><span>{s}</span><span className="text-xs text-gray-400">{stringPrices[s]}원</span></div>
-                                        ))}
-                                        <div onMouseDown={()=>setShowAddModal(true)} className="p-3 text-blue-500 font-bold">+ 새 스트링 추가</div>
-                                    </div>
-                                )}
-                            </div>
-                            <input type="number" placeholder="스트링 가격" value={formData.stringPrice} onChange={e=>setFormData({...formData, stringPrice:e.target.value})} className="p-2 border rounded-lg w-full"/>
+                      )}
+                    </div>
+
+                    {/* 공임 / 수량 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">공임 (원)</label>
+                        <select value={formData.labor} onChange={e=>setFormData({...formData,labor:e.target.value})}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}>
+                          {config.defaultLabors.map(l=><option key={l} value={l}>{parseInt(l).toLocaleString()}원</option>)}
+                          <option value="0">0원</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">수량</label>
+                        <input type="number" value={formData.quantity} min="1"
+                          onChange={e=>setFormData({...formData,quantity:e.target.value})}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                      </div>
+                    </div>
+
+                    {/* 쿠폰 적용 */}
+                    {!editingId && coupons.filter(c=>!c.used).length > 0 && (
+                      <div className="border border-pink-200 bg-pink-50 rounded-lg p-3 space-y-2">
+                        <p className="text-xs font-medium text-pink-700">🎫 쿠폰 적용</p>
+                        <div className="flex gap-2">
+                          <input type="text" value={couponInput}
+                            onChange={e=>{setCouponInput(e.target.value.toUpperCase()); setCouponMsg(''); setAppliedCoupon(null);}}
+                            placeholder="쿠폰번호 입력"
+                            className="flex-1 px-3 py-2 border border-pink-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 uppercase"
+                          />
+                          <button type="button" onClick={handleApplyCoupon}
+                            className="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm font-medium">적용</button>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <select value={formData.labor} onChange={e=>setFormData({...formData, labor:e.target.value})} className="p-2 border rounded-lg w-full">
-                                {config.defaultLabors.map(l=><option key={l} value={l}>{l}원</option>)}
-                                <option value="0">0원</option>
-                            </select>
-                            <input type="number" value={formData.quantity} onChange={e=>setFormData({...formData, quantity:e.target.value})} className="p-2 border rounded-lg w-full"/>
+                        {couponMsg && <p className="text-xs font-medium text-pink-700">{couponMsg}</p>}
+                      </div>
+                    )}
+
+                    {/* 합계 */}
+                    <div className="bg-gray-50 rounded-lg p-3 text-center">
+                      {appliedCoupon ? (
+                        <div>
+                          <p className="text-sm text-gray-500 line-through">{calculateTotal().toLocaleString()}원</p>
+                          <p className="text-xs text-pink-600">🎫 쿠폰 -{parseInt(appliedCoupon.discount).toLocaleString()}원</p>
+                          <p className="text-xl font-bold text-pink-600">{calculateTotalWithCoupon().toLocaleString()}원</p>
                         </div>
-                        <div className="bg-gray-50 p-3 rounded-lg text-center font-bold text-lg">
-                            합계: {calculateTotalWithCoupon().toLocaleString()}원
-                        </div>
-                        <button type="submit" className={`w-full py-3 rounded-lg text-white font-bold ${activeBtnClass}`}>저장하기</button>
-                      </form>
+                      ) : (
+                        <p className="text-lg font-bold text-gray-800">합계: {calculateTotal().toLocaleString()}원</p>
+                      )}
+                      {formData.isHybrid && <p className="text-xs text-gray-500">하이브리드 +2,000원 포함</p>}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button type="submit" className={`flex-1 py-3 rounded-lg font-medium text-white ${color==='green'?'bg-green-500':'bg-blue-500'}`}>
+                        {editingId ? '수정 완료' : '등록하기'}
+                      </button>
+                      <button type="button" onClick={resetForm} className="px-5 py-3 bg-gray-300 text-gray-800 rounded-lg font-medium">취소</button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* ── 작업 목록 ── */}
+              {viewMode === 'customers' && (
+                <div className="space-y-2 mt-3">
+                  {/* 검색 중일 때 - 고객 이력 헤더 */}
+                  {searchTerm && displayRecords.length > 0 && (
+                    <div className="bg-white rounded-xl shadow-lg px-4 py-3">
+                      <p className="text-sm font-bold text-gray-800">
+                        '{searchTerm}' 검색결과
+                        <span className="ml-2 text-xs font-normal text-gray-400">{displayRecords.length}건</span>
+                      </p>
+                      {(() => {
+                        const cs = getCustomerStats().find(c=>matchChosung(c.name, searchTerm));
+                        if (!cs) return null;
+                        return (
+                          <div className="flex gap-2 mt-1 flex-wrap">
+                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">연간 {cs.yearlyVisits}회</span>
+                            <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">총 {cs.visitCount}회</span>
+                            <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs">누적 {cs.totalAmount.toLocaleString()}원</span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 
+                  {/* 빈 상태 */}
+                  {displayRecords.length === 0 && (
+                    <div className="bg-white rounded-xl shadow-lg p-10 text-center">
+                      <p className="text-gray-400 text-4xl mb-3">{sport==='tennis'?'🎾':'🏸'}</p>
+                      {searchTerm
+                        ? <p className="text-gray-500">'{searchTerm}' 검색 결과가 없습니다.</p>
+                        : <><p className="text-gray-500">등록된 작업이 없습니다.</p>
+                           <p className="text-gray-400 text-sm mt-1">➕ 등록 버튼을 눌러 시작하세요.</p></>
+                      }
+                    </div>
+                  )}
+
+                  {/* 작업 카드 목록 */}
                   {displayRecords.map(r => (
-                    <div key={r.id} className="bg-white rounded-xl shadow p-3 border border-gray-100 relative">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <span className="text-xs text-gray-400">{r.date}</span>
-                          <h3 className="font-bold text-gray-800">{r.name}</h3>
+                    <div key={r.id} className="bg-white rounded-xl shadow-lg p-3">
+                      {/* 이름 + 날짜 헤더 */}
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-bold text-gray-800">{r.name}</span>
+                          {r.couponCode && <span className="text-xs bg-pink-100 text-pink-600 px-1.5 py-0.5 rounded-full">🎫 쿠폰</span>}
                         </div>
-                        <div className="text-right">
-                          <p className={`font-bold ${statColor}`}>{r.total.toLocaleString()}원</p>
-                          <div className="flex gap-1 justify-end mt-1">
-                            <button onClick={()=>{setEditingId(r.id); setFormData(r); setShowForm(true);}} className="text-xs text-blue-500">✏️</button>
-                            <button onClick={()=>handleDelete(r.id)} className="text-xs text-red-400">🗑️</button>
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400">{r.date}</span>
+                          <button onClick={()=>handleEdit(r)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg">✏️</button>
+                          <button onClick={()=>handleDelete(r.id)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg">🗑️</button>
                         </div>
                       </div>
-                      <div className="mt-2 text-xs text-gray-600 border-t pt-2">
-                        <p>라켓: {r.racket}</p>
-                        <p>스트링: {r.stringType} ({r.quantity}자루)</p>
+                      {/* 작업 내용 */}
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm border-t border-gray-100 pt-2">
+                        <div className="col-span-2"><span className="text-xs text-gray-400">라켓 </span><span className="text-xs font-medium">{r.racket} ({r.pattern})</span></div>
+                        <div className="col-span-2"><span className="text-xs text-gray-400">스트링 </span><span className="text-xs font-medium">{r.stringType}{r.isHybrid&&r.hybridString2&&<span className="text-purple-600"> + {r.hybridString2}</span>}</span></div>
+                        <div><span className="text-xs text-gray-400">공임 </span><span className="text-xs">{parseInt(r.labor).toLocaleString()}원</span></div>
+                        <div><span className="text-xs text-gray-400">수량 </span><span className="text-xs">{r.quantity}개</span></div>
+                        {r.couponCode && <div className="col-span-2"><span className="text-xs text-gray-400">쿠폰 </span><span className="text-xs text-pink-600">🎫 -{parseInt(r.couponDiscount).toLocaleString()}원</span></div>}
+                        <div className="col-span-2 text-right">
+                          <span className={`text-base font-bold ${statColor}`}>{r.total.toLocaleString()}원</span>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* [기타 통계 및 관리 뷰 (기존 파일 로직 유지)] */}
-              {viewMode === 'strings' && (
-                  <div className="bg-white p-4 rounded-xl shadow">
-                      <h2 className="font-bold mb-4">🎯 스트링 관리</h2>
-                      {Object.entries(customStrings).map(([name, price])=>(
-                          <div key={name} className="flex justify-between p-2 border-b">
-                              <span>{name} ({price}원)</span>
-                              <button onClick={async ()=>{
-                                  const updated = {...customStrings}; delete updated[name];
-                                  await handleSaveCustomStrings(updated);
-                              }} className="text-red-400 text-xs">삭제</button>
+              {/* ── 월별 매출 ── */}
+              {viewMode === 'monthly' && (
+                <div className="bg-white rounded-xl shadow-lg p-4 mt-3">
+                  <h2 className="text-base font-bold text-gray-800 mb-3">📅 월별 매출 현황</h2>
+                  <div className="space-y-2">
+                    {getMonthlyStats().length === 0 && <p className="text-center text-gray-400 py-8">데이터가 없습니다.</p>}
+                    {getMonthlyStats().map(stat => (
+                      <div key={stat.month} className="border border-gray-200 rounded-lg p-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <p className="font-bold text-gray-800">{stat.month}</p>
+                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{stat.count}건</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="bg-orange-50 rounded-lg p-2">
+                            <p className="text-xs text-gray-500 mb-0.5">스트링비</p>
+                            <p className="text-sm font-bold text-orange-600">{stat.stringTotal.toLocaleString()}원</p>
                           </div>
-                      ))}
-                      <button onClick={()=>setShowAddModal(true)} className="w-full mt-4 p-2 bg-yellow-500 text-white rounded-lg">+ 새 스트링 추가</button>
+                          <div className="bg-blue-50 rounded-lg p-2">
+                            <p className="text-xs text-gray-500 mb-0.5">공임비</p>
+                            <p className="text-sm font-bold text-blue-600">{stat.laborTotal.toLocaleString()}원</p>
+                          </div>
+                          <div className={`rounded-lg p-2 ${color==='green'?'bg-green-50':'bg-blue-50'}`}>
+                            <p className="text-xs text-gray-500 mb-0.5">합계</p>
+                            <p className={`text-sm font-bold ${statColor}`}>{stat.total.toLocaleString()}원</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                </div>
               )}
 
-              {/* [추가 모달] */}
-              {showAddModal && (
-                  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                      <div className="bg-white p-6 rounded-2xl w-full max-w-xs">
-                          <h3 className="font-bold mb-4">새 스트링 추가</h3>
-                          <input type="text" placeholder="이름" value={modalStringName} onChange={e=>setModalStringName(e.target.value)} className="w-full p-2 border rounded mb-2"/>
-                          <input type="number" placeholder="가격" value={modalStringPrice} onChange={e=>setModalStringPrice(e.target.value)} className="w-full p-2 border rounded mb-4"/>
-                          <div className="flex gap-2">
-                              <button onClick={()=>setShowAddModal(false)} className="flex-1 p-2 bg-gray-200 rounded">취소</button>
-                              <button onClick={async ()=>{
-                                  const updated = {...customStrings, [modalStringName]: parseInt(modalStringPrice)};
-                                  await handleSaveCustomStrings(updated);
-                                  setShowAddModal(false); setModalStringName(''); setModalStringPrice('');
-                              }} className="flex-1 p-2 bg-blue-500 text-white rounded">추가</button>
-                          </div>
+              {/* ── 연도별 매출 ── */}
+              {/* ── 쿠폰 관리 ── */}
+              {viewMode === 'coupons' && (
+                <div className="mt-3 space-y-3">
+                  {/* 쿠폰 등록 버튼 */}
+                  <button onClick={()=>setShowCouponForm(!showCouponForm)}
+                    className="w-full py-3 bg-pink-500 text-white rounded-xl font-medium text-sm shadow">
+                    {showCouponForm ? '✕ 취소' : '➕ 쿠폰 등록'}
+                  </button>
+
+                  {/* 등록 폼 */}
+                  {showCouponForm && (
+                    <div className="bg-white rounded-xl shadow-lg p-4 space-y-3">
+                      <h3 className="text-sm font-bold text-gray-800">🎫 새 쿠폰 등록</h3>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">쿠폰번호 *</label>
+                        <input type="text" value={couponForm.code}
+                          onChange={e=>setCouponForm({...couponForm, code:e.target.value.toUpperCase()})}
+                          placeholder="예) KAKAO-2024-ABCD"
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 uppercase"/>
                       </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">할인금액 (원) *</label>
+                          <input type="number" value={couponForm.discount}
+                            onChange={e=>setCouponForm({...couponForm, discount:e.target.value})}
+                            placeholder="예) 5000"
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">만료일</label>
+                          <input type="date" value={couponForm.expiry}
+                            onChange={e=>setCouponForm({...couponForm, expiry:e.target.value})}
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">메모</label>
+                        <input type="text" value={couponForm.note}
+                          onChange={e=>setCouponForm({...couponForm, note:e.target.value})}
+                          placeholder="예) 카카오 이벤트 쿠폰"
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/>
+                      </div>
+                      <button onClick={()=>{
+                        if (!couponForm.code.trim() || !couponForm.discount) return;
+                        const newCoupon = {
+                          id: Date.now(),
+                          code: couponForm.code.trim().toUpperCase(),
+                          discount: parseFloat(couponForm.discount),
+                          expiry: couponForm.expiry,
+                          note: couponForm.note,
+                          used: false,
+                          usedDate: '',
+                          usedFor: '',
+                          createdAt: new Date().toISOString().split('T')[0],
+                        };
+                        saveCoupons([...coupons, newCoupon]);
+                        setCouponForm({code:'', discount:'', expiry:'', note:''});
+                        setShowCouponForm(false);
+                      }}
+                        className="w-full py-3 bg-pink-500 text-white rounded-xl font-medium text-sm">
+                        등록하기
+                      </button>
+                    </div>
+                  )}
+
+                  {/* 미사용 쿠폰 */}
+                  <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 flex justify-between">
+                      <span className="text-sm font-bold text-gray-800">미사용 쿠폰</span>
+                      <span className="text-xs text-pink-600 font-medium">{coupons.filter(c=>!c.used).length}개</span>
+                    </div>
+                    {coupons.filter(c=>!c.used).length === 0 && (
+                      <p className="text-center text-gray-400 py-8 text-sm">미사용 쿠폰이 없습니다.</p>
+                    )}
+                    {coupons.filter(c=>!c.used).map(c => {
+                      const today = new Date().toISOString().split('T')[0];
+                      const expired = c.expiry && c.expiry < today;
+                      return (
+                        <div key={c.id} className={`border-b border-gray-100 last:border-0 px-4 py-3 flex items-center gap-3 ${expired?'opacity-50':''}`}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-bold text-gray-800 font-mono">{c.code}</p>
+                              {expired && <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">만료</span>}
+                            </div>
+                            <p className="text-base font-bold text-pink-600">{parseInt(c.discount).toLocaleString()}원 할인</p>
+                            <div className="flex gap-3 mt-0.5">
+                              {c.expiry && <p className="text-xs text-gray-400">~{c.expiry}</p>}
+                              {c.note && <p className="text-xs text-gray-400">{c.note}</p>}
+                            </div>
+                          </div>
+                          <button onClick={()=>{if(window.confirm('쿠폰을 삭제할까요?')) saveCoupons(coupons.filter(x=>x.id!==c.id));}}
+                            className="p-2 text-red-400 hover:bg-red-50 rounded-lg">🗑️</button>
+                        </div>
+                      );
+                    })}
                   </div>
+
+                  {/* 사용완료 쿠폰 */}
+                  {coupons.filter(c=>c.used).length > 0 && (
+                    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                      <div className="px-4 py-3 border-b border-gray-100 flex justify-between">
+                        <span className="text-sm font-bold text-gray-800">사용완료 쿠폰</span>
+                        <span className="text-xs text-gray-400">{coupons.filter(c=>c.used).length}개</span>
+                      </div>
+                      {coupons.filter(c=>c.used).map(c => (
+                        <div key={c.id} className="border-b border-gray-100 last:border-0 px-4 py-3 opacity-60">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-sm font-medium text-gray-600 font-mono line-through">{c.code}</p>
+                              <p className="text-sm text-gray-500">{parseInt(c.discount).toLocaleString()}원 할인</p>
+                              {c.note && <p className="text-xs text-gray-400">{c.note}</p>}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-gray-400">{c.usedDate} 사용</p>
+                              {c.usedFor && <p className="text-xs text-gray-500">{c.usedFor} 고객</p>}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── 스트링 관리 ── */}
+              {viewMode === 'strings' && (
+                <div className="mt-3 space-y-3">
+                  {/* 추가 버튼 */}
+                  <button
+                    onClick={()=>{ setShowAddModal(true); setModalStringName(''); setModalStringPrice(''); }}
+                    className="w-full py-3 bg-yellow-500 text-white rounded-xl font-medium text-sm shadow">
+                    ➕ 새 스트링 추가
+                  </button>
+
+                  {/* 스트링 목록 */}
+                  <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                      <h2 className="text-base font-bold text-gray-800">🎯 스트링 목록</h2>
+                      <span className="text-xs text-gray-400">{Object.keys(customStrings).length}개</span>
+                    </div>
+                    {Object.keys(customStrings).length === 0 && (
+                      <p className="text-center text-gray-400 py-10 text-sm">등록된 스트링이 없습니다.<br/>위 버튼으로 추가해주세요.</p>
+                    )}
+                    {Object.entries(customStrings)
+                      .sort((a,b) => a[0].localeCompare(b[0], 'ko'))
+                      .map(([name, price]) => (
+                      <div key={name} className="border-b border-gray-100 last:border-0">
+                        {editingStringKey === name ? (
+                          /* 수정 모드 */
+                          <div className="p-3 bg-blue-50 space-y-2">
+                            <input
+                              type="text"
+                              value={editStringName}
+                              onChange={e=>setEditStringName(e.target.value)}
+                              className="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                              placeholder="스트링 이름"
+                            />
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                value={editStringPrice}
+                                onChange={e=>setEditStringPrice(e.target.value)}
+                                className="flex-1 px-3 py-2 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                placeholder="가격 (원)"
+                              />
+                              <button onClick={handleSaveEditString}
+                                className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium">저장</button>
+                              <button onClick={()=>setEditingStringKey(null)}
+                                className="px-3 py-2 bg-gray-300 text-gray-600 rounded-lg text-sm">취소</button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* 표시 모드 */
+                          <div className="flex items-center px-4 py-3">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-800">{name}</p>
+                              <p className="text-xs text-gray-500">{price.toLocaleString()}원</p>
+                            </div>
+                            <div className="flex gap-1">
+                              <button onClick={()=>handleEditString(name, name, price)}
+                                className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg">✏️</button>
+                              <button onClick={()=>handleDeleteString(name)}
+                                className="p-2 text-red-400 hover:bg-red-50 rounded-lg">🗑️</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {viewMode === 'yearly' && (
+                <div className="bg-white rounded-xl shadow-lg p-4 mt-3">
+                  <h2 className="text-base font-bold text-gray-800 mb-3">📈 연도별 매출 현황</h2>
+                  <div className="space-y-3">
+                    {getYearlyStats().length === 0 && <p className="text-center text-gray-400 py-8">데이터가 없습니다.</p>}
+                    {getYearlyStats().map(stat => (
+                      <div key={stat.year} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-3">
+                          <div>
+                            <p className="text-lg font-bold text-gray-800">{stat.year}년</p>
+                            <p className="text-xs text-gray-500">총 {stat.count}건 · 월평균 {Math.round(stat.total/12).toLocaleString()}원</p>
+                          </div>
+                          <p className="text-xl font-bold text-purple-600">{stat.total.toLocaleString()}원</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-orange-50 rounded-lg p-3 text-center">
+                            <p className="text-xs text-gray-500 mb-1">🎯 스트링비 합계</p>
+                            <p className="text-base font-bold text-orange-600">{stat.stringTotal.toLocaleString()}원</p>
+                          </div>
+                          <div className="bg-blue-50 rounded-lg p-3 text-center">
+                            <p className="text-xs text-gray-500 mb-1">🔧 공임비 합계</p>
+                            <p className="text-base font-bold text-blue-600">{stat.laborTotal.toLocaleString()}원</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           );
         };
 
+        // ── 최상위 앱 (스포츠 탭 전환) ──────────────────
         const App = () => {
           const [sport, setSport] = useState('tennis');
           return (
-            <div className="min-h-screen bg-gray-100 pb-10">
+            <div className="min-h-screen bg-gray-100">
+              {/* 스포츠 탭 헤더 */}
               <div className={`${sport==='tennis' ? 'bg-green-600' : 'bg-blue-600'} text-white px-4 pt-4 pb-0 shadow-md`}>
-                <h1 className="text-lg font-bold mb-3 italic">NIJI STRING <span className="text-xs font-normal opacity-70">v18-PRO</span></h1>
+                <h1 className="text-lg font-bold mb-3">🏆 스트링 작업 관리</h1>
                 <div className="flex">
-                  <button onClick={()=>setSport('tennis')} className={`flex-1 py-2 text-sm font-bold rounded-t-xl ${sport==='tennis' ? 'bg-white text-green-600' : 'bg-green-700 text-green-100'}`}>🎾 테니스</button>
-                  <button onClick={()=>setSport('badminton')} className={`flex-1 py-2 text-sm font-bold rounded-t-xl ${sport==='badminton' ? 'bg-white text-blue-600' : 'bg-blue-700 text-blue-100'}`}>🏸 배드민턴</button>
+                  <button
+                    onClick={()=>setSport('tennis')}
+                    className={`flex-1 py-2 text-sm font-bold rounded-t-xl transition-colors ${sport==='tennis' ? 'bg-white text-green-600' : 'bg-green-700 text-green-100'}`}>
+                    🎾 테니스
+                  </button>
+                  <button
+                    onClick={()=>setSport('badminton')}
+                    className={`flex-1 py-2 text-sm font-bold rounded-t-xl transition-colors ${sport==='badminton' ? 'bg-white text-blue-600' : 'bg-blue-700 text-blue-100'}`}>
+                    🏸 배드민턴
+                  </button>
                 </div>
               </div>
-              <div className="p-3 max-w-md mx-auto"><StringingApp key={sport} sport={sport} /></div>
+
+              {/* 콘텐츠 */}
+              <div className="p-3 max-w-2xl mx-auto">
+                <StringingApp key={sport} sport={sport} />
+              </div>
             </div>
           );
         };
