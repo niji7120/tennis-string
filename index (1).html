@@ -937,6 +937,22 @@
                       </div>
                       {/* 본문 */}
                       <div className="p-3 space-y-2">
+                        {/* 이전 방문일 */}
+                        {(() => {
+                          const prev = [...records]
+                            .filter(x => x.name === r.name && x.id !== r.id)
+                            .sort((a,b) => b.date.localeCompare(a.date));
+                          if (prev.length === 0) return null;
+                          const lastDate = prev[0].date;
+                          const diffDays = Math.floor((new Date(r.date) - new Date(lastDate)) / (1000*60*60*24));
+                          return (
+                            <div className="flex items-center gap-1 text-xs text-gray-400">
+                              <span>🕐 이전 방문</span>
+                              <span className="font-medium text-gray-600">{lastDate}</span>
+                              <span className="ml-1 text-gray-400">({diffDays}일 전)</span>
+                            </div>
+                          );
+                        })()}
                         {/* 라켓 */}
                         <div className="flex items-start gap-2">
                           <span className="text-xs text-gray-400 w-12 flex-shrink-0 mt-0.5">라켓</span>
