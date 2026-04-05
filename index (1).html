@@ -1,4 +1,6 @@
 
+
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -35,6 +37,13 @@
         const matchChosung = (str, search) => {
           if (!search) return true;
           return str.toLowerCase().includes(search.toLowerCase()) || getChosung(str).includes(search);
+        };
+
+        // ── KST 오늘 날짜 ────────────────────────────────
+        const getTodayKST = () => {
+          const d = new Date();
+          const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+          return kst.toISOString().split('T')[0];
         };
 
         // ── 스포츠별 설정 ────────────────────────────────
@@ -126,12 +135,13 @@
           const stringPrices = {...config.defaultStrings, ...customStrings};
 
           const emptyForm = () => ({
-            date: new Date().toISOString().split('T')[0],
+            date: getTodayKST(),
             name: '', racket: '',
             pattern: config.patterns[0],
             stringType: '', stringPrice: '',
             labor: config.defaultLabors[0],
             quantity: 1,
+            tension: '', tensionH: '', tensionV: '',
             isHybrid: false, hybridString2: '', hybridPrice2: '',
           });
 
@@ -237,7 +247,7 @@
             // 쿠폰 사용 처리
             if (appliedCoupon && !editingId) {
               const updated = coupons.map(c => c.code === appliedCoupon.code
-                ? {...c, used: true, usedDate: new Date().toISOString().split('T')[0], usedFor: formData.name}
+                ? {...c, used: true, usedDate: getTodayKST(), usedFor: formData.name}
                 : c);
               saveCoupons(updated);
             }
@@ -255,7 +265,7 @@
           };
 
           const handleEdit = (rec) => {
-            setFormData({ date:rec.date, name:rec.name, racket:rec.racket, pattern:rec.pattern, stringType:rec.stringType, stringPrice:rec.stringPrice, labor:rec.labor, quantity:rec.quantity, isHybrid:rec.isHybrid||false, hybridString2:rec.hybridString2||'', hybridPrice2:rec.hybridPrice2||'' });
+            setFormData({ date:rec.date, name:rec.name, racket:rec.racket, pattern:rec.pattern, stringType:rec.stringType, stringPrice:rec.stringPrice, labor:rec.labor, quantity:rec.quantity, tension:rec.tension||'', tensionH:rec.tensionH||'', tensionV:rec.tensionV||'', isHybrid:rec.isHybrid||false, hybridString2:rec.hybridString2||'', hybridPrice2:rec.hybridPrice2||'' });
             const ew = rec.extraWorks || [];
             setExtraWorks(ew);
             setShowExtraSection(ew.length > 0);
@@ -278,7 +288,7 @@
 
           const handleNameSelect = (name) => {
             const last = [...records].filter(r=>r.name===name).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
-            if (last) setFormData({ date:new Date().toISOString().split('T')[0], name, racket:last.racket, pattern:last.pattern, stringType:last.stringType, stringPrice:last.stringPrice, labor:last.labor, quantity:last.quantity, isHybrid:last.isHybrid||false, hybridString2:last.hybridString2||'', hybridPrice2:last.hybridPrice2||'' });
+            if (last) setFormData({ date:getTodayKST(), name, racket:last.racket, pattern:last.pattern, stringType:last.stringType, stringPrice:last.stringPrice, labor:last.labor, quantity:last.quantity, isHybrid:last.isHybrid||false, hybridString2:last.hybridString2||'', hybridPrice2:last.hybridPrice2||'' });
             else setFormData({...formData, name});
             setShowNameDropdown(false);
           };
@@ -329,7 +339,7 @@
           // 쿠폰 적용 (폼에서)
           const handleApplyCoupon = () => {
             const code = couponInput.trim().toUpperCase();
-            const today = new Date().toISOString().split('T')[0];
+            const today = getTodayKST();
             const found = coupons.find(c => c.code.toUpperCase() === code);
             if (!found) { setCouponMsg('❌ 쿠폰번호를 찾을 수 없습니다.'); setAppliedCoupon(null); return; }
             if (found.used) { setCouponMsg('❌ 이미 사용된 쿠폰입니다.'); setAppliedCoupon(null); return; }
@@ -392,7 +402,7 @@
             const map = {};
             records.forEach(r => {
               const m = r.date.substring(0,7);
-              if (!map[m]) map[m] = {month:m, total:0, stringTotal:0, laborTotal:0, count:0};
+              if (!map[m]) map[m] = {month:m, total:0, stringTotal:0, laborTotal:0, extraTotal:0, count:0};
               map[m].total += r.total;
               map[m].count++;
               const qty = parseInt(r.quantity) || 1;
@@ -401,6 +411,8 @@
               const hybrid = r.isHybrid ? 2000 : 0;
               map[m].stringTotal += (sp + hybrid) * qty;
               map[m].laborTotal += (parseFloat(r.labor)||0) * qty;
+              const extra = (r.extraWorks||[]).reduce((s,w)=>s+(parseFloat(w.price)||0),0);
+              map[m].extraTotal += extra;
             });
             return Object.values(map).sort((a,b)=>b.month.localeCompare(a.month));
           };
@@ -409,7 +421,7 @@
             const map = {};
             records.forEach(r => {
               const y = r.date.substring(0,4);
-              if (!map[y]) map[y] = {year:y, total:0, stringTotal:0, laborTotal:0, count:0};
+              if (!map[y]) map[y] = {year:y, total:0, stringTotal:0, laborTotal:0, extraTotal:0, count:0};
               map[y].total += r.total;
               map[y].count++;
               const qty = parseInt(r.quantity) || 1;
@@ -418,6 +430,8 @@
               const hybrid = r.isHybrid ? 2000 : 0;
               map[y].stringTotal += (sp + hybrid) * qty;
               map[y].laborTotal += (parseFloat(r.labor)||0) * qty;
+              const extra = (r.extraWorks||[]).reduce((s,w)=>s+(parseFloat(w.price)||0),0);
+              map[y].extraTotal += extra;
             });
             return Object.values(map).sort((a,b)=>b.year.localeCompare(a.year));
           };
@@ -701,6 +715,34 @@
                       )}
                     </div>
 
+                    {/* 텐션 */}
+                    <div className="border-2 border-dashed border-yellow-200 rounded-lg p-3">
+                      <p className="text-xs font-medium text-yellow-700 mb-2">⚡ 텐션 (lbs)</p>
+                      {formData.isHybrid ? (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">메인 (세로줄)</label>
+                            <input type="number" value={formData.tensionH}
+                              onChange={e=>setFormData({...formData,tensionH:e.target.value})}
+                              placeholder="예) 50" step="0.5"
+                              className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}/>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">크로스 (가로줄)</label>
+                            <input type="number" value={formData.tensionV}
+                              onChange={e=>setFormData({...formData,tensionV:e.target.value})}
+                              placeholder="예) 48" step="0.5"
+                              className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}/>
+                          </div>
+                        </div>
+                      ) : (
+                        <input type="number" value={formData.tension}
+                          onChange={e=>setFormData({...formData,tension:e.target.value})}
+                          placeholder="예) 50" step="0.5"
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}/>
+                      )}
+                    </div>
+
                     {/* 공임 / 수량 */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -891,39 +933,91 @@
                   )}
 
                   {/* 작업 카드 목록 */}
-                  {displayRecords.map(r => (
-                    <div key={r.id} className="bg-white rounded-xl shadow-lg p-3">
-                      {/* 이름 + 날짜 헤더 */}
-                      <div className="flex justify-between items-center mb-2">
+                  {displayRecords.map(r => {
+                    const visitCount = records.filter(x => x.name === r.name).length;
+                    return (
+                    <div key={r.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
+                      {/* 헤더 */}
+                      <div className={`px-3 py-2 flex justify-between items-center ${color==='green'?'bg-green-500':'bg-blue-500'}`}>
                         <div className="flex items-center gap-2">
-                          <span className="text-base font-bold text-gray-800">{r.name}</span>
-                          {r.couponCode && <span className="text-xs bg-pink-100 text-pink-600 px-1.5 py-0.5 rounded-full">🎫 쿠폰</span>}
+                          <span className="text-white font-bold text-sm">{r.name}</span>
+                          <span className="text-xs bg-white bg-opacity-20 text-white px-1.5 py-0.5 rounded-full">👤 {visitCount}회 방문</span>
+                          {r.couponCode && <span className="text-xs bg-white bg-opacity-30 text-white px-1.5 py-0.5 rounded-full">🎫 쿠폰</span>}
+                          {r.isHybrid && <span className="text-xs bg-white bg-opacity-30 text-white px-1.5 py-0.5 rounded-full">하이브리드</span>}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400">{r.date}</span>
-                          <button onClick={()=>handleEdit(r)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg">✏️</button>
-                          <button onClick={()=>handleDelete(r.id)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg">🗑️</button>
+                        <div className="flex items-center gap-1">
+                          <span className="text-white text-opacity-80 text-xs mr-1">{r.date}</span>
+                          <button onClick={()=>handleEdit(r)} className="p-1.5 text-white hover:bg-white hover:bg-opacity-20 rounded-lg">✏️</button>
+                          <button onClick={()=>handleDelete(r.id)} className="p-1.5 text-white hover:bg-white hover:bg-opacity-20 rounded-lg">🗑️</button>
                         </div>
                       </div>
-                      {/* 작업 내용 */}
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm border-t border-gray-100 pt-2">
-                        <div className="col-span-2"><span className="text-xs text-gray-400">라켓 </span><span className="text-xs font-medium">{r.racket} ({r.pattern})</span></div>
-                        <div className="col-span-2"><span className="text-xs text-gray-400">스트링 </span><span className="text-xs font-medium">{r.stringType}{r.isHybrid&&r.hybridString2&&<span className="text-purple-600"> + {r.hybridString2}</span>}</span></div>
-                        <div><span className="text-xs text-gray-400">공임 </span><span className="text-xs">{parseInt(r.labor).toLocaleString()}원</span></div>
-                        <div><span className="text-xs text-gray-400">수량 </span><span className="text-xs">{r.quantity}개</span></div>
-                        {r.extraWorks && r.extraWorks.length > 0 && (
-                          <div className="col-span-2">
-                            <span className="text-xs text-gray-400">추가작업 </span>
-                            <span className="text-xs text-indigo-700">{r.extraWorks.map(w=>`${w.name} ${parseInt(w.price||0).toLocaleString()}원`).join(' · ')}</span>
+                      {/* 본문 */}
+                      <div className="p-3 space-y-2">
+                        {/* 라켓 */}
+                        <div className="flex items-start gap-2">
+                          <span className="text-xs text-gray-400 w-12 flex-shrink-0 mt-0.5">라켓</span>
+                          <span className="text-xs font-medium text-gray-800">{r.racket}</span>
+                          <span className="text-xs text-gray-400 ml-auto flex-shrink-0">{r.pattern}</span>
+                        </div>
+                        {/* 스트링 */}
+                        <div className="flex items-start gap-2">
+                          <span className="text-xs text-gray-400 w-12 flex-shrink-0 mt-0.5">스트링</span>
+                          <div className="flex-1">
+                            <span className="text-xs font-medium text-gray-800">{r.stringType}</span>
+                            {r.isHybrid && r.hybridString2 && (
+                              <span className="text-xs text-purple-600"> + {r.hybridString2}</span>
+                            )}
+                            <span className="text-xs text-gray-400 ml-1">{parseInt(r.stringPrice||0).toLocaleString()}원{r.isHybrid&&r.hybridPrice2&&`+${parseInt(r.hybridPrice2).toLocaleString()}원`}</span>
+                          </div>
+                        </div>
+                        {/* 텐션 */}
+                        {(r.tension || r.tensionH || r.tensionV) && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-400 w-12 flex-shrink-0">텐션</span>
+                            <span className="text-xs font-medium text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">
+                              {r.tension ? `${r.tension} lbs` : `메인 ${r.tensionH} / 크로스 ${r.tensionV} lbs`}
+                            </span>
                           </div>
                         )}
-                        {r.couponCode && <div className="col-span-2"><span className="text-xs text-gray-400">쿠폰 </span><span className="text-xs text-pink-600">🎫 -{parseInt(r.couponDiscount).toLocaleString()}원</span></div>}
-                        <div className="col-span-2 text-right">
-                          <span className={`text-base font-bold ${statColor}`}>{r.total.toLocaleString()}원</span>
+                        {/* 공임/수량 */}
+                        <div className="flex gap-4">
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-400">공임</span>
+                            <span className="text-xs font-medium text-gray-700">{parseInt(r.labor||0).toLocaleString()}원</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-400">수량</span>
+                            <span className="text-xs font-medium text-gray-700">{r.quantity}개</span>
+                          </div>
+                        </div>
+                        {/* 추가작업 */}
+                        {r.extraWorks && r.extraWorks.length > 0 && (
+                          <div className="bg-indigo-50 rounded-lg px-2 py-1.5">
+                            <p className="text-xs text-indigo-400 mb-1">🛠️ 추가작업</p>
+                            <div className="flex flex-wrap gap-1">
+                              {r.extraWorks.map((w,i)=>(
+                                <span key={i} className="text-xs bg-white text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">
+                                  {w.name} {parseInt(w.price||0).toLocaleString()}원
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {/* 쿠폰 할인 */}
+                        {r.couponCode && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-400">쿠폰할인</span>
+                            <span className="text-xs text-pink-600 font-medium">-{parseInt(r.couponDiscount||0).toLocaleString()}원</span>
+                          </div>
+                        )}
+                        {/* 합계 */}
+                        <div className={`border-t border-gray-100 pt-2 flex justify-between items-center`}>
+                          <span className="text-xs text-gray-400">최종 금액</span>
+                          <span className={`text-lg font-bold ${statColor}`}>{r.total.toLocaleString()}원</span>
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               )}
 
@@ -931,26 +1025,31 @@
               {viewMode === 'monthly' && (
                 <div className="bg-white rounded-xl shadow-lg p-4 mt-3">
                   <h2 className="text-base font-bold text-gray-800 mb-3">📅 월별 매출 현황</h2>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {getMonthlyStats().length === 0 && <p className="text-center text-gray-400 py-8">데이터가 없습니다.</p>}
                     {getMonthlyStats().map(stat => (
-                      <div key={stat.month} className="border border-gray-200 rounded-lg p-3">
-                        <div className="flex justify-between items-center mb-2">
+                      <div key={stat.month} className="border border-gray-200 rounded-xl overflow-hidden">
+                        {/* 월 헤더 */}
+                        <div className="flex justify-between items-center px-4 py-2.5 bg-gray-50 border-b border-gray-200">
                           <p className="font-bold text-gray-800">{stat.month}</p>
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{stat.count}건</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">{stat.count}건</span>
+                            <span className={`text-base font-bold ${statColor}`}>{stat.total.toLocaleString()}원</span>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div className="bg-orange-50 rounded-lg p-2">
-                            <p className="text-xs text-gray-500 mb-0.5">스트링비</p>
-                            <p className="text-sm font-bold text-orange-600">{stat.stringTotal.toLocaleString()}원</p>
+                        {/* 항목별 */}
+                        <div className="divide-y divide-gray-100">
+                          <div className="flex justify-between items-center px-4 py-2">
+                            <span className="text-xs text-gray-500">🎯 스트링비</span>
+                            <span className="text-sm font-medium text-orange-600">{stat.stringTotal.toLocaleString()}원</span>
                           </div>
-                          <div className="bg-blue-50 rounded-lg p-2">
-                            <p className="text-xs text-gray-500 mb-0.5">공임비</p>
-                            <p className="text-sm font-bold text-blue-600">{stat.laborTotal.toLocaleString()}원</p>
+                          <div className="flex justify-between items-center px-4 py-2">
+                            <span className="text-xs text-gray-500">🔧 공임비</span>
+                            <span className="text-sm font-medium text-blue-600">{stat.laborTotal.toLocaleString()}원</span>
                           </div>
-                          <div className={`rounded-lg p-2 ${color==='green'?'bg-green-50':'bg-blue-50'}`}>
-                            <p className="text-xs text-gray-500 mb-0.5">합계</p>
-                            <p className={`text-sm font-bold ${statColor}`}>{stat.total.toLocaleString()}원</p>
+                          <div className="flex justify-between items-center px-4 py-2">
+                            <span className="text-xs text-gray-500">🛠️ 추가작업비</span>
+                            <span className="text-sm font-medium text-indigo-600">{(stat.extraTotal||0).toLocaleString()}원</span>
                           </div>
                         </div>
                       </div>
@@ -1013,7 +1112,7 @@
                           used: false,
                           usedDate: '',
                           usedFor: '',
-                          createdAt: new Date().toISOString().split('T')[0],
+                          createdAt: getTodayKST(),
                         };
                         saveCoupons([...coupons, newCoupon]);
                         setCouponForm({code:'', discount:'', expiry:'', note:''});
@@ -1035,7 +1134,7 @@
                       <p className="text-center text-gray-400 py-8 text-sm">미사용 쿠폰이 없습니다.</p>
                     )}
                     {coupons.filter(c=>!c.used).map(c => {
-                      const today = new Date().toISOString().split('T')[0];
+                      const today = getTodayKST();
                       const expired = c.expiry && c.expiry < today;
                       return (
                         <div key={c.id} className={`border-b border-gray-100 last:border-0 px-4 py-3 flex items-center gap-3 ${expired?'opacity-50':''}`}>
@@ -1158,22 +1257,28 @@
                   <div className="space-y-3">
                     {getYearlyStats().length === 0 && <p className="text-center text-gray-400 py-8">데이터가 없습니다.</p>}
                     {getYearlyStats().map(stat => (
-                      <div key={stat.year} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex justify-between items-center mb-3">
+                      <div key={stat.year} className="border border-gray-200 rounded-xl overflow-hidden">
+                        {/* 연도 헤더 */}
+                        <div className="flex justify-between items-center px-4 py-3 bg-gray-50 border-b border-gray-200">
                           <div>
                             <p className="text-lg font-bold text-gray-800">{stat.year}년</p>
-                            <p className="text-xs text-gray-500">총 {stat.count}건 · 월평균 {Math.round(stat.total/12).toLocaleString()}원</p>
+                            <p className="text-xs text-gray-400">총 {stat.count}건 · 월평균 {Math.round(stat.total/12).toLocaleString()}원</p>
                           </div>
                           <p className="text-xl font-bold text-purple-600">{stat.total.toLocaleString()}원</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="bg-orange-50 rounded-lg p-3 text-center">
-                            <p className="text-xs text-gray-500 mb-1">🎯 스트링비 합계</p>
-                            <p className="text-base font-bold text-orange-600">{stat.stringTotal.toLocaleString()}원</p>
+                        {/* 항목별 */}
+                        <div className="divide-y divide-gray-100">
+                          <div className="flex justify-between items-center px-4 py-2.5">
+                            <span className="text-xs text-gray-500">🎯 스트링비 합계</span>
+                            <span className="text-base font-bold text-orange-600">{stat.stringTotal.toLocaleString()}원</span>
                           </div>
-                          <div className="bg-blue-50 rounded-lg p-3 text-center">
-                            <p className="text-xs text-gray-500 mb-1">🔧 공임비 합계</p>
-                            <p className="text-base font-bold text-blue-600">{stat.laborTotal.toLocaleString()}원</p>
+                          <div className="flex justify-between items-center px-4 py-2.5">
+                            <span className="text-xs text-gray-500">🔧 공임비 합계</span>
+                            <span className="text-base font-bold text-blue-600">{stat.laborTotal.toLocaleString()}원</span>
+                          </div>
+                          <div className="flex justify-between items-center px-4 py-2.5">
+                            <span className="text-xs text-gray-500">🛠️ 추가작업비 합계</span>
+                            <span className="text-base font-bold text-indigo-600">{(stat.extraTotal||0).toLocaleString()}원</span>
                           </div>
                         </div>
                       </div>
