@@ -120,6 +120,10 @@
           const [appliedCoupon, setAppliedCoupon] = useState(null);
           const [couponInput, setCouponInput] = useState('');
           const [couponMsg, setCouponMsg] = useState('');
+          const [confirmModal, setConfirmModal] = useState(null);
+          const [showBulkForm, setShowBulkForm] = useState(false);
+          const [bulkForm, setBulkForm] = useState({prefix:'NIJI', count:'5', discount:'', expiry:'', note:''});
+          const [bulkResult, setBulkResult] = useState(null); // 발행된 번호 목록 // {msg, onOk}
 
           // ── 추가작업 관련 state ───────────────────────
           const DEFAULT_EXTRA_ITEMS = ['스텐실 작업', '범퍼 교체', '오버그립', '그립테이프', '진동방지구', '기타'];
@@ -274,9 +278,7 @@
           };
 
           const handleDelete = (id) => {
-            if (window.confirm('정말 삭제하시겠습니까?')) {
-              saveRecords(records.filter(r=>r.id!==id));
-            }
+            setConfirmModal({ msg: '정말 삭제하시겠습니까?', onOk: () => { saveRecords(records.filter(r=>r.id!==id)); setConfirmModal(null); } });
           };
 
           // ── 드롭다운 핸들러 ───────────────────────────
@@ -348,6 +350,40 @@
             setCouponMsg('✅ 쿠폰이 적용되었습니다! ' + parseInt(found.discount).toLocaleString() + '원 할인');
           };
 
+          // 일괄 발행
+          const handleBulkIssue = () => {
+            if (!bulkForm.discount || !bulkForm.count) return;
+            const count = Math.min(parseInt(bulkForm.count) || 1, 50);
+            const today = getTodayKST();
+            // 날짜 태그: MMDD
+            const dateTag = today.replace(/-/g,'').slice(4); // MMDD
+            const prefix = (bulkForm.prefix || 'NIJI').toUpperCase().trim();
+            // 기존 번호와 겹치지 않게
+            const existing = new Set(coupons.map(c=>c.code));
+            const newCoupons = [];
+            const codes = [];
+            let seq = 1;
+            while (newCoupons.length < count) {
+              const code = `${prefix}-${dateTag}-${String(seq).padStart(3,'0')}`;
+              if (!existing.has(code)) {
+                newCoupons.push({
+                  id: Date.now() + seq,
+                  code,
+                  discount: parseFloat(bulkForm.discount),
+                  expiry: bulkForm.expiry,
+                  note: bulkForm.note,
+                  used: false, usedDate: '', usedFor: '',
+                  createdAt: today,
+                });
+                codes.push(code);
+              }
+              seq++;
+              if (seq > 9999) break;
+            }
+            saveCoupons([...coupons, ...newCoupons]);
+            setBulkResult(codes);
+          };
+
           const calculateTotalWithCoupon = () => {
             const base = calculateTotal();
             if (!appliedCoupon) return base;
@@ -370,11 +406,7 @@
           };
 
           const handleDeleteString = (key) => {
-            if (window.confirm(`'${key}' 스트링을 삭제할까요?`)) {
-              const updated = {...customStrings};
-              delete updated[key];
-              saveCustomStrings(updated);
-            }
+            setConfirmModal({ msg: `'${key}' 스트링을 삭제할까요?`, onOk: () => { const updated = {...customStrings}; delete updated[key]; saveCustomStrings(updated); setConfirmModal(null); } });
           };
 
           // ── 필터 헬퍼 ─────────────────────────────────
@@ -482,7 +514,21 @@
 
           return (
             <div>
-              {/* ── 추가항목 저장 모달 ── */}
+              {/* ── 확인 모달 ── */}
+              {confirmModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                  style={{backgroundColor:'rgba(0,0,0,0.5)'}}>
+                  <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xs">
+                    <p className="text-base font-medium text-gray-800 mb-5 text-center">{confirmModal.msg}</p>
+                    <div className="flex gap-2">
+                      <button onClick={()=>setConfirmModal(null)}
+                        className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium">취소</button>
+                      <button onClick={confirmModal.onOk}
+                        className="flex-1 py-3 bg-red-500 text-white rounded-xl font-medium">삭제</button>
+                    </div>
+                  </div>
+                </div>
+              )}
               {showAddExtraItemModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
                   style={{backgroundColor:'rgba(0,0,0,0.5)'}}>
@@ -518,7 +564,7 @@
                 </div>
               )}
 
-              {/* ── 스트링 추가 모달 ── */}
+              {/* ── 추가항목 저장 모달 ── */}
               {showAddModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
                   style={{backgroundColor:'rgba(0,0,0,0.5)'}}>
@@ -746,18 +792,22 @@
                     </div>
 
                     {/* 쿠폰 적용 */}
-                    {!editingId && coupons.filter(c=>!c.used).length > 0 && (
+                    {!editingId && (
                       <div className="border border-pink-200 bg-pink-50 rounded-lg p-3 space-y-2">
                         <p className="text-xs font-medium text-pink-700">🎫 쿠폰 적용</p>
-                        <div className="flex gap-2">
-                          <input type="text" value={couponInput}
-                            onChange={e=>{setCouponInput(e.target.value.toUpperCase()); setCouponMsg(''); setAppliedCoupon(null);}}
-                            placeholder="쿠폰번호 입력"
-                            className="flex-1 px-3 py-2 border border-pink-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 uppercase"
-                          />
-                          <button type="button" onClick={handleApplyCoupon}
-                            className="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm font-medium">적용</button>
-                        </div>
+                        {coupons.filter(c=>!c.used).length === 0 ? (
+                          <p className="text-xs text-gray-400">등록된 미사용 쿠폰이 없습니다.<br/>상단 🎫쿠폰 탭에서 먼저 등록해주세요.</p>
+                        ) : (
+                          <div className="flex gap-2">
+                            <input type="text" value={couponInput}
+                              onChange={e=>{setCouponInput(e.target.value.toUpperCase()); setCouponMsg(''); setAppliedCoupon(null);}}
+                              placeholder="쿠폰번호 입력"
+                              className="flex-1 px-3 py-2 border border-pink-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 uppercase"
+                            />
+                            <button type="button" onClick={handleApplyCoupon}
+                              className="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm font-medium">적용</button>
+                          </div>
+                        )}
                         {couponMsg && <p className="text-xs font-medium text-pink-700">{couponMsg}</p>}
                       </div>
                     )}
@@ -1062,11 +1112,96 @@
               {/* ── 쿠폰 관리 ── */}
               {viewMode === 'coupons' && (
                 <div className="mt-3 space-y-3">
-                  {/* 쿠폰 등록 버튼 */}
-                  <button onClick={()=>setShowCouponForm(!showCouponForm)}
-                    className="w-full py-3 bg-pink-500 text-white rounded-xl font-medium text-sm shadow">
-                    {showCouponForm ? '✕ 취소' : '➕ 쿠폰 등록'}
-                  </button>
+                  {/* 버튼 2개 나란히 */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={()=>{ setShowBulkForm(!showBulkForm); setShowCouponForm(false); setBulkResult(null); }}
+                      className="py-3 bg-purple-500 text-white rounded-xl font-medium text-sm shadow">
+                      {showBulkForm ? '✕ 취소' : '🎟️ 일괄 발행'}
+                    </button>
+                    <button onClick={()=>{ setShowCouponForm(!showCouponForm); setShowBulkForm(false); setBulkResult(null); }}
+                      className="py-3 bg-pink-500 text-white rounded-xl font-medium text-sm shadow">
+                      {showCouponForm ? '✕ 취소' : '➕ 1장 등록'}
+                    </button>
+                  </div>
+
+                  {/* 일괄 발행 폼 */}
+                  {showBulkForm && (
+                    <div className="bg-white rounded-xl shadow-lg p-4 space-y-3">
+                      <h3 className="text-sm font-bold text-gray-800">🎟️ 대회 찬조 쿠폰 일괄 발행</h3>
+                      <p className="text-xs text-gray-400">번호는 자동 생성돼요 예) NIJI-0406-001</p>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">앞자리 (영문)</label>
+                          <input type="text" value={bulkForm.prefix} maxLength={8}
+                            onChange={e=>setBulkForm({...bulkForm, prefix:e.target.value.toUpperCase()})}
+                            placeholder="NIJI"
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 uppercase"/>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">발행 장수 *</label>
+                          <input type="number" value={bulkForm.count} min="1" max="50"
+                            onChange={e=>setBulkForm({...bulkForm, count:e.target.value})}
+                            placeholder="5"
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">할인금액 (원) *</label>
+                          <input type="number" value={bulkForm.discount}
+                            onChange={e=>setBulkForm({...bulkForm, discount:e.target.value})}
+                            placeholder="예) 12000"
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">만료일</label>
+                          <input type="date" value={bulkForm.expiry}
+                            onChange={e=>setBulkForm({...bulkForm, expiry:e.target.value})}
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">메모 (대회명 등)</label>
+                        <input type="text" value={bulkForm.note}
+                          onChange={e=>setBulkForm({...bulkForm, note:e.target.value})}
+                          placeholder="예) 4월 월례대회 찬조"
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/>
+                      </div>
+
+                      <button onClick={handleBulkIssue}
+                        disabled={!bulkForm.discount || !bulkForm.count}
+                        className="w-full py-3 bg-purple-500 text-white rounded-xl font-medium text-sm disabled:opacity-40">
+                        🎟️ {bulkForm.count || 0}장 발행하기
+                      </button>
+
+                      {/* 발행 결과 */}
+                      {bulkResult && (
+                        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-2">
+                          <p className="text-xs font-bold text-purple-700">✅ {bulkResult.length}장 발행 완료! 카카오톡으로 전송하세요.</p>
+                          <div className="space-y-1">
+                            {bulkResult.map((code, i) => (
+                              <div key={i} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-purple-100">
+                                <span className="font-mono text-sm font-bold text-gray-800">{code}</span>
+                                <button onClick={()=>{
+                                  if (navigator.clipboard) navigator.clipboard.writeText(code);
+                                }} className="text-xs text-purple-500 px-2 py-1 bg-purple-100 rounded-lg">복사</button>
+                              </div>
+                            ))}
+                          </div>
+                          <button onClick={()=>{
+                            const text = bulkResult.join('\n');
+                            if (navigator.clipboard) navigator.clipboard.writeText(text);
+                          }} className="w-full py-2 bg-purple-500 text-white rounded-lg text-xs font-medium">
+                            📋 전체 번호 한번에 복사
+                          </button>
+                          <p className="text-xs text-gray-400 text-center">복사 후 카카오톡에 붙여넣기 하세요</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* 등록 폼 */}
                   {showCouponForm && (
@@ -1149,7 +1284,7 @@
                               {c.note && <p className="text-xs text-gray-400">{c.note}</p>}
                             </div>
                           </div>
-                          <button onClick={()=>{if(window.confirm('쿠폰을 삭제할까요?')) saveCoupons(coupons.filter(x=>x.id!==c.id));}}
+                          <button onClick={()=>{ setConfirmModal({ msg:'쿠폰을 삭제할까요?', onOk:()=>{ saveCoupons(coupons.filter(x=>x.id!==c.id)); setConfirmModal(null); } }); }}
                             className="p-2 text-red-400 hover:bg-red-50 rounded-lg">🗑️</button>
                         </div>
                       );
