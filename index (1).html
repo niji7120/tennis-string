@@ -12,6 +12,22 @@
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyCx4aVqStCesIvvDl8xGLFXLzEHw4ItsXE",
+        authDomain: "niji-string1.firebaseapp.com",
+        databaseURL: "https://niji-string1-default-rtdb.firebaseio.com",
+        projectId: "niji-string1",
+        storageBucket: "niji-string1.firebasestorage.app",
+        messagingSenderId: "1088629586415",
+        appId: "1:1088629586415:web:5a231bd26dd33ff9935e1a"
+      };
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.database();
+    </script>
     <style>
         body {
             margin: 0; padding: 0;
@@ -151,74 +167,86 @@
 
           const [formData, setFormData] = useState(emptyForm());
 
-          // localStorage 키 (스포츠별 분리)
-          const storageKey = 'stringing-records-' + sport;
-          const stringsKey = 'stringing-all-strings-v2-' + sport;
-          const couponKey = 'stringing-coupons-' + sport;
+          // Firebase 경로 (스포츠별 분리)
+          const fbBase = 'nijistring/' + sport;
+
+          const [fbLoading, setFbLoading] = useState(true);
 
           useEffect(() => {
-            try {
-              const saved = localStorage.getItem(storageKey);
-              if (saved) {
-                setRecords(JSON.parse(saved));
+            setFbLoading(true);
+            // records 실시간 구독
+            const recRef = db.ref(fbBase + '/records');
+            recRef.on('value', snap => {
+              const val = snap.val();
+              if (val) {
+                const arr = Object.values(val).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+                setRecords(arr);
               } else {
-                const data = config.initialData.map((r, i) => ({
-                  ...r,
-                  id: Date.now() + i,
-                  total: (parseFloat(r.stringPrice) + parseFloat(r.labor)) * parseInt(r.quantity),
-                  createdAt: new Date(r.date).getTime() + i,
-                }));
-                setRecords(data);
-                localStorage.setItem(storageKey, JSON.stringify(data));
+                // 최초: 초기 데이터 Firebase에 저장
+                if (config.initialData.length > 0) {
+                  const data = {};
+                  config.initialData.forEach((r, i) => {
+                    const id = Date.now() + i;
+                    data[id] = { ...r, id, total: (parseFloat(r.stringPrice)+parseFloat(r.labor))*parseInt(r.quantity), createdAt: new Date(r.date).getTime()+i };
+                  });
+                  recRef.set(data);
+                } else {
+                  setRecords([]);
+                }
               }
-              const savedStrings = localStorage.getItem(stringsKey);
-              if (savedStrings) {
-                setCustomStrings(JSON.parse(savedStrings));
-              } else {
-                // 최초: 기본 스트링으로 초기화 (배드민턴은 빈 객체)
-                setCustomStrings({...config.defaultStrings});
-              }
-              const savedCoupons = localStorage.getItem(couponKey);
-              if (savedCoupons) setCoupons(JSON.parse(savedCoupons));
-              const savedExtras = localStorage.getItem(extraItemsKey);
-              if (savedExtras) setSavedExtraItems(JSON.parse(savedExtras));
-              else setSavedExtraItems(DEFAULT_EXTRA_ITEMS.map(n=>({name:n, price:''})));
-            } catch(e) {
-              console.log('데이터 로드 오류:', e);
-            }
+              setFbLoading(false);
+            });
+            // strings 구독
+            db.ref(fbBase + '/strings').on('value', snap => {
+              const val = snap.val();
+              setCustomStrings(val || {...config.defaultStrings});
+            });
+            // coupons 구독
+            db.ref(fbBase + '/coupons').on('value', snap => {
+              const val = snap.val();
+              setCoupons(val ? Object.values(val) : []);
+            });
+            // extraItems 구독
+            db.ref(fbBase + '/extraItems').on('value', snap => {
+              const val = snap.val();
+              setSavedExtraItems(val ? Object.values(val) : DEFAULT_EXTRA_ITEMS.map(n=>({name:n, price:''})));
+            });
             setFormData(emptyForm());
             setAppliedCoupon(null);
             setCouponInput('');
             setCouponMsg('');
             setExtraWorks([]);
             setShowExtraSection(false);
+            return () => { db.ref(fbBase).off(); };
           }, [sport]);
 
           // records 저장
           const saveRecords = (newRecords) => {
             setRecords(newRecords);
-            try {
-              localStorage.setItem(storageKey, JSON.stringify(newRecords));
-            } catch(e) {
-              alert('저장 실패: 데이터 용량이 초과됐습니다.');
-            }
+            const data = {};
+            newRecords.forEach(r => { data[r.id] = r; });
+            db.ref(fbBase + '/records').set(data).catch(e => alert('저장 실패: ' + e.message));
           };
 
           // coupons 저장
           const saveCoupons = (arr) => {
             setCoupons(arr);
-            try { localStorage.setItem(couponKey, JSON.stringify(arr)); } catch(e) {}
+            const data = {};
+            arr.forEach(c => { data[c.id] = c; });
+            db.ref(fbBase + '/coupons').set(data).catch(()=>{});
           };
 
           // strings 저장
           const saveCustomStrings = (newStrings) => {
             setCustomStrings(newStrings);
-            try { localStorage.setItem(stringsKey, JSON.stringify(newStrings)); } catch(e) {}
+            db.ref(fbBase + '/strings').set(newStrings).catch(()=>{});
           };
 
           const saveExtraItems = (items) => {
             setSavedExtraItems(items);
-            try { localStorage.setItem(extraItemsKey, JSON.stringify(items)); } catch(e) {}
+            const data = {};
+            items.forEach((it,i) => { data[i] = it; });
+            db.ref(fbBase + '/extraItems').set(data).catch(()=>{});
           };
 
           // ── 계산 ─────────────────────────────────────
@@ -509,6 +537,13 @@
                   ➕ 새 스트링 추가
                 </button>
               </div>
+            </div>
+          );
+
+          if (fbLoading) return (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+              <p className="text-4xl mb-3">☁️</p>
+              <p className="text-sm">데이터 불러오는 중...</p>
             </div>
           );
 
