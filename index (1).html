@@ -10,8 +10,8 @@
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
-    <!-- SheetJS (엑셀 처리) -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <!-- SheetJS 엑셀 라이브러리 -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -420,78 +420,6 @@ const StringingApp = ({ sport, uid }) => {
         try { await db.ref(dbPath(uid, sport, 'extraItems')).set(items); } catch(e) {}
     };
 
-    // ── 엑셀 내보내기 ─────────────────────────────
-    const handleExportExcel = () => {
-        if (!records.length) { alert('내보낼 데이터가 없습니다.'); return; }
-        const sportLabel = sport === 'tennis' ? '테니스' : '배드민턴';
-        const rows = [...records]
-            .sort((a,b)=>{ if(b.date!==a.date) return b.date.localeCompare(a.date); return (b.createdAt||0)-(a.createdAt||0); })
-            .map(r => ({
-                '날짜': r.date, '고객명': r.name, '라켓명': r.racket, '패턴': r.pattern,
-                '스트링': r.stringType, '스트링가격': parseFloat(r.stringPrice)||0,
-                '공임': parseFloat(r.labor)||0, '수량': parseInt(r.quantity)||1,
-                '하이브리드': r.isHybrid ? 'Y' : 'N',
-                '하이브리드스트링2': r.hybridString2||'', '하이브리드가격2': parseFloat(r.hybridPrice2)||0,
-                '텐션': r.tension||'', '텐션H': r.tensionH||'', '텐션V': r.tensionV||'',
-                '추가작업': (r.extraWorks||[]).map(w=>`${w.name}:${w.price}`).join('|'),
-                '쿠폰코드': r.couponCode||'', '쿠폰할인': parseFloat(r.couponDiscount)||0, '합계': r.total||0,
-            }));
-        const ws = XLSX.utils.json_to_sheet(rows);
-        const colWidths = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length*2, 12) }));
-        ws['!cols'] = colWidths;
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, sportLabel);
-        const today = getTodayKST().replace(/-/g,'');
-        XLSX.writeFile(wb, `니지스트링_${sportLabel}_${today}.xlsx`);
-    };
-
-    const [importing, setImporting] = useState(false);
-    const importRef = useRef(null);
-
-    const handleImportExcel = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        e.target.value = '';
-        setImporting(true);
-        try {
-            const data = await file.arrayBuffer();
-            const wb = XLSX.read(data);
-            const ws = wb.Sheets[wb.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(ws);
-            if (!rows.length) { alert('데이터가 없습니다.'); setImporting(false); return; }
-            const ref = db.ref(dbPath(uid, sport, 'records'));
-            let added = 0;
-            for (const row of rows) {
-                const name = String(row['고객명']||'').trim();
-                const date = String(row['날짜']||'').trim();
-                if (!name || !date) continue;
-                const isDup = records.some(r=>r.date===date && r.name===name && String(r.stringType)===String(row['스트링']||'').trim());
-                if (isDup) continue;
-                const extraWorksRaw = String(row['추가작업']||'');
-                const ew = extraWorksRaw ? extraWorksRaw.split('|').map(s=>{const[n,p]=s.split(':');return{name:n||'',price:p||''};}).filter(w=>w.name) : [];
-                const rec = {
-                    id: Date.now() + Math.random(), date, name,
-                    racket: String(row['라켓명']||''), pattern: String(row['패턴']||config.patterns[0]),
-                    stringType: String(row['스트링']||''), stringPrice: String(row['스트링가격']||0),
-                    labor: String(row['공임']||0), quantity: parseInt(row['수량'])||1,
-                    isHybrid: String(row['하이브리드']||'N')==='Y',
-                    hybridString2: String(row['하이브리드스트링2']||''), hybridPrice2: String(row['하이브리드가격2']||''),
-                    tension: String(row['텐션']||''), tensionH: String(row['텐션H']||''), tensionV: String(row['텐션V']||''),
-                    extraWorks: ew, couponCode: String(row['쿠폰코드']||''),
-                    couponDiscount: parseFloat(row['쿠폰할인'])||0, total: parseFloat(row['합계'])||0,
-                    createdAt: Date.now() + added,
-                };
-                const newKey = ref.push().key;
-                await ref.child(newKey).set({...rec, fbKey: newKey});
-                added++;
-            }
-            alert(`✅ ${added}건 가져오기 완료!\n(중복 데이터는 건너뜀)`);
-        } catch(err) {
-            alert('❌ 가져오기 실패: ' + err.message);
-        }
-        setImporting(false);
-    };
-
     // ── 계산 ─────────────────────────────────────
     const calculateExtraTotal = () => extraWorks.reduce((sum,w) => sum+(parseFloat(w.price)||0), 0);
 
@@ -634,6 +562,107 @@ const StringingApp = ({ sport, uid }) => {
         }
         await saveCouponsMany([...coupons, ...newCoupons]);
         setBulkResult(newCoupons.map(c=>c.code));
+    };
+
+    // ── 엑셀 내보내기 ─────────────────────────────
+    const handleExportExcel = () => {
+        if (records.length === 0) { alert('내보낼 데이터가 없습니다.'); return; }
+        const rows = [...records]
+            .sort((a,b) => a.date.localeCompare(b.date))
+            .map(r => ({
+                '날짜': r.date,
+                '고객명': r.name,
+                '라켓명': r.racket,
+                '패턴': r.pattern,
+                '스트링': r.stringType,
+                '스트링가격': parseInt(r.stringPrice)||0,
+                '하이브리드': r.isHybrid ? r.hybridString2 : '',
+                '하이브리드가격': r.isHybrid ? (parseInt(r.hybridPrice2)||0) : '',
+                '공임비': parseInt(r.labor)||0,
+                '수량': parseInt(r.quantity)||1,
+                '텐션': r.tension||'',
+                '추가작업': (r.extraWorks||[]).map(w=>w.name).join(', '),
+                '추가작업금액': (r.extraWorks||[]).reduce((s,w)=>s+(parseFloat(w.price)||0),0),
+                '쿠폰코드': r.couponCode||'',
+                '쿠폰할인': parseInt(r.couponDiscount)||0,
+                '최종금액': parseInt(r.total)||0,
+            }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        // 컬럼 너비 자동 조정
+        const colWidths = Object.keys(rows[0]||{}).map(k => ({ wch: Math.max(k.length*2, 12) }));
+        ws['!cols'] = colWidths;
+        const wb = XLSX.utils.book_new();
+        const sheetName = sport === 'tennis' ? '테니스작업' : '배드민턴작업';
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        const today = getTodayKST().replace(/-/g,'');
+        XLSX.writeFile(wb, `니지스트링_${sheetName}_${today}.xlsx`);
+    };
+
+    // ── 엑셀 불러오기 ─────────────────────────────
+    const handleImportExcel = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            try {
+                const data = new Uint8Array(ev.target.result);
+                const wb = XLSX.read(data, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(ws);
+                if (rows.length === 0) { alert('엑셀 파일에 데이터가 없습니다.'); return; }
+
+                // 필수 컬럼 체크
+                const firstRow = rows[0];
+                if (!firstRow['날짜'] || !firstRow['고객명']) {
+                    alert('엑셀 파일 형식이 맞지 않습니다.\n먼저 내보내기로 양식을 받아서 사용해 주세요.');
+                    return;
+                }
+
+                const confirm = window.confirm ? window.confirm(`${rows.length}건을 불러올까요?\n(기존 데이터에 추가됩니다)`) : true;
+                if (!confirm) return;
+
+                const ref = db.ref(dbPath(uid, sport, 'records'));
+                const batch = {};
+                rows.forEach((row, i) => {
+                    const key = ref.push().key;
+                    const sp = parseFloat(row['스트링가격'])||0;
+                    const labor = parseFloat(row['공임비'])||0;
+                    const qty = parseInt(row['수량'])||1;
+                    const extra = parseFloat(row['추가작업금액'])||0;
+                    const couponDiscount = parseFloat(row['쿠폰할인'])||0;
+                    const total = row['최종금액'] ? (parseFloat(row['최종금액'])||0) : (sp+labor)*qty+extra-couponDiscount;
+                    const extraNames = row['추가작업'] ? row['추가작업'].split(',').map(n=>n.trim()).filter(Boolean) : [];
+                    const extraPrice = extraNames.length > 0 ? Math.round(extra/extraNames.length) : 0;
+                    batch[key] = {
+                        fbKey: key,
+                        id: Date.now()+i,
+                        createdAt: Date.now()+i,
+                        date: String(row['날짜']||getTodayKST()).trim(),
+                        name: String(row['고객명']||'').trim(),
+                        racket: String(row['라켓명']||'').trim(),
+                        pattern: String(row['패턴']||config.patterns[0]).trim(),
+                        stringType: String(row['스트링']||'').trim(),
+                        stringPrice: String(sp),
+                        isHybrid: !!(row['하이브리드']),
+                        hybridString2: String(row['하이브리드']||'').trim(),
+                        hybridPrice2: String(row['하이브리드가격']||'').trim(),
+                        labor: String(labor),
+                        quantity: qty,
+                        tension: String(row['텐션']||'').trim(),
+                        extraWorks: extraNames.map(n=>({name:n, price:String(extraPrice)})),
+                        couponCode: String(row['쿠폰코드']||'').trim(),
+                        couponDiscount: couponDiscount,
+                        total: total,
+                    };
+                });
+                await ref.update(batch);
+                alert(`✅ ${rows.length}건을 성공적으로 불러왔습니다!`);
+            } catch(err) {
+                alert('파일 읽기 오류: ' + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        e.target.value = ''; // 같은 파일 다시 선택 가능하도록
     };
 
     // ── 필터 헬퍼 ─────────────────────────────────
@@ -782,20 +811,6 @@ const StringingApp = ({ sport, uid }) => {
                 </div>
             )}
 
-            {/* ── 엑셀 내보내기/가져오기 ── */}
-            <div className="flex gap-2 mb-2">
-                <button onClick={handleExportExcel}
-                    className="flex-1 py-2 bg-emerald-500 text-white rounded-lg font-medium text-xs shadow flex items-center justify-center gap-1">
-                    📥 엑셀로 저장
-                </button>
-                <button onClick={()=>importRef.current&&importRef.current.click()}
-                    disabled={importing}
-                    className="flex-1 py-2 bg-sky-500 text-white rounded-lg font-medium text-xs shadow flex items-center justify-center gap-1 disabled:opacity-50">
-                    {importing ? '⏳ 불러오는 중...' : '📤 엑셀 불러오기'}
-                </button>
-                <input ref={importRef} type="file" accept=".xlsx,.xls" style={{display:'none'}} onChange={handleImportExcel}/>
-            </div>
-
             {/* ── 상단 탭 바 ── */}
             <div className="grid grid-cols-5 gap-1 mb-3">
                 {[['customers','👥 고객',activeBtnClass],['coupons','🎫 쿠폰','bg-pink-500 text-white'],['strings','🎯 스트링','bg-yellow-500 text-white'],['monthly','📅 월별','bg-orange-500 text-white'],['yearly','📈 연도별','bg-purple-500 text-white']].map(([mode, label, cls])=>(
@@ -805,13 +820,26 @@ const StringingApp = ({ sport, uid }) => {
 
             {/* ── 검색 + 등록 ── */}
             {viewMode==='customers' && (
-                <div className="flex gap-2">
-                    <input type="text" placeholder="고객 검색..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
-                        className={`flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}/>
-                    <button onClick={()=>setShowForm(!showForm)}
-                        className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap ${showForm?'bg-gray-400 text-white':(color==='green'?'bg-green-500 text-white':'bg-blue-500 text-white')}`}>
-                        {showForm?'✕ 취소':'➕ 등록'}
-                    </button>
+                <div className="space-y-2">
+                    <div className="flex gap-2">
+                        <input type="text" placeholder="고객 검색..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
+                            className={`flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}/>
+                        <button onClick={()=>setShowForm(!showForm)}
+                            className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap ${showForm?'bg-gray-400 text-white':(color==='green'?'bg-green-500 text-white':'bg-blue-500 text-white')}`}>
+                            {showForm?'✕ 취소':'➕ 등록'}
+                        </button>
+                    </div>
+                    {/* 엑셀 버튼 */}
+                    <div className="flex gap-2">
+                        <button onClick={handleExportExcel}
+                            className="flex-1 py-2 bg-emerald-600 text-white rounded-lg font-medium text-xs flex items-center justify-center gap-1">
+                            📤 엑셀로 내보내기
+                        </button>
+                        <label className="flex-1 py-2 bg-teal-600 text-white rounded-lg font-medium text-xs flex items-center justify-center gap-1 cursor-pointer">
+                            📥 엑셀 불러오기
+                            <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} className="hidden"/>
+                        </label>
+                    </div>
                 </div>
             )}
 
