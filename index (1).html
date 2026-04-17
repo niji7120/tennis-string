@@ -7,12 +7,9 @@
     <title>니지스트링 작업 관리</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com/3.4.1"></script>
-    <!-- SheetJS 엑셀 라이브러리 -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -29,7 +26,6 @@
 <div id="root"></div>
 
 <script>
-// ── Firebase 초기화 ──────────────────────────────────
 const firebaseConfig = {
     apiKey: "AIzaSyBAMGaF-5vqELG_vaSHUgBhKi0Fe6tMflI",
     authDomain: "rucci-string260414.firebaseapp.com",
@@ -37,8 +33,7 @@ const firebaseConfig = {
     projectId: "rucci-string260414",
     storageBucket: "rucci-string260414.firebasestorage.app",
     messagingSenderId: "445012947600",
-    appId: "1:445012947600:web:9b408e72ad336a67041e15",
-    measurementId: "G-XL1XXRBXTN"
+    appId: "1:445012947600:web:9b408e72ad336a67041e15"
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -48,7 +43,7 @@ const db = firebase.database();
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
 
-// ── 초성 검색 유틸 ──────────────────────────────
+// ── 초성 검색 ──────────────────────────────────────
 const getChosung = (str) => {
     const list = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
     return [...str].map(c => { const code = c.charCodeAt(0) - 44032; return (code > -1 && code < 11172) ? list[Math.floor(code/588)] : c; }).join('');
@@ -58,17 +53,17 @@ const matchChosung = (str, search) => {
     return str.toLowerCase().includes(search.toLowerCase()) || getChosung(str).includes(search);
 };
 
-// ── KST 오늘 날짜 ────────────────────────────────
+// ── KST 오늘 날짜 ──────────────────────────────────
 const getTodayKST = () => {
     const d = new Date();
     const kst = new Date(d.getTime() + 9*60*60*1000);
     return kst.toISOString().split('T')[0];
 };
 
-// ── Firebase DB 경로 헬퍼 ────────────────────────
+// ── Firebase 경로 ───────────────────────────────────
 const dbPath = (uid, sport, node) => `users/${uid}/${sport}/${node}`;
 
-// ── 스포츠별 설정 ────────────────────────────────
+// ── 스포츠 설정 ─────────────────────────────────────
 const SPORTS_CONFIG = {
     tennis: {
         label: '🎾 테니스', color: 'green',
@@ -108,15 +103,15 @@ const SPORTS_CONFIG = {
     },
 };
 
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 // 🔐 로그인 화면
-// ═══════════════════════════════════════════════════
-const LoginScreen = ({ onLogin }) => {
+// ══════════════════════════════════════════════
+const LoginScreen = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [mode, setMode] = useState('login'); // 'login' | 'register' | 'reset'
+    const [mode, setMode] = useState('login');
     const [resetSent, setResetSent] = useState(false);
 
     const handleSubmit = async () => {
@@ -140,7 +135,7 @@ const LoginScreen = ({ onLogin }) => {
                 'auth/invalid-email': '이메일 형식이 올바르지 않습니다.',
                 'auth/too-many-requests': '요청이 너무 많습니다. 잠시 후 다시 시도하세요.',
                 'auth/invalid-credential': '이메일 또는 비밀번호가 올바르지 않습니다.',
-            }[e.code] || '오류가 발생했습니다: ' + e.message;
+            }[e.code] || '오류: ' + e.message;
             setError(msg);
         }
         setLoading(false);
@@ -165,12 +160,10 @@ const LoginScreen = ({ onLogin }) => {
                     <h1 className="text-xl font-bold text-gray-800">니지스트링</h1>
                     <p className="text-sm text-gray-400 mt-1">스트링 작업 관리 시스템</p>
                 </div>
-
                 <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
                     <button onClick={()=>{setMode('login');setError('');}} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${mode==='login'?'bg-white text-green-600 shadow':'text-gray-500'}`}>로그인</button>
                     <button onClick={()=>{setMode('register');setError('');}} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${mode==='register'?'bg-white text-green-600 shadow':'text-gray-500'}`}>회원가입</button>
                 </div>
-
                 <div className="space-y-3">
                     <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">이메일</label>
@@ -205,23 +198,23 @@ const LoginScreen = ({ onLogin }) => {
     );
 };
 
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 // 📱 메인 스트링 앱
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 const StringingApp = ({ sport, uid }) => {
     const config = SPORTS_CONFIG[sport];
     const color = config.color;
+    const DEFAULT_EXTRA_ITEMS = ['스텐실 작업','범퍼 교체','오버그립','그립테이프','진동방지구','기타'];
 
-    // ── State ────────────────────────────────────
+    // ── State ──────────────────────────────────
     const [records, setRecords] = useState([]);
     const [customStrings, setCustomStrings] = useState({});
     const [coupons, setCoupons] = useState([]);
-    const [savedExtraItems, setSavedExtraItems] = useState([]);
+    const [savedExtraItems, setSavedExtraItems] = useState(DEFAULT_EXTRA_ITEMS.map(n=>({name:n,price:''})));
     const [dbLoading, setDbLoading] = useState(true);
-    const [initialized, setInitialized] = useState(false);
 
     const [showForm, setShowForm] = useState(false);
-    const [editingId, setEditingId] = useState(null);
+    const [editingId, setEditingId] = useState(null);   // fbKey 문자열로 통일
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState('customers');
     const [showAddModal, setShowAddModal] = useState(false);
@@ -235,7 +228,7 @@ const StringingApp = ({ sport, uid }) => {
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponInput, setCouponInput] = useState('');
     const [couponMsg, setCouponMsg] = useState('');
-    const [confirmModal, setConfirmModal] = useState(null);
+    const [confirmModal, setConfirmModal] = useState(null); // {msg, onOk, okLabel, cancelLabel}
     const [showBulkForm, setShowBulkForm] = useState(false);
     const [bulkForm, setBulkForm] = useState({prefix:'NIJI',count:'5',discount:'',expiry:'',note:''});
     const [bulkResult, setBulkResult] = useState(null);
@@ -249,33 +242,32 @@ const StringingApp = ({ sport, uid }) => {
     const [showAddExtraItemModal, setShowAddExtraItemModal] = useState(false);
     const [newExtraItemName, setNewExtraItemName] = useState('');
     const [newExtraItemPrice, setNewExtraItemPrice] = useState('');
-    const [expandedCustomer, setExpandedCustomer] = useState(null);
-    const [saveStatus, setSaveStatus] = useState(''); // '', 'saving', 'saved', 'error'
+    const [saveStatus, setSaveStatus] = useState('');
 
-    const DEFAULT_EXTRA_ITEMS = ['스텐실 작업','범퍼 교체','오버그립','그립테이프','진동방지구','기타'];
     const stringPrices = {...config.defaultStrings, ...customStrings};
 
-    const emptyForm = () => ({
+    const makeEmptyForm = () => ({
         date: getTodayKST(), name:'', racket:'',
         pattern: config.patterns[0],
         stringType:'', stringPrice:'',
         labor: config.defaultLabors[0],
-        quantity:1, tension:'', tensionH:'', tensionV:'',
+        quantity:1, tension:'',
         isHybrid:false, hybridString2:'', hybridPrice2:'',
     });
-    const [formData, setFormData] = useState(emptyForm());
+    const [formData, setFormData] = useState(makeEmptyForm());
 
-    // ── 저장 상태 표시 헬퍼 ──────────────────────
+    // ── 저장 상태 토스트 ────────────────────────
     const showSaveStatus = (status) => {
         setSaveStatus(status);
         if (status === 'saved') setTimeout(() => setSaveStatus(''), 2000);
     };
 
-    // ── Firebase 실시간 구독 ──────────────────────
+    // ── 알림 모달 헬퍼 ──────────────────────────
+    const showAlert = (msg) => setConfirmModal({ msg, onOk:()=>setConfirmModal(null), okLabel:'확인', cancelLabel:null });
+
+    // ── Firebase 실시간 구독 ────────────────────
     useEffect(() => {
         setDbLoading(true);
-        setInitialized(false);
-
         const recordsRef = db.ref(dbPath(uid, sport, 'records'));
         const stringsRef = db.ref(dbPath(uid, sport, 'strings'));
         const couponsRef = db.ref(dbPath(uid, sport, 'coupons'));
@@ -283,27 +275,23 @@ const StringingApp = ({ sport, uid }) => {
 
         let loaded = {records:false, strings:false, coupons:false, extras:false};
         const checkAllLoaded = () => {
-            if (Object.values(loaded).every(Boolean)) {
-                setDbLoading(false);
-                setInitialized(true);
-            }
+            if (Object.values(loaded).every(Boolean)) setDbLoading(false);
         };
 
-        // records
-        const recUnsub = recordsRef.on('value', snap => {
+        // records 리스너
+        const recListener = snap => {
             const val = snap.val();
             if (val) {
                 const arr = Object.entries(val).map(([fbKey, v]) => ({...v, fbKey}));
                 arr.sort((a,b) => { if(b.date!==a.date) return b.date.localeCompare(a.date); return (b.createdAt||0)-(a.createdAt||0); });
                 setRecords(arr);
             } else if (!loaded.records) {
-                // 최초 초기 데이터 삽입 (테니스만)
                 if (sport === 'tennis' && config.initialData.length > 0) {
                     const batch = {};
                     config.initialData.forEach((r, i) => {
                         const key = recordsRef.push().key;
                         const total = (parseFloat(r.stringPrice)+parseFloat(r.labor))*parseInt(r.quantity);
-                        batch[key] = {...r, id:Date.now()+i, total, createdAt:new Date(r.date).getTime()+i, extraWorks:[], couponCode:'', couponDiscount:0};
+                        batch[key] = {...r, fbKey:key, id:key, total, createdAt:new Date(r.date).getTime()+i, extraWorks:[], couponCode:'', couponDiscount:0};
                     });
                     recordsRef.update(batch);
                 } else {
@@ -312,17 +300,19 @@ const StringingApp = ({ sport, uid }) => {
             }
             loaded.records = true;
             checkAllLoaded();
-        });
+        };
+        recordsRef.on('value', recListener);
 
-        // strings
-        const strUnsub = stringsRef.on('value', snap => {
+        // strings 리스너
+        const strListener = snap => {
             setCustomStrings(snap.val() || {});
             loaded.strings = true;
             checkAllLoaded();
-        });
+        };
+        stringsRef.on('value', strListener);
 
-        // coupons
-        const couUnsub = couponsRef.on('value', snap => {
+        // coupons 리스너
+        const couListener = snap => {
             const val = snap.val();
             if (val) {
                 const arr = Object.entries(val).map(([fbKey, v]) => ({...v, fbKey}));
@@ -330,36 +320,46 @@ const StringingApp = ({ sport, uid }) => {
             } else { setCoupons([]); }
             loaded.coupons = true;
             checkAllLoaded();
-        });
+        };
+        couponsRef.on('value', couListener);
 
-        // extraItems
-        const extUnsub = extrasRef.on('value', snap => {
+        // extraItems 리스너
+        const extListener = snap => {
             const val = snap.val();
-            if (val) { setSavedExtraItems(val); }
-            else { setSavedExtraItems(DEFAULT_EXTRA_ITEMS.map(n=>({name:n,price:''}))); }
+            if (val) {
+                // Firebase는 배열을 객체로 저장할 수 있으므로 변환
+                const items = Array.isArray(val) ? val : Object.values(val);
+                setSavedExtraItems(items.filter(Boolean));
+            } else {
+                setSavedExtraItems(DEFAULT_EXTRA_ITEMS.map(n=>({name:n,price:''})));
+            }
             loaded.extras = true;
             checkAllLoaded();
-        });
+        };
+        extrasRef.on('value', extListener);
 
         // 폼 초기화
-        setFormData(emptyForm());
+        setFormData(makeEmptyForm());
         setAppliedCoupon(null);
         setCouponInput('');
         setCouponMsg('');
         setExtraWorks([]);
         setShowExtraSection(false);
         setShowForm(false);
+        setEditingId(null);
         setViewMode('customers');
+        setSearchTerm('');
 
+        // 구독 해제 (리스너 함수를 정확히 넘겨야 중복 방지)
         return () => {
-            recordsRef.off('value', recUnsub);
-            stringsRef.off('value', strUnsub);
-            couponsRef.off('value', couUnsub);
-            extrasRef.off('value', extUnsub);
+            recordsRef.off('value', recListener);
+            stringsRef.off('value', strListener);
+            couponsRef.off('value', couListener);
+            extrasRef.off('value', extListener);
         };
     }, [uid, sport]);
 
-    // ── Firebase 저장 함수들 ──────────────────────
+    // ── Firebase 저장/삭제 함수 ─────────────────
     const saveRecord = async (rec) => {
         showSaveStatus('saving');
         try {
@@ -368,10 +368,10 @@ const StringingApp = ({ sport, uid }) => {
                 await ref.child(rec.fbKey).set(rec);
             } else {
                 const newKey = ref.push().key;
-                await ref.child(newKey).set({...rec, fbKey: newKey});
+                await ref.child(newKey).set({...rec, fbKey:newKey, id:newKey});
             }
             showSaveStatus('saved');
-        } catch(e) { showSaveStatus('error'); alert('저장 실패: ' + e.message); }
+        } catch(e) { showSaveStatus('error'); showAlert('저장 실패: ' + e.message); }
     };
 
     const deleteRecord = async (fbKey) => {
@@ -379,12 +379,12 @@ const StringingApp = ({ sport, uid }) => {
         try {
             await db.ref(dbPath(uid, sport, 'records')).child(fbKey).remove();
             showSaveStatus('saved');
-        } catch(e) { showSaveStatus('error'); alert('삭제 실패: ' + e.message); }
+        } catch(e) { showSaveStatus('error'); showAlert('삭제 실패: ' + e.message); }
     };
 
     const saveCustomStrings = async (newStrings) => {
         setCustomStrings(newStrings);
-        try { await db.ref(dbPath(uid, sport, 'strings')).set(newStrings); } catch(e) { alert('스트링 저장 실패'); }
+        try { await db.ref(dbPath(uid, sport, 'strings')).set(newStrings); } catch(e) { showAlert('스트링 저장 실패: ' + e.message); }
     };
 
     const saveCoupon = async (coupon) => {
@@ -394,112 +394,152 @@ const StringingApp = ({ sport, uid }) => {
                 await ref.child(coupon.fbKey).set(coupon);
             } else {
                 const newKey = ref.push().key;
-                await ref.child(newKey).set({...coupon, fbKey: newKey});
+                await ref.child(newKey).set({...coupon, fbKey:newKey});
             }
-        } catch(e) { alert('쿠폰 저장 실패'); }
+        } catch(e) { showAlert('쿠폰 저장 실패: ' + e.message); }
     };
 
     const saveCouponsMany = async (arr) => {
         try {
             const ref = db.ref(dbPath(uid, sport, 'coupons'));
-            const existing = {};
-            arr.filter(c=>c.fbKey).forEach(c => { existing[c.fbKey] = c; });
-            const newOnes = arr.filter(c=>!c.fbKey);
-            const batch = {...existing};
-            newOnes.forEach(c => { const k = ref.push().key; batch[k] = {...c, fbKey:k}; });
+            const batch = {};
+            arr.forEach(c => {
+                const k = c.fbKey || ref.push().key;
+                batch[k] = {...c, fbKey:k};
+            });
             await ref.set(batch);
-        } catch(e) { alert('쿠폰 저장 실패'); }
+        } catch(e) { showAlert('쿠폰 저장 실패: ' + e.message); }
     };
 
     const deleteCoupon = async (fbKey) => {
-        try { await db.ref(dbPath(uid, sport, 'coupons')).child(fbKey).remove(); } catch(e) { alert('쿠폰 삭제 실패'); }
+        try { await db.ref(dbPath(uid, sport, 'coupons')).child(fbKey).remove(); } catch(e) { showAlert('쿠폰 삭제 실패: ' + e.message); }
     };
 
     const saveExtraItems = async (items) => {
         setSavedExtraItems(items);
-        try { await db.ref(dbPath(uid, sport, 'extraItems')).set(items); } catch(e) {}
+        try {
+            // 배열을 객체로 변환해서 저장 (Firebase 배열 처리 안정화)
+            const obj = {};
+            items.forEach((item, i) => { obj[i] = item; });
+            await db.ref(dbPath(uid, sport, 'extraItems')).set(obj);
+        } catch(e) {}
     };
 
-    // ── 계산 ─────────────────────────────────────
-    const calculateExtraTotal = () => extraWorks.reduce((sum,w) => sum+(parseFloat(w.price)||0), 0);
+    // ── 계산 ───────────────────────────────────
+    const calcExtraTotal = (works) => (works||[]).reduce((s,w)=>s+(parseFloat(w.price)||0), 0);
 
-    const calculateTotal = (fd = formData) => {
+    const calcTotal = (fd, works) => {
         let sp = parseFloat(fd.stringPrice) || 0;
         const labor = parseFloat(fd.labor) || 0;
         const qty = parseInt(fd.quantity) || 1;
         const hybrid = fd.isHybrid ? 2000 : 0;
         if (fd.isHybrid && fd.hybridPrice2) sp = (sp+(parseFloat(fd.hybridPrice2)||0))/2;
-        return (sp+labor+hybrid)*qty + calculateExtraTotal();
+        return (sp+labor+hybrid)*qty + calcExtraTotal(works);
     };
 
-    const calculateTotalWithCoupon = () => {
-        const base = calculateTotal();
+    const calcTotalWithCoupon = () => {
+        const base = calcTotal(formData, extraWorks);
         if (!appliedCoupon) return base;
         return Math.max(0, base - parseFloat(appliedCoupon.discount));
     };
 
-    // ── CRUD ─────────────────────────────────────
+    // ── CRUD ───────────────────────────────────
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const finalTotal = calculateTotalWithCoupon();
+        const finalTotal = calcTotalWithCoupon();
+        const existingRec = editingId ? records.find(r=>r.fbKey===editingId) : null;
         const rec = {
-            id: editingId || Date.now(),
             ...formData,
+            fbKey: existingRec?.fbKey || null,
+            id: existingRec?.id || null,
             extraWorks: extraWorks.filter(w=>w.name.trim()),
             total: finalTotal,
-            couponCode: appliedCoupon ? appliedCoupon.code : '',
-            couponDiscount: appliedCoupon ? appliedCoupon.discount : 0,
-            createdAt: editingId ? (records.find(r=>r.id===editingId)?.createdAt||Date.now()) : Date.now(),
+            couponCode: appliedCoupon ? appliedCoupon.code : (existingRec?.couponCode || ''),
+            couponDiscount: appliedCoupon ? appliedCoupon.discount : (existingRec?.couponDiscount || 0),
+            createdAt: existingRec?.createdAt || Date.now(),
         };
-        if (editingId) {
-            const existing = records.find(r=>r.id===editingId);
-            if (existing?.fbKey) rec.fbKey = existing.fbKey;
-        }
         await saveRecord(rec);
 
-        // 쿠폰 사용 처리
+        // 쿠폰 사용 처리 (신규 등록일 때만)
         if (appliedCoupon && !editingId) {
             const updated = {...appliedCoupon, used:true, usedDate:getTodayKST(), usedFor:formData.name};
             await saveCoupon(updated);
         }
-        setAppliedCoupon(null); setCouponInput(''); setCouponMsg('');
+        setAppliedCoupon(null);
+        setCouponInput('');
+        setCouponMsg('');
         resetForm();
     };
 
     const resetForm = () => {
         const name = formData.name;
-        setFormData({...emptyForm(), name});
-        setShowForm(false); setEditingId(null);
-        setExtraWorks([]); setShowExtraSection(false);
+        setFormData({...makeEmptyForm(), name});
+        setShowForm(false);
+        setEditingId(null);
+        setExtraWorks([]);
+        setShowExtraSection(false);
     };
 
+    // ── 수정: fbKey 기준으로 통일 ───────────────
     const handleEdit = (rec) => {
-        setFormData({date:rec.date, name:rec.name, racket:rec.racket, pattern:rec.pattern, stringType:rec.stringType, stringPrice:rec.stringPrice, labor:rec.labor, quantity:rec.quantity, tension:rec.tension||'', tensionH:rec.tensionH||'', tensionV:rec.tensionV||'', isHybrid:rec.isHybrid||false, hybridString2:rec.hybridString2||'', hybridPrice2:rec.hybridPrice2||''});
+        setFormData({
+            date: rec.date, name: rec.name, racket: rec.racket,
+            pattern: rec.pattern, stringType: rec.stringType,
+            stringPrice: rec.stringPrice, labor: rec.labor,
+            quantity: rec.quantity, tension: rec.tension||'',
+            isHybrid: rec.isHybrid||false,
+            hybridString2: rec.hybridString2||'',
+            hybridPrice2: rec.hybridPrice2||'',
+        });
         const ew = rec.extraWorks || [];
-        setExtraWorks(ew); setShowExtraSection(ew.length>0);
-        setEditingId(rec.id); setShowForm(true);
+        setExtraWorks(ew);
+        setShowExtraSection(ew.length>0);
+        setEditingId(rec.fbKey);   // ← fbKey(문자열)로 통일
+        setAppliedCoupon(null);
+        setCouponInput('');
+        setCouponMsg('');
+        setShowForm(true);
+        setViewMode('customers');
+        window.scrollTo({top:0, behavior:'smooth'});
     };
 
     const handleDelete = (rec) => {
-        setConfirmModal({ msg:'정말 삭제하시겠습니까?', onOk:async ()=>{ await deleteRecord(rec.fbKey); setConfirmModal(null); } });
+        setConfirmModal({
+            msg: `'${rec.name}' 기록을 정말 삭제할까요?`,
+            onOk: async () => { await deleteRecord(rec.fbKey); setConfirmModal(null); },
+            okLabel: '삭제',
+            cancelLabel: '취소',
+        });
     };
 
-    // ── 드롭다운 핸들러 ───────────────────────────
+    // ── 드롭다운 핸들러 ─────────────────────────
     const handleStringSelect = (name, isSecond=false) => {
         const price = (stringPrices[name]||0).toString();
-        if (isSecond) { setFormData({...formData, hybridString2:name, hybridPrice2:price}); setShowHybridDropdown(false); }
-        else { setFormData({...formData, stringType:name, stringPrice:price}); setShowStringDropdown(false); }
+        if (isSecond) { setFormData(prev=>({...prev, hybridString2:name, hybridPrice2:price})); setShowHybridDropdown(false); }
+        else { setFormData(prev=>({...prev, stringType:name, stringPrice:price})); setShowStringDropdown(false); }
     };
 
     const handleNameSelect = (name) => {
-        const last = [...records].filter(r=>r.name===name).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
-        if (last) setFormData({date:getTodayKST(), name, racket:last.racket, pattern:last.pattern, stringType:last.stringType, stringPrice:last.stringPrice, labor:last.labor, quantity:last.quantity, isHybrid:last.isHybrid||false, hybridString2:last.hybridString2||'', hybridPrice2:last.hybridPrice2||''});
-        else setFormData({...formData, name});
+        const last = [...records].filter(r=>r.name===name).sort((a,b)=>b.date.localeCompare(a.date))[0];
+        if (last) {
+            setFormData({
+                date: getTodayKST(), name,
+                racket: last.racket, pattern: last.pattern,
+                stringType: last.stringType, stringPrice: last.stringPrice,
+                labor: last.labor, quantity: last.quantity,
+                tension: '',
+                isHybrid: last.isHybrid||false,
+                hybridString2: last.hybridString2||'',
+                hybridPrice2: last.hybridPrice2||'',
+            });
+        } else {
+            setFormData(prev=>({...prev, name}));
+        }
         setShowNameDropdown(false);
     };
 
     const handleNameChange = (name) => {
-        setFormData({...formData, name});
+        setFormData(prev=>({...prev, name}));
         const matches = getUniqueNames(name);
         if (name.length>0 && matches.length===1 && /^[ㄱ-ㅎ]+$/.test(name)) { handleNameSelect(matches[0]); return; }
         setShowNameDropdown(name.length>0 && matches.length>0);
@@ -527,10 +567,14 @@ const StringingApp = ({ sport, uid }) => {
     };
 
     const handleDeleteString = (key) => {
-        setConfirmModal({ msg:`'${key}' 스트링을 삭제할까요?`, onOk:async ()=>{ const u={...customStrings}; delete u[key]; await saveCustomStrings(u); setConfirmModal(null); } });
+        setConfirmModal({
+            msg: `'${key}' 스트링을 삭제할까요?`,
+            onOk: async () => { const u={...customStrings}; delete u[key]; await saveCustomStrings(u); setConfirmModal(null); },
+            okLabel: '삭제', cancelLabel: '취소',
+        });
     };
 
-    // 쿠폰 적용
+    // ── 쿠폰 적용 ──────────────────────────────
     const handleApplyCoupon = () => {
         const code = couponInput.trim().toUpperCase();
         const today = getTodayKST();
@@ -539,10 +583,10 @@ const StringingApp = ({ sport, uid }) => {
         if (found.used) { setCouponMsg('❌ 이미 사용된 쿠폰입니다.'); setAppliedCoupon(null); return; }
         if (found.expiry && found.expiry<today) { setCouponMsg('❌ 만료된 쿠폰입니다.'); setAppliedCoupon(null); return; }
         setAppliedCoupon(found);
-        setCouponMsg('✅ 쿠폰이 적용되었습니다! '+parseInt(found.discount).toLocaleString()+'원 할인');
+        setCouponMsg('✅ 쿠폰 적용! '+parseInt(found.discount).toLocaleString()+'원 할인');
     };
 
-    // 일괄 쿠폰 발행
+    // ── 일괄 쿠폰 발행 ─────────────────────────
     const handleBulkIssue = async () => {
         if (!bulkForm.discount || !bulkForm.count) return;
         const count = Math.min(parseInt(bulkForm.count)||1, 50);
@@ -555,7 +599,7 @@ const StringingApp = ({ sport, uid }) => {
         while (newCoupons.length < count) {
             const code = `${prefix}-${dateTag}-${String(seq).padStart(3,'0')}`;
             if (!existing.has(code)) {
-                newCoupons.push({ id:Date.now()+seq, code, discount:parseFloat(bulkForm.discount), expiry:bulkForm.expiry, note:bulkForm.note, used:false, usedDate:'', usedFor:'', createdAt:today });
+                newCoupons.push({ code, discount:parseFloat(bulkForm.discount), expiry:bulkForm.expiry, note:bulkForm.note, used:false, usedDate:'', usedFor:'', createdAt:today });
             }
             seq++;
             if (seq>9999) break;
@@ -564,9 +608,9 @@ const StringingApp = ({ sport, uid }) => {
         setBulkResult(newCoupons.map(c=>c.code));
     };
 
-    // ── 엑셀 내보내기 ─────────────────────────────
+    // ── 엑셀 내보내기 ──────────────────────────
     const handleExportExcel = () => {
-        if (records.length === 0) { alert('내보낼 데이터가 없습니다.'); return; }
+        if (records.length === 0) { showAlert('내보낼 데이터가 없습니다.'); return; }
         const rows = [...records]
             .sort((a,b) => a.date.localeCompare(b.date))
             .map(r => ({
@@ -588,7 +632,6 @@ const StringingApp = ({ sport, uid }) => {
                 '최종금액': parseInt(r.total)||0,
             }));
         const ws = XLSX.utils.json_to_sheet(rows);
-        // 컬럼 너비 자동 조정
         const colWidths = Object.keys(rows[0]||{}).map(k => ({ wch: Math.max(k.length*2, 12) }));
         ws['!cols'] = colWidths;
         const wb = XLSX.utils.book_new();
@@ -598,7 +641,7 @@ const StringingApp = ({ sport, uid }) => {
         XLSX.writeFile(wb, `니지스트링_${sheetName}_${today}.xlsx`);
     };
 
-    // ── 엑셀 불러오기 ─────────────────────────────
+    // ── 엑셀 불러오기 (모바일 호환 모달 사용) ──
     const handleImportExcel = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -609,80 +652,87 @@ const StringingApp = ({ sport, uid }) => {
                 const wb = XLSX.read(data, { type: 'array' });
                 const ws = wb.Sheets[wb.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(ws);
-                if (rows.length === 0) { alert('엑셀 파일에 데이터가 없습니다.'); return; }
-
-                // 필수 컬럼 체크
+                if (rows.length === 0) { showAlert('엑셀 파일에 데이터가 없습니다.'); return; }
                 const firstRow = rows[0];
                 if (!firstRow['날짜'] || !firstRow['고객명']) {
-                    alert('엑셀 파일 형식이 맞지 않습니다.\n먼저 내보내기로 양식을 받아서 사용해 주세요.');
+                    showAlert('엑셀 파일 형식이 맞지 않습니다.\n먼저 내보내기로 양식을 받아서 사용해 주세요.');
                     return;
                 }
-
-                const confirm = window.confirm ? window.confirm(`${rows.length}건을 불러올까요?\n(기존 데이터에 추가됩니다)`) : true;
-                if (!confirm) return;
-
-                const ref = db.ref(dbPath(uid, sport, 'records'));
-                const batch = {};
-                rows.forEach((row, i) => {
-                    const key = ref.push().key;
-                    const sp = parseFloat(row['스트링가격'])||0;
-                    const labor = parseFloat(row['공임비'])||0;
-                    const qty = parseInt(row['수량'])||1;
-                    const extra = parseFloat(row['추가작업금액'])||0;
-                    const couponDiscount = parseFloat(row['쿠폰할인'])||0;
-                    const total = row['최종금액'] ? (parseFloat(row['최종금액'])||0) : (sp+labor)*qty+extra-couponDiscount;
-                    const extraNames = row['추가작업'] ? row['추가작업'].split(',').map(n=>n.trim()).filter(Boolean) : [];
-                    const extraPrice = extraNames.length > 0 ? Math.round(extra/extraNames.length) : 0;
-                    batch[key] = {
-                        fbKey: key,
-                        id: Date.now()+i,
-                        createdAt: Date.now()+i,
-                        date: String(row['날짜']||getTodayKST()).trim(),
-                        name: String(row['고객명']||'').trim(),
-                        racket: String(row['라켓명']||'').trim(),
-                        pattern: String(row['패턴']||config.patterns[0]).trim(),
-                        stringType: String(row['스트링']||'').trim(),
-                        stringPrice: String(sp),
-                        isHybrid: !!(row['하이브리드']),
-                        hybridString2: String(row['하이브리드']||'').trim(),
-                        hybridPrice2: String(row['하이브리드가격']||'').trim(),
-                        labor: String(labor),
-                        quantity: qty,
-                        tension: String(row['텐션']||'').trim(),
-                        extraWorks: extraNames.map(n=>({name:n, price:String(extraPrice)})),
-                        couponCode: String(row['쿠폰코드']||'').trim(),
-                        couponDiscount: couponDiscount,
-                        total: total,
-                    };
+                setConfirmModal({
+                    msg: `${rows.length}건을 불러올까요?\n(기존 데이터에 추가됩니다)`,
+                    okLabel: '불러오기',
+                    cancelLabel: '취소',
+                    onOk: async () => {
+                        setConfirmModal(null);
+                        try {
+                            const ref = db.ref(dbPath(uid, sport, 'records'));
+                            const batch = {};
+                            rows.forEach((row, i) => {
+                                const key = ref.push().key;
+                                const sp = parseFloat(row['스트링가격'])||0;
+                                const labor = parseFloat(row['공임비'])||0;
+                                const qty = parseInt(row['수량'])||1;
+                                const extra = parseFloat(row['추가작업금액'])||0;
+                                const couponDiscount = parseFloat(row['쿠폰할인'])||0;
+                                const total = row['최종금액'] ? (parseFloat(row['최종금액'])||0) : (sp+labor)*qty+extra-couponDiscount;
+                                const extraNames = row['추가작업'] ? row['추가작업'].split(',').map(n=>n.trim()).filter(Boolean) : [];
+                                const extraPrice = extraNames.length > 0 ? Math.round(extra/extraNames.length) : 0;
+                                batch[key] = {
+                                    fbKey:key, id:key,
+                                    createdAt: Date.now()+i,
+                                    date: String(row['날짜']||getTodayKST()).trim(),
+                                    name: String(row['고객명']||'').trim(),
+                                    racket: String(row['라켓명']||'').trim(),
+                                    pattern: String(row['패턴']||config.patterns[0]).trim(),
+                                    stringType: String(row['스트링']||'').trim(),
+                                    stringPrice: String(sp),
+                                    isHybrid: !!(row['하이브리드']),
+                                    hybridString2: String(row['하이브리드']||'').trim(),
+                                    hybridPrice2: String(row['하이브리드가격']||'').trim(),
+                                    labor: String(labor),
+                                    quantity: qty,
+                                    tension: String(row['텐션']||'').trim(),
+                                    extraWorks: extraNames.map(n=>({name:n, price:String(extraPrice)})),
+                                    couponCode: String(row['쿠폰코드']||'').trim(),
+                                    couponDiscount, total,
+                                };
+                            });
+                            await ref.update(batch);
+                            showAlert(`✅ ${rows.length}건을 성공적으로 불러왔습니다!`);
+                        } catch(err) {
+                            showAlert('저장 오류: ' + err.message);
+                        }
+                    },
                 });
-                await ref.update(batch);
-                alert(`✅ ${rows.length}건을 성공적으로 불러왔습니다!`);
             } catch(err) {
-                alert('파일 읽기 오류: ' + err.message);
+                showAlert('파일 읽기 오류: ' + err.message);
             }
         };
         reader.readAsArrayBuffer(file);
-        e.target.value = ''; // 같은 파일 다시 선택 가능하도록
+        e.target.value = '';
     };
 
-    // ── 필터 헬퍼 ─────────────────────────────────
-    const getUniqueNames = (term='') => [...new Set(records.map(r=>r.name))].filter(n=>matchChosung(n, term||formData.name));
-    const getUniqueRackets = () => [...new Set(records.map(r=>r.racket))].filter(r=>matchChosung(r, formData.racket));
-    const getFilteredStrings = (term) => Object.keys(stringPrices).filter(s=>matchChosung(s,term)).sort();
+    // ── 필터 헬퍼 ──────────────────────────────
+    const getUniqueNames = (term) => {
+        const t = (term !== undefined && term !== null) ? term : formData.name;
+        return [...new Set(records.map(r=>r.name))].filter(n => matchChosung(n, t));
+    };
+    const getUniqueRackets = () => [...new Set(records.map(r=>r.racket))].filter(r=>r && matchChosung(r, formData.racket));
+    const getFilteredStrings = (term) => Object.keys(stringPrices).filter(s=>matchChosung(s,term||'')).sort();
 
-    // ── 통계 ─────────────────────────────────────
+    // ── 통계 ───────────────────────────────────
     const getCustomerStats = () => {
         const map = {};
         records.forEach(r => {
             if (!map[r.name]) map[r.name] = {name:r.name, visits:[], totalAmount:0};
             map[r.name].visits.push(r);
-            map[r.name].totalAmount += r.total;
+            map[r.name].totalAmount += (r.total||0);
         });
         return Object.values(map).map(c => ({
-            ...c, visitCount:c.visits.length,
-            lastVisit:[...c.visits].sort((a,b)=>new Date(b.date)-new Date(a.date))[0],
-            yearlyVisits:c.visits.filter(v=>new Date(v.date)>=new Date(new Date().setFullYear(new Date().getFullYear()-1))).length,
-        })).sort((a,b)=>new Date(b.lastVisit.date)-new Date(a.lastVisit.date));
+            ...c, visitCount: c.visits.length,
+            lastVisit: [...c.visits].sort((a,b)=>b.date.localeCompare(a.date))[0],
+            yearlyVisits: c.visits.filter(v=>new Date(v.date)>=new Date(new Date().setFullYear(new Date().getFullYear()-1))).length,
+        })).sort((a,b)=>b.lastVisit.date.localeCompare(a.lastVisit.date));
     };
 
     const getMonthlyStats = () => {
@@ -690,7 +740,7 @@ const StringingApp = ({ sport, uid }) => {
         records.forEach(r => {
             const m = r.date.substring(0,7);
             if (!map[m]) map[m]={month:m, total:0, stringTotal:0, laborTotal:0, extraTotal:0, count:0};
-            map[m].total += r.total; map[m].count++;
+            map[m].total += (r.total||0); map[m].count++;
             const qty = parseInt(r.quantity)||1;
             let sp = parseFloat(r.stringPrice)||0;
             if (r.isHybrid && r.hybridPrice2) sp=(sp+(parseFloat(r.hybridPrice2)||0))/2;
@@ -707,7 +757,7 @@ const StringingApp = ({ sport, uid }) => {
         records.forEach(r => {
             const y = r.date.substring(0,4);
             if (!map[y]) map[y]={year:y, total:0, stringTotal:0, laborTotal:0, extraTotal:0, count:0};
-            map[y].total += r.total; map[y].count++;
+            map[y].total += (r.total||0); map[y].count++;
             const qty = parseInt(r.quantity)||1;
             let sp = parseFloat(r.stringPrice)||0;
             if (r.isHybrid && r.hybridPrice2) sp=(sp+(parseFloat(r.hybridPrice2)||0))/2;
@@ -721,15 +771,14 @@ const StringingApp = ({ sport, uid }) => {
 
     const sortedRecords = [...records].sort((a,b)=>{ if(b.date!==a.date) return b.date.localeCompare(a.date); return (b.createdAt||0)-(a.createdAt||0); });
     const displayRecords = searchTerm ? sortedRecords.filter(r=>matchChosung(r.name, searchTerm)) : sortedRecords;
-    const filteredCustomers = getCustomerStats().filter(c=>matchChosung(c.name, searchTerm));
 
-    // ── 색상 클래스 ───────────────────────────────
+    // ── 색상 클래스 ─────────────────────────────
     const activeBtnClass = color==='green'?'bg-green-500 text-white':'bg-blue-500 text-white';
     const ringClass = color==='green'?'focus:ring-green-500':'focus:ring-blue-500';
     const hoverBgClass = color==='green'?'hover:bg-green-50':'hover:bg-blue-50';
     const statColor = color==='green'?'text-green-600':'text-blue-600';
 
-    // ── 드롭다운 컴포넌트 ─────────────────────────
+    // ── 스트링 드롭다운 컴포넌트 ────────────────
     const StringDropdown = ({ strings, onSelect }) => (
         <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-64 overflow-y-auto" onMouseDown={e=>e.preventDefault()}>
             {strings.map(s=>(
@@ -747,7 +796,7 @@ const StringingApp = ({ sport, uid }) => {
         </div>
     );
 
-    // ── 로딩 화면 ────────────────────────────────
+    // ── 로딩 화면 ───────────────────────────────
     if (dbLoading) return (
         <div className="flex flex-col items-center justify-center py-20">
             <div className="spinner mb-4"></div>
@@ -757,14 +806,19 @@ const StringingApp = ({ sport, uid }) => {
 
     return (
         <div>
-            {/* ── 확인 모달 ── */}
+            {/* ── 확인/알림 모달 (window.confirm 대체) ── */}
             {confirmModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.5)'}}>
                     <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xs">
-                        <p className="text-base font-medium text-gray-800 mb-5 text-center">{confirmModal.msg}</p>
+                        <p className="text-base font-medium text-gray-800 mb-5 text-center whitespace-pre-line">{confirmModal.msg}</p>
                         <div className="flex gap-2">
-                            <button onClick={()=>setConfirmModal(null)} className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium">취소</button>
-                            <button onClick={confirmModal.onOk} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-medium">삭제</button>
+                            {confirmModal.cancelLabel !== null && confirmModal.cancelLabel !== undefined && (
+                                <button onClick={()=>setConfirmModal(null)} className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium">{confirmModal.cancelLabel||'취소'}</button>
+                            )}
+                            <button onClick={confirmModal.onOk}
+                                className={`flex-1 py-3 rounded-xl font-medium text-white ${(confirmModal.cancelLabel===null||confirmModal.cancelLabel===undefined)?'bg-green-500':(confirmModal.okLabel==='삭제'?'bg-red-500':'bg-green-500')}`}>
+                                {confirmModal.okLabel||'확인'}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -780,7 +834,11 @@ const StringingApp = ({ sport, uid }) => {
                             <input type="number" value={newExtraItemPrice} onChange={e=>setNewExtraItemPrice(e.target.value)} placeholder="기본 가격 (선택)" className="w-full px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"/>
                             <div className="flex gap-2">
                                 <button onClick={()=>{setShowAddExtraItemModal(false);setNewExtraItemName('');setNewExtraItemPrice('');}} className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium">취소</button>
-                                <button onClick={async ()=>{ if(!newExtraItemName.trim()) return; await saveExtraItems([...savedExtraItems, {name:newExtraItemName.trim(), price:newExtraItemPrice}]); setShowAddExtraItemModal(false); setNewExtraItemName(''); setNewExtraItemPrice(''); }} className="flex-1 py-3 bg-indigo-500 text-white rounded-xl font-medium">저장</button>
+                                <button onClick={async ()=>{
+                                    if(!newExtraItemName.trim()) return;
+                                    await saveExtraItems([...savedExtraItems, {name:newExtraItemName.trim(), price:newExtraItemPrice}]);
+                                    setShowAddExtraItemModal(false); setNewExtraItemName(''); setNewExtraItemPrice('');
+                                }} className="flex-1 py-3 bg-indigo-500 text-white rounded-xl font-medium">저장</button>
                             </div>
                         </div>
                     </div>
@@ -823,18 +881,14 @@ const StringingApp = ({ sport, uid }) => {
                 <div className="space-y-2">
                     <div className="flex gap-2">
                         <input type="text" placeholder="고객 검색..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
-                            className={`flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}/>
-                        <button onClick={()=>setShowForm(!showForm)}
+                            className={`flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`}/>
+                        <button onClick={()=>{if(showForm&&editingId){resetForm();}else{setShowForm(!showForm);}if(!showForm){setEditingId(null);setFormData(makeEmptyForm());setExtraWorks([]);setShowExtraSection(false);setAppliedCoupon(null);setCouponInput('');setCouponMsg('');} }}
                             className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap ${showForm?'bg-gray-400 text-white':(color==='green'?'bg-green-500 text-white':'bg-blue-500 text-white')}`}>
                             {showForm?'✕ 취소':'➕ 등록'}
                         </button>
                     </div>
-                    {/* 엑셀 버튼 */}
                     <div className="flex gap-2">
-                        <button onClick={handleExportExcel}
-                            className="flex-1 py-2 bg-emerald-600 text-white rounded-lg font-medium text-xs flex items-center justify-center gap-1">
-                            📤 엑셀로 내보내기
-                        </button>
+                        <button onClick={handleExportExcel} className="flex-1 py-2 bg-emerald-600 text-white rounded-lg font-medium text-xs flex items-center justify-center gap-1">📤 엑셀 내보내기</button>
                         <label className="flex-1 py-2 bg-teal-600 text-white rounded-lg font-medium text-xs flex items-center justify-center gap-1 cursor-pointer">
                             📥 엑셀 불러오기
                             <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} className="hidden"/>
@@ -852,19 +906,19 @@ const StringingApp = ({ sport, uid }) => {
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">날짜</label>
-                                <input type="date" value={formData.date} onChange={e=>setFormData({...formData,date:e.target.value})}
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                                <input type="date" value={formData.date} onChange={e=>setFormData(prev=>({...prev,date:e.target.value}))}
+                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required/>
                             </div>
                             <div className="relative">
                                 <label className="block text-xs font-medium text-gray-600 mb-1">고객명</label>
                                 <input type="text" value={formData.name} onChange={e=>handleNameChange(e.target.value)}
-                                    onFocus={()=>setShowNameDropdown(formData.name.length>0)}
+                                    onFocus={()=>{ if(formData.name.length>0) setShowNameDropdown(getUniqueNames(formData.name).length>0); }}
                                     onBlur={()=>setTimeout(()=>setShowNameDropdown(false),200)}
                                     placeholder="홍길동"
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
-                                {showNameDropdown && getUniqueNames().length>0 && (
+                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required/>
+                                {showNameDropdown && getUniqueNames(formData.name).length>0 && (
                                     <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-40 overflow-y-auto">
-                                        {getUniqueNames().map(n=>(
+                                        {getUniqueNames(formData.name).map(n=>(
                                             <button key={n} type="button" onClick={()=>handleNameSelect(n)}
                                                 className={`w-full text-left px-4 py-3 text-sm ${hoverBgClass} border-b border-gray-100 last:border-0`}>{n}</button>
                                         ))}
@@ -880,15 +934,16 @@ const StringingApp = ({ sport, uid }) => {
                         <div className="grid grid-cols-2 gap-3">
                             <div className="relative">
                                 <label className="block text-xs font-medium text-gray-600 mb-1">{config.racketLabel}</label>
-                                <input type="text" value={formData.racket} onChange={e=>{setFormData({...formData,racket:e.target.value});setShowRacketDropdown(e.target.value.length>0);}}
+                                <input type="text" value={formData.racket}
+                                    onChange={e=>{setFormData(prev=>({...prev,racket:e.target.value}));setShowRacketDropdown(e.target.value.length>0);}}
                                     onFocus={()=>setShowRacketDropdown(formData.racket.length>0)}
                                     onBlur={()=>setTimeout(()=>setShowRacketDropdown(false),200)}
                                     placeholder={config.racketPlaceholder}
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required/>
                                 {showRacketDropdown && getUniqueRackets().length>0 && (
                                     <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-40 overflow-y-auto">
                                         {getUniqueRackets().map(r=>(
-                                            <button key={r} type="button" onClick={()=>{setFormData({...formData,racket:r});setShowRacketDropdown(false);}}
+                                            <button key={r} type="button" onClick={()=>{setFormData(prev=>({...prev,racket:r}));setShowRacketDropdown(false);}}
                                                 className={`w-full text-left px-4 py-3 text-sm ${hoverBgClass} border-b border-gray-100 last:border-0`}>{r}</button>
                                         ))}
                                     </div>
@@ -896,52 +951,56 @@ const StringingApp = ({ sport, uid }) => {
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">패턴</label>
-                                <select value={formData.pattern} onChange={e=>setFormData({...formData,pattern:e.target.value})}
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}>
+                                <select value={formData.pattern} onChange={e=>setFormData(prev=>({...prev,pattern:e.target.value}))}
+                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`}>
                                     {config.patterns.map(p=><option key={p}>{p}</option>)}
                                 </select>
                             </div>
                         </div>
 
-                        {/* 스트링 종류 / 가격 */}
+                        {/* 스트링 / 가격 */}
                         <div className="grid grid-cols-2 gap-3">
                             <div className="relative">
                                 <label className="block text-xs font-medium text-gray-600 mb-1">스트링 종류</label>
-                                <input type="text" value={formData.stringType} onChange={e=>handleStringChange(e.target.value)}
+                                <input type="text" value={formData.stringType}
+                                    onChange={e=>handleStringChange(e.target.value)}
                                     onFocus={()=>setShowStringDropdown(true)}
-                                    onBlur={()=>setTimeout(()=>setShowStringDropdown(false),500)}
+                                    onBlur={()=>setTimeout(()=>setShowStringDropdown(false),300)}
                                     placeholder="스트링 선택"
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required/>
                                 {showStringDropdown && <StringDropdown strings={getFilteredStrings(formData.stringType)} onSelect={handleStringSelect}/>}
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">스트링 가격 (원)</label>
-                                <input type="number" value={formData.stringPrice} onChange={e=>setFormData({...formData,stringPrice:e.target.value})}
-                                    placeholder="0" className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                                <input type="number" value={formData.stringPrice} onChange={e=>setFormData(prev=>({...prev,stringPrice:e.target.value}))}
+                                    placeholder="0" className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required/>
                             </div>
                         </div>
 
                         {/* 하이브리드 */}
                         <div className="border-2 border-dashed border-gray-200 rounded-lg p-3">
                             <label className="flex items-center gap-2 mb-2 cursor-pointer">
-                                <input type="checkbox" checked={formData.isHybrid} onChange={e=>setFormData({...formData,isHybrid:e.target.checked,hybridString2:e.target.checked?formData.hybridString2:'',hybridPrice2:e.target.checked?formData.hybridPrice2:''})} className="w-4 h-4 rounded"/>
+                                <input type="checkbox" checked={formData.isHybrid}
+                                    onChange={e=>setFormData(prev=>({...prev,isHybrid:e.target.checked,hybridString2:e.target.checked?prev.hybridString2:'',hybridPrice2:e.target.checked?prev.hybridPrice2:''}))}
+                                    className="w-4 h-4 rounded"/>
                                 <span className="text-sm font-medium text-gray-700">하이브리드 (+2,000원)</span>
                             </label>
                             {formData.isHybrid && (
                                 <div className="grid grid-cols-2 gap-3 mt-2">
                                     <div className="relative">
                                         <label className="block text-xs font-medium text-gray-600 mb-1">두번째 스트링</label>
-                                        <input type="text" value={formData.hybridString2} onChange={e=>handleStringChange(e.target.value,true)}
+                                        <input type="text" value={formData.hybridString2}
+                                            onChange={e=>handleStringChange(e.target.value,true)}
                                             onFocus={()=>setShowHybridDropdown(true)}
-                                            onBlur={()=>setTimeout(()=>setShowHybridDropdown(false),500)}
+                                            onBlur={()=>setTimeout(()=>setShowHybridDropdown(false),300)}
                                             placeholder="스트링 선택"
-                                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required={formData.isHybrid}/>
+                                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required={formData.isHybrid}/>
                                         {showHybridDropdown && <StringDropdown strings={getFilteredStrings(formData.hybridString2)} onSelect={s=>handleStringSelect(s,true)}/>}
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-600 mb-1">두번째 가격 (원)</label>
-                                        <input type="number" value={formData.hybridPrice2} onChange={e=>setFormData({...formData,hybridPrice2:e.target.value})}
-                                            placeholder="0" className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required={formData.isHybrid}/>
+                                        <input type="number" value={formData.hybridPrice2} onChange={e=>setFormData(prev=>({...prev,hybridPrice2:e.target.value}))}
+                                            placeholder="0" className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required={formData.isHybrid}/>
                                     </div>
                                 </div>
                             )}
@@ -953,29 +1012,29 @@ const StringingApp = ({ sport, uid }) => {
                                 <p className="text-xs font-medium text-yellow-700">⚡ 텐션 (lbs)</p>
                                 <p className="text-xs text-gray-400">예) 50 또는 50/48</p>
                             </div>
-                            <input type="text" value={formData.tension} onChange={e=>setFormData({...formData,tension:e.target.value})}
+                            <input type="text" value={formData.tension} onChange={e=>setFormData(prev=>({...prev,tension:e.target.value}))}
                                 placeholder="예) 50 또는 50/48"
-                                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}/>
+                                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`}/>
                         </div>
 
                         {/* 공임 / 수량 */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">공임 (원)</label>
-                                <select value={formData.labor} onChange={e=>setFormData({...formData,labor:e.target.value})}
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`}>
+                                <select value={formData.labor} onChange={e=>setFormData(prev=>({...prev,labor:e.target.value}))}
+                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`}>
                                     {config.defaultLabors.map(l=><option key={l} value={l}>{parseInt(l).toLocaleString()}원</option>)}
                                     <option value="0">0원</option>
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">수량</label>
-                                <input type="number" value={formData.quantity} min="1" onChange={e=>setFormData({...formData,quantity:e.target.value})}
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass}`} required/>
+                                <input type="number" value={formData.quantity} min="1" onChange={e=>setFormData(prev=>({...prev,quantity:e.target.value}))}
+                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required/>
                             </div>
                         </div>
 
-                        {/* 쿠폰 */}
+                        {/* 쿠폰 (신규 등록 시에만) */}
                         {!editingId && (
                             <div className="border border-pink-200 bg-pink-50 rounded-lg p-3 space-y-2">
                                 <p className="text-xs font-medium text-pink-700">🎫 쿠폰 적용</p>
@@ -983,7 +1042,9 @@ const StringingApp = ({ sport, uid }) => {
                                     <p className="text-xs text-gray-400">등록된 미사용 쿠폰이 없습니다.</p>
                                 ) : (
                                     <div className="flex gap-2">
-                                        <input type="text" value={couponInput} onChange={e=>{setCouponInput(e.target.value.toUpperCase());setCouponMsg('');setAppliedCoupon(null);}} placeholder="쿠폰번호 입력"
+                                        <input type="text" value={couponInput}
+                                            onChange={e=>{setCouponInput(e.target.value.toUpperCase());setCouponMsg('');setAppliedCoupon(null);}}
+                                            placeholder="쿠폰번호 입력"
                                             className="flex-1 px-3 py-2 border border-pink-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 uppercase"/>
                                         <button type="button" onClick={handleApplyCoupon} className="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm font-medium">적용</button>
                                     </div>
@@ -1015,7 +1076,7 @@ const StringingApp = ({ sport, uid }) => {
                                                     className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
                                                 {showExtraDropdown===idx && (
                                                     <div className="absolute z-30 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-48 overflow-y-auto" onMouseDown={e=>e.preventDefault()}>
-                                                        {savedExtraItems.filter(it=>it.name.toLowerCase().includes(w.name.toLowerCase())).map((it,i)=>(
+                                                        {savedExtraItems.filter(it=>it && it.name && it.name.toLowerCase().includes(w.name.toLowerCase())).map((it,i)=>(
                                                             <button key={i} type="button" onClick={()=>{const u=[...extraWorks];u[idx]={name:it.name,price:it.price||''};setExtraWorks(u);setShowExtraDropdown(null);}}
                                                                 className="w-full text-left px-3 py-2.5 hover:bg-indigo-50 flex justify-between items-center border-b border-gray-100 last:border-0 text-sm">
                                                                 <span>{it.name}</span>
@@ -1042,7 +1103,7 @@ const StringingApp = ({ sport, uid }) => {
                         <div className={`border border-gray-200 rounded-lg p-3 ${color==='green'?'bg-green-50':'bg-blue-50'}`}>
                             <div className="flex justify-between items-center">
                                 <span className="text-sm font-medium text-gray-600">예상 금액</span>
-                                <span className={`text-xl font-bold ${statColor}`}>{calculateTotalWithCoupon().toLocaleString()}원</span>
+                                <span className={`text-xl font-bold ${statColor}`}>{calcTotalWithCoupon().toLocaleString()}원</span>
                             </div>
                             {appliedCoupon && (
                                 <p className="text-xs text-pink-600 mt-1 text-right">🎫 쿠폰 -{parseInt(appliedCoupon.discount).toLocaleString()}원 적용</p>
@@ -1084,9 +1145,9 @@ const StringingApp = ({ sport, uid }) => {
                     {displayRecords.map(r=>{
                         const visitCount = records.filter(x=>x.name===r.name).length;
                         return (
-                            <div key={r.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
+                            <div key={r.fbKey||r.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
                                 <div className={`px-3 py-2 flex justify-between items-center ${color==='green'?'bg-green-500':'bg-blue-500'}`}>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                         <span className="text-white font-bold text-sm">{r.name}</span>
                                         <span className="text-xs bg-white bg-opacity-20 text-white px-1.5 py-0.5 rounded-full">👤 {visitCount}회</span>
                                         {r.couponCode && <span className="text-xs bg-white bg-opacity-30 text-white px-1.5 py-0.5 rounded-full">🎫 쿠폰</span>}
@@ -1100,7 +1161,7 @@ const StringingApp = ({ sport, uid }) => {
                                 </div>
                                 <div className="p-3 space-y-2">
                                     {(()=>{
-                                        const prev = [...records].filter(x=>x.name===r.name&&x.id!==r.id).sort((a,b)=>b.date.localeCompare(a.date));
+                                        const prev = [...records].filter(x=>x.name===r.name&&x.fbKey!==r.fbKey).sort((a,b)=>b.date.localeCompare(a.date));
                                         if (prev.length===0) return null;
                                         const diffDays = Math.floor((new Date(r.date)-new Date(prev[0].date))/(1000*60*60*24));
                                         return <div className="flex items-center gap-1 text-xs text-gray-400"><span>🕐 이전 방문</span><span className="font-medium text-gray-600">{prev[0].date}</span><span>({diffDays}일 전)</span></div>;
@@ -1115,7 +1176,7 @@ const StringingApp = ({ sport, uid }) => {
                                         <div className="flex-1">
                                             <span className="text-xs font-medium text-gray-800">{r.stringType}</span>
                                             {r.isHybrid&&r.hybridString2&&<span className="text-xs text-purple-600"> + {r.hybridString2}</span>}
-                                            <span className="text-xs text-gray-400 ml-1">{parseInt(r.stringPrice||0).toLocaleString()}원{r.isHybrid&&r.hybridPrice2&&`+${parseInt(r.hybridPrice2).toLocaleString()}원`}</span>
+                                            <span className="text-xs text-gray-400 ml-1">{parseInt(r.stringPrice||0).toLocaleString()}원{r.isHybrid&&r.hybridPrice2&&` +${parseInt(r.hybridPrice2).toLocaleString()}원`}</span>
                                         </div>
                                     </div>
                                     {r.tension && (
@@ -1144,7 +1205,7 @@ const StringingApp = ({ sport, uid }) => {
                                     )}
                                     <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
                                         <span className="text-xs text-gray-400">최종 금액</span>
-                                        <span className={`text-lg font-bold ${statColor}`}>{r.total.toLocaleString()}원</span>
+                                        <span className={`text-lg font-bold ${statColor}`}>{(r.total||0).toLocaleString()}원</span>
                                     </div>
                                 </div>
                             </div>
@@ -1219,18 +1280,18 @@ const StringingApp = ({ sport, uid }) => {
                             <p className="text-xs text-gray-400">번호는 자동 생성돼요 예) NIJI-0406-001</p>
                             <div className="grid grid-cols-2 gap-3">
                                 <div><label className="block text-xs font-medium text-gray-500 mb-1">앞자리 (영문)</label>
-                                    <input type="text" value={bulkForm.prefix} maxLength={8} onChange={e=>setBulkForm({...bulkForm,prefix:e.target.value.toUpperCase()})} placeholder="NIJI" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 uppercase"/></div>
+                                    <input type="text" value={bulkForm.prefix} maxLength={8} onChange={e=>setBulkForm(prev=>({...prev,prefix:e.target.value.toUpperCase()}))} placeholder="NIJI" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 uppercase"/></div>
                                 <div><label className="block text-xs font-medium text-gray-500 mb-1">발행 장수 *</label>
-                                    <input type="number" value={bulkForm.count} min="1" max="50" onChange={e=>setBulkForm({...bulkForm,count:e.target.value})} placeholder="5" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/></div>
+                                    <input type="number" value={bulkForm.count} min="1" max="50" onChange={e=>setBulkForm(prev=>({...prev,count:e.target.value}))} placeholder="5" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/></div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div><label className="block text-xs font-medium text-gray-500 mb-1">할인금액 (원) *</label>
-                                    <input type="number" value={bulkForm.discount} onChange={e=>setBulkForm({...bulkForm,discount:e.target.value})} placeholder="예) 12000" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/></div>
+                                    <input type="number" value={bulkForm.discount} onChange={e=>setBulkForm(prev=>({...prev,discount:e.target.value}))} placeholder="예) 12000" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/></div>
                                 <div><label className="block text-xs font-medium text-gray-500 mb-1">만료일</label>
-                                    <input type="date" value={bulkForm.expiry} onChange={e=>setBulkForm({...bulkForm,expiry:e.target.value})} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/></div>
+                                    <input type="date" value={bulkForm.expiry} onChange={e=>setBulkForm(prev=>({...prev,expiry:e.target.value}))} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/></div>
                             </div>
                             <div><label className="block text-xs font-medium text-gray-500 mb-1">메모 (대회명 등)</label>
-                                <input type="text" value={bulkForm.note} onChange={e=>setBulkForm({...bulkForm,note:e.target.value})} placeholder="예) 4월 월례대회 찬조" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/></div>
+                                <input type="text" value={bulkForm.note} onChange={e=>setBulkForm(prev=>({...prev,note:e.target.value}))} placeholder="예) 4월 월례대회 찬조" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/></div>
                             <button onClick={handleBulkIssue} disabled={!bulkForm.discount||!bulkForm.count} className="w-full py-3 bg-purple-500 text-white rounded-xl font-medium text-sm disabled:opacity-40">🎟️ {bulkForm.count||0}장 발행하기</button>
                             {bulkResult && (
                                 <div className="bg-purple-50 rounded-xl p-3">
@@ -1247,17 +1308,21 @@ const StringingApp = ({ sport, uid }) => {
                         <div className="bg-white rounded-xl shadow-lg p-4 space-y-3">
                             <h3 className="text-sm font-bold text-gray-800">➕ 쿠폰 직접 등록</h3>
                             <div><label className="block text-xs font-medium text-gray-500 mb-1">쿠폰번호 *</label>
-                                <input type="text" value={couponForm.code} onChange={e=>setCouponForm({...couponForm,code:e.target.value.toUpperCase()})} placeholder="예) KAKAO-2024-ABCD" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 uppercase"/></div>
+                                <input type="text" value={couponForm.code} onChange={e=>setCouponForm(prev=>({...prev,code:e.target.value.toUpperCase()}))} placeholder="예) KAKAO-2024-ABCD" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 uppercase"/></div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div><label className="block text-xs font-medium text-gray-500 mb-1">할인금액 (원) *</label>
-                                    <input type="number" value={couponForm.discount} onChange={e=>setCouponForm({...couponForm,discount:e.target.value})} placeholder="예) 5000" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/></div>
+                                    <input type="number" value={couponForm.discount} onChange={e=>setCouponForm(prev=>({...prev,discount:e.target.value}))} placeholder="예) 5000" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/></div>
                                 <div><label className="block text-xs font-medium text-gray-500 mb-1">만료일</label>
-                                    <input type="date" value={couponForm.expiry} onChange={e=>setCouponForm({...couponForm,expiry:e.target.value})} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/></div>
+                                    <input type="date" value={couponForm.expiry} onChange={e=>setCouponForm(prev=>({...prev,expiry:e.target.value}))} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/></div>
                             </div>
                             <div><label className="block text-xs font-medium text-gray-500 mb-1">메모</label>
-                                <input type="text" value={couponForm.note} onChange={e=>setCouponForm({...couponForm,note:e.target.value})} placeholder="예) 카카오 이벤트 쿠폰" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/></div>
-                            <button onClick={async ()=>{ if(!couponForm.code.trim()||!couponForm.discount) return; await saveCoupon({id:Date.now(), code:couponForm.code.trim().toUpperCase(), discount:parseFloat(couponForm.discount), expiry:couponForm.expiry, note:couponForm.note, used:false, usedDate:'', usedFor:'', createdAt:getTodayKST()}); setCouponForm({code:'',discount:'',expiry:'',note:''}); setShowCouponForm(false); }}
-                                className="w-full py-3 bg-pink-500 text-white rounded-xl font-medium text-sm">등록하기</button>
+                                <input type="text" value={couponForm.note} onChange={e=>setCouponForm(prev=>({...prev,note:e.target.value}))} placeholder="예) 카카오 이벤트 쿠폰" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/></div>
+                            <button onClick={async ()=>{
+                                if(!couponForm.code.trim()||!couponForm.discount) return;
+                                await saveCoupon({code:couponForm.code.trim().toUpperCase(), discount:parseFloat(couponForm.discount), expiry:couponForm.expiry, note:couponForm.note, used:false, usedDate:'', usedFor:'', createdAt:getTodayKST()});
+                                setCouponForm({code:'',discount:'',expiry:'',note:''});
+                                setShowCouponForm(false);
+                            }} className="w-full py-3 bg-pink-500 text-white rounded-xl font-medium text-sm">등록하기</button>
                         </div>
                     )}
 
@@ -1271,7 +1336,7 @@ const StringingApp = ({ sport, uid }) => {
                         {coupons.filter(c=>!c.used).map(c=>{
                             const expired = c.expiry && c.expiry < getTodayKST();
                             return (
-                                <div key={c.id} className={`border-b border-gray-100 last:border-0 px-4 py-3 flex items-center gap-3 ${expired?'opacity-50':''}`}>
+                                <div key={c.fbKey||c.code} className={`border-b border-gray-100 last:border-0 px-4 py-3 flex items-center gap-3 ${expired?'opacity-50':''}`}>
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
                                             <p className="text-sm font-bold text-gray-800 font-mono">{c.code}</p>
@@ -1283,7 +1348,7 @@ const StringingApp = ({ sport, uid }) => {
                                             {c.note && <p className="text-xs text-gray-400">{c.note}</p>}
                                         </div>
                                     </div>
-                                    <button onClick={()=>setConfirmModal({msg:'쿠폰을 삭제할까요?', onOk:async ()=>{ await deleteCoupon(c.fbKey); setConfirmModal(null); }})} className="p-2 text-red-400 hover:bg-red-50 rounded-lg">🗑️</button>
+                                    <button onClick={()=>setConfirmModal({msg:'쿠폰을 삭제할까요?', onOk:async()=>{await deleteCoupon(c.fbKey);setConfirmModal(null);}, okLabel:'삭제', cancelLabel:'취소'})} className="p-2 text-red-400 hover:bg-red-50 rounded-lg">🗑️</button>
                                 </div>
                             );
                         })}
@@ -1297,7 +1362,7 @@ const StringingApp = ({ sport, uid }) => {
                                 <span className="text-xs text-gray-400">{coupons.filter(c=>c.used).length}개</span>
                             </div>
                             {coupons.filter(c=>c.used).map(c=>(
-                                <div key={c.id} className="border-b border-gray-100 last:border-0 px-4 py-3 opacity-60">
+                                <div key={c.fbKey||c.code} className="border-b border-gray-100 last:border-0 px-4 py-3 opacity-60">
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <p className="text-sm font-medium text-gray-600 font-mono line-through">{c.code}</p>
@@ -1358,9 +1423,9 @@ const StringingApp = ({ sport, uid }) => {
     );
 };
 
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 // 🏆 최상위 앱
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 const App = () => {
     const [user, setUser] = useState(null);
     const [authLoading, setAuthLoading] = useState(true);
@@ -1391,12 +1456,11 @@ const App = () => {
 
     return (
         <div className="min-h-screen bg-gray-100">
-            {/* 스포츠 탭 헤더 */}
             <div className={`${sport==='tennis'?'bg-green-600':'bg-blue-600'} text-white px-4 pt-4 pb-0 shadow-md`}>
                 <div className="flex justify-between items-center mb-2">
                     <h1 className="text-lg font-bold">🏆 니지스트링 관리</h1>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs text-white text-opacity-70 hidden sm:block">{user.email}</span>
+                        <span className="text-xs text-white opacity-70 hidden sm:block">{user.email}</span>
                         <button onClick={handleLogout} className="text-xs bg-white bg-opacity-20 hover:bg-opacity-30 px-3 py-1.5 rounded-full transition-colors">로그아웃</button>
                     </div>
                 </div>
@@ -1405,8 +1469,6 @@ const App = () => {
                     <button onClick={()=>setSport('badminton')} className={`flex-1 py-2 text-sm font-bold rounded-t-xl transition-colors ${sport==='badminton'?'bg-white text-blue-600':'bg-blue-700 text-blue-100'}`}>🏸 배드민턴</button>
                 </div>
             </div>
-
-            {/* 콘텐츠 */}
             <div className="p-3 max-w-2xl mx-auto">
                 <StringingApp key={`${user.uid}-${sport}`} sport={sport} uid={user.uid} />
             </div>
@@ -1414,9 +1476,7 @@ const App = () => {
     );
 };
 
-// UID 참조 오류 수정을 위한 래퍼
-const Root = () => <App />;
-ReactDOM.render(<Root />, document.getElementById('root'));
+ReactDOM.render(<App />, document.getElementById('root'));
 </script>
 </body>
 </html>
