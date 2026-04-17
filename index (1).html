@@ -243,6 +243,7 @@ const StringingApp = ({ sport, uid }) => {
     const [newExtraItemName, setNewExtraItemName] = useState('');
     const [newExtraItemPrice, setNewExtraItemPrice] = useState('');
     const [saveStatus, setSaveStatus] = useState('');
+    const [expandedCustomer, setExpandedCustomer] = useState(null); // 드롭다운 열린 고객명
 
     const stringPrices = {...config.defaultStrings, ...customStrings};
 
@@ -644,21 +645,16 @@ const StringingApp = ({ sport, uid }) => {
     // ── 엑셀 날짜 변환 헬퍼 (숫자 일련번호 → YYYY-MM-DD) ──
     const parseExcelDate = (val) => {
         if (!val) return getTodayKST();
-        // 숫자인 경우 (엑셀 일련번호: 복사·붙여넣기 시 발생)
         if (typeof val === 'number') {
-            // 엑셀 날짜 기준: 1900-01-01 = 1 (윈도우 기준)
-            const excelEpoch = new Date(1899, 11, 30); // 1899-12-30
+            const excelEpoch = new Date(1899, 11, 30);
             const d = new Date(excelEpoch.getTime() + val * 86400000);
             const y = d.getFullYear();
             const m = String(d.getMonth()+1).padStart(2,'0');
             const dd = String(d.getDate()).padStart(2,'0');
             return `${y}-${m}-${dd}`;
         }
-        // 문자인 경우 그대로 사용
         const s = String(val).trim();
-        // YYYY-MM-DD 형식이면 그대로
         if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-        // YYYY/MM/DD 형식이면 변환
         if (/^\d{4}\/\d{2}\/\d{2}$/.test(s)) return s.replace(/\//g, '-');
         return s;
     };
@@ -671,7 +667,6 @@ const StringingApp = ({ sport, uid }) => {
         reader.onload = async (ev) => {
             try {
                 const data = new Uint8Array(ev.target.result);
-                // cellDates:false → 날짜를 숫자로 읽어서 직접 변환 (복사·붙여넣기 데이터 포함 처리)
                 const wb = XLSX.read(data, { type: 'array', cellDates: false });
                 const ws = wb.Sheets[wb.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(ws, { raw: true });
@@ -681,8 +676,7 @@ const StringingApp = ({ sport, uid }) => {
                     showAlert('엑셀 파일 형식이 맞지 않습니다.\n먼저 내보내기로 양식을 받아서 사용해 주세요.');
                     return;
                 }
-
-                // ── 중복 체크: 기존 데이터와 비교해서 중복 제거 ──
+                // 중복 체크
                 const existingKeys = new Set(
                     records.map(r => `${r.date}|${r.name}|${r.racket}|${r.stringType}|${r.labor}`)
                 );
@@ -692,7 +686,6 @@ const StringingApp = ({ sport, uid }) => {
                     return !existingKeys.has(key);
                 });
                 const dupCount = rows.length - uniqueRows.length;
-
                 setConfirmModal({
                     msg: dupCount > 0
                         ? `총 ${rows.length}건 중 중복 ${dupCount}건 제외\n${uniqueRows.length}건을 불러올까요?\n(기존 데이터에 추가됩니다)`
@@ -1156,101 +1149,129 @@ const StringingApp = ({ sport, uid }) => {
                 </div>
             )}
 
-            {/* ── 고객 목록 ── */}
-            {viewMode==='customers' && (
-                <div className="space-y-2 mt-3">
-                    {searchTerm && displayRecords.length>0 && (
-                        <div className="bg-white rounded-xl shadow-lg px-4 py-3">
-                            <p className="text-sm font-bold text-gray-800">'{searchTerm}' 검색결과 <span className="ml-2 text-xs font-normal text-gray-400">{displayRecords.length}건</span></p>
-                            {(()=>{
-                                const cs = getCustomerStats().find(c=>matchChosung(c.name,searchTerm));
-                                if (!cs) return null;
-                                return (<div className="flex gap-2 mt-1 flex-wrap">
-                                    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">연간 {cs.yearlyVisits}회</span>
-                                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">총 {cs.visitCount}회</span>
-                                    <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs">누적 {cs.totalAmount.toLocaleString()}원</span>
-                                </div>);
-                            })()}
-                        </div>
-                    )}
-                    {displayRecords.length===0 && (
-                        <div className="bg-white rounded-xl shadow-lg p-10 text-center">
-                            <p className="text-gray-400 text-4xl mb-3">{sport==='tennis'?'🎾':'🏸'}</p>
-                            {searchTerm ? <p className="text-gray-500">'{searchTerm}' 검색 결과가 없습니다.</p>
-                                : <><p className="text-gray-500">등록된 작업이 없습니다.</p><p className="text-gray-400 text-sm mt-1">➕ 등록 버튼을 눌러 시작하세요.</p></>}
-                        </div>
-                    )}
-                    {displayRecords.map(r=>{
-                        const visitCount = records.filter(x=>x.name===r.name).length;
-                        return (
-                            <div key={r.fbKey||r.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
-                                <div className={`px-3 py-2 flex justify-between items-center ${color==='green'?'bg-green-500':'bg-blue-500'}`}>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-white font-bold text-sm">{r.name}</span>
-                                        <span className="text-xs bg-white bg-opacity-20 text-white px-1.5 py-0.5 rounded-full">👤 {visitCount}회</span>
-                                        {r.couponCode && <span className="text-xs bg-white bg-opacity-30 text-white px-1.5 py-0.5 rounded-full">🎫 쿠폰</span>}
-                                        {r.isHybrid && <span className="text-xs bg-white bg-opacity-30 text-white px-1.5 py-0.5 rounded-full">하이브리드</span>}
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-white text-opacity-80 text-xs mr-1">{r.date}</span>
-                                        <button onClick={()=>handleEdit(r)} className="p-1.5 text-white hover:bg-white hover:bg-opacity-20 rounded-lg">✏️</button>
-                                        <button onClick={()=>handleDelete(r)} className="p-1.5 text-white hover:bg-white hover:bg-opacity-20 rounded-lg">🗑️</button>
-                                    </div>
-                                </div>
-                                <div className="p-3 space-y-2">
-                                    {(()=>{
-                                        const prev = [...records].filter(x=>x.name===r.name&&x.fbKey!==r.fbKey).sort((a,b)=>b.date.localeCompare(a.date));
-                                        if (prev.length===0) return null;
-                                        const diffDays = Math.floor((new Date(r.date)-new Date(prev[0].date))/(1000*60*60*24));
-                                        return <div className="flex items-center gap-1 text-xs text-gray-400"><span>🕐 이전 방문</span><span className="font-medium text-gray-600">{prev[0].date}</span><span>({diffDays}일 전)</span></div>;
-                                    })()}
-                                    <div className="flex items-start gap-2">
-                                        <span className="text-xs text-gray-400 w-12 flex-shrink-0 mt-0.5">라켓</span>
-                                        <span className="text-xs font-medium text-gray-800">{r.racket}</span>
-                                        <span className="text-xs text-gray-400 ml-auto flex-shrink-0">{r.pattern}</span>
-                                    </div>
-                                    <div className="flex items-start gap-2">
-                                        <span className="text-xs text-gray-400 w-12 flex-shrink-0 mt-0.5">스트링</span>
-                                        <div className="flex-1">
-                                            <span className="text-xs font-medium text-gray-800">{r.stringType}</span>
-                                            {r.isHybrid&&r.hybridString2&&<span className="text-xs text-purple-600"> + {r.hybridString2}</span>}
-                                            <span className="text-xs text-gray-400 ml-1">{parseInt(r.stringPrice||0).toLocaleString()}원{r.isHybrid&&r.hybridPrice2&&` +${parseInt(r.hybridPrice2).toLocaleString()}원`}</span>
-                                        </div>
-                                    </div>
-                                    {r.tension && (
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-gray-400 w-12 flex-shrink-0">텐션</span>
-                                            <span className="text-xs font-medium text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">⚡ {r.tension} lbs</span>
-                                        </div>
-                                    )}
-                                    <div className="flex gap-4">
-                                        <div className="flex items-center gap-1"><span className="text-xs text-gray-400">공임</span><span className="text-xs font-medium text-gray-700">{parseInt(r.labor||0).toLocaleString()}원</span></div>
-                                        <div className="flex items-center gap-1"><span className="text-xs text-gray-400">수량</span><span className="text-xs font-medium text-gray-700">{r.quantity}개</span></div>
-                                    </div>
-                                    {r.extraWorks&&r.extraWorks.length>0 && (
-                                        <div className="bg-indigo-50 rounded-lg px-2 py-1.5">
-                                            <p className="text-xs text-indigo-400 mb-1">🛠️ 추가작업</p>
-                                            <div className="flex flex-wrap gap-1">
-                                                {r.extraWorks.map((w,i)=>(<span key={i} className="text-xs bg-white text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">{w.name} {parseInt(w.price||0).toLocaleString()}원</span>))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {r.couponCode && (
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-xs text-gray-400">쿠폰할인</span>
-                                            <span className="text-xs text-pink-600 font-medium">-{parseInt(r.couponDiscount||0).toLocaleString()}원</span>
-                                        </div>
-                                    )}
-                                    <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
-                                        <span className="text-xs text-gray-400">최종 금액</span>
-                                        <span className={`text-lg font-bold ${statColor}`}>{(r.total||0).toLocaleString()}원</span>
-                                    </div>
-                                </div>
+            {/* ── 고객 목록 (드롭다운) ── */}
+            {viewMode==='customers' && (()=>{
+                // 고객별로 묶기
+                const statsMap = {};
+                records.forEach(r => {
+                    if (!statsMap[r.name]) statsMap[r.name] = {name:r.name, visits:[], totalAmount:0};
+                    statsMap[r.name].visits.push(r);
+                    statsMap[r.name].totalAmount += (r.total||0);
+                });
+                let customerList = Object.values(statsMap).map(c => ({
+                    ...c,
+                    visitCount: c.visits.length,
+                    lastVisit: [...c.visits].sort((a,b)=>b.date.localeCompare(a.date))[0],
+                    sortedVisits: [...c.visits].sort((a,b)=>{ if(b.date!==a.date) return b.date.localeCompare(a.date); return (b.createdAt||0)-(a.createdAt||0); }),
+                })).sort((a,b)=>b.lastVisit.date.localeCompare(a.lastVisit.date));
+
+                // 검색어 필터
+                if (searchTerm) customerList = customerList.filter(c=>matchChosung(c.name, searchTerm));
+
+                return (
+                    <div className="space-y-2 mt-3">
+                        {customerList.length===0 && (
+                            <div className="bg-white rounded-xl shadow-lg p-10 text-center">
+                                <p className="text-gray-400 text-4xl mb-3">{sport==='tennis'?'🎾':'🏸'}</p>
+                                {searchTerm ? <p className="text-gray-500">'{searchTerm}' 검색 결과가 없습니다.</p>
+                                    : <><p className="text-gray-500">등록된 작업이 없습니다.</p><p className="text-gray-400 text-sm mt-1">➕ 등록 버튼을 눌러 시작하세요.</p></>}
                             </div>
-                        );
-                    })}
-                </div>
-            )}
+                        )}
+                        {customerList.map(cs => {
+                            const isOpen = expandedCustomer === cs.name;
+                            return (
+                                <div key={cs.name} className="bg-white rounded-xl shadow-lg overflow-hidden">
+                                    {/* ── 고객 헤더 (항상 보임) ── */}
+                                    <button
+                                        onClick={()=>setExpandedCustomer(isOpen ? null : cs.name)}
+                                        className={`w-full px-3 py-3 flex justify-between items-center ${color==='green'?'bg-green-500':'bg-blue-500'} active:opacity-80`}
+                                    >
+                                        <div className="flex items-center gap-2 flex-wrap text-left">
+                                            <span className="text-white font-bold text-sm">{cs.name}</span>
+                                            <span className="text-xs bg-white bg-opacity-20 text-white px-2 py-0.5 rounded-full">👤 {cs.visitCount}회</span>
+                                            <span className="text-xs bg-white bg-opacity-20 text-white px-2 py-0.5 rounded-full">📅 {cs.lastVisit.date}</span>
+                                            <span className="text-xs bg-white bg-opacity-20 text-white px-2 py-0.5 rounded-full">💰 {cs.totalAmount.toLocaleString()}원</span>
+                                        </div>
+                                        <span className="text-white text-lg ml-2 flex-shrink-0">{isOpen ? '▲' : '▼'}</span>
+                                    </button>
+
+                                    {/* ── 작업 내역 (드롭다운) ── */}
+                                    {isOpen && (
+                                        <div className="divide-y divide-gray-100">
+                                            {cs.sortedVisits.map((r, idx) => (
+                                                <div key={r.fbKey||r.id} className="p-3 space-y-2">
+                                                    {/* 작업 헤더: 날짜 + 수정/삭제 */}
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${color==='green'?'bg-green-100 text-green-700':'bg-blue-100 text-blue-700'}`}>
+                                                                {r.date}
+                                                            </span>
+                                                            {r.couponCode && <span className="text-xs bg-pink-100 text-pink-600 px-1.5 py-0.5 rounded-full">🎫 쿠폰</span>}
+                                                            {r.isHybrid && <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">하이브리드</span>}
+                                                        </div>
+                                                        <div className="flex gap-1">
+                                                            <button onClick={()=>handleEdit(r)} className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg">✏️</button>
+                                                            <button onClick={()=>handleDelete(r)} className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg">🗑️</button>
+                                                        </div>
+                                                    </div>
+                                                    {/* 라켓 */}
+                                                    <div className="flex items-start gap-2">
+                                                        <span className="text-xs text-gray-400 w-12 flex-shrink-0 mt-0.5">라켓</span>
+                                                        <span className="text-xs font-medium text-gray-800">{r.racket}</span>
+                                                        <span className="text-xs text-gray-400 ml-auto flex-shrink-0">{r.pattern}</span>
+                                                    </div>
+                                                    {/* 스트링 */}
+                                                    <div className="flex items-start gap-2">
+                                                        <span className="text-xs text-gray-400 w-12 flex-shrink-0 mt-0.5">스트링</span>
+                                                        <div className="flex-1">
+                                                            <span className="text-xs font-medium text-gray-800">{r.stringType}</span>
+                                                            {r.isHybrid&&r.hybridString2&&<span className="text-xs text-purple-600"> + {r.hybridString2}</span>}
+                                                            <span className="text-xs text-gray-400 ml-1">{parseInt(r.stringPrice||0).toLocaleString()}원{r.isHybrid&&r.hybridPrice2&&` +${parseInt(r.hybridPrice2).toLocaleString()}원`}</span>
+                                                        </div>
+                                                    </div>
+                                                    {/* 텐션 */}
+                                                    {r.tension && (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs text-gray-400 w-12 flex-shrink-0">텐션</span>
+                                                            <span className="text-xs font-medium text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">⚡ {r.tension} lbs</span>
+                                                        </div>
+                                                    )}
+                                                    {/* 공임·수량 */}
+                                                    <div className="flex gap-4">
+                                                        <div className="flex items-center gap-1"><span className="text-xs text-gray-400">공임</span><span className="text-xs font-medium text-gray-700">{parseInt(r.labor||0).toLocaleString()}원</span></div>
+                                                        <div className="flex items-center gap-1"><span className="text-xs text-gray-400">수량</span><span className="text-xs font-medium text-gray-700">{r.quantity}개</span></div>
+                                                    </div>
+                                                    {/* 추가작업 */}
+                                                    {r.extraWorks&&r.extraWorks.length>0 && (
+                                                        <div className="bg-indigo-50 rounded-lg px-2 py-1.5">
+                                                            <p className="text-xs text-indigo-400 mb-1">🛠️ 추가작업</p>
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {r.extraWorks.map((w,i)=>(<span key={i} className="text-xs bg-white text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">{w.name} {parseInt(w.price||0).toLocaleString()}원</span>))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {/* 쿠폰 */}
+                                                    {r.couponCode && (
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-xs text-gray-400">쿠폰할인</span>
+                                                            <span className="text-xs text-pink-600 font-medium">-{parseInt(r.couponDiscount||0).toLocaleString()}원</span>
+                                                        </div>
+                                                    )}
+                                                    {/* 최종금액 */}
+                                                    <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
+                                                        <span className="text-xs text-gray-400">최종 금액</span>
+                                                        <span className={`text-lg font-bold ${statColor}`}>{(r.total||0).toLocaleString()}원</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                );
+            })()}
 
             {/* ── 월별 매출 ── */}
             {viewMode==='monthly' && (
