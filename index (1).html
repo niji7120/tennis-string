@@ -641,6 +641,28 @@ const StringingApp = ({ sport, uid }) => {
         XLSX.writeFile(wb, `니지스트링_${sheetName}_${today}.xlsx`);
     };
 
+    // ── 엑셀 날짜 변환 헬퍼 (숫자 일련번호 → YYYY-MM-DD) ──
+    const parseExcelDate = (val) => {
+        if (!val) return getTodayKST();
+        // 숫자인 경우 (엑셀 일련번호: 복사·붙여넣기 시 발생)
+        if (typeof val === 'number') {
+            // 엑셀 날짜 기준: 1900-01-01 = 1 (윈도우 기준)
+            const excelEpoch = new Date(1899, 11, 30); // 1899-12-30
+            const d = new Date(excelEpoch.getTime() + val * 86400000);
+            const y = d.getFullYear();
+            const m = String(d.getMonth()+1).padStart(2,'0');
+            const dd = String(d.getDate()).padStart(2,'0');
+            return `${y}-${m}-${dd}`;
+        }
+        // 문자인 경우 그대로 사용
+        const s = String(val).trim();
+        // YYYY-MM-DD 형식이면 그대로
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+        // YYYY/MM/DD 형식이면 변환
+        if (/^\d{4}\/\d{2}\/\d{2}$/.test(s)) return s.replace(/\//g, '-');
+        return s;
+    };
+
     // ── 엑셀 불러오기 (모바일 호환 모달 사용) ──
     const handleImportExcel = (e) => {
         const file = e.target.files[0];
@@ -649,25 +671,41 @@ const StringingApp = ({ sport, uid }) => {
         reader.onload = async (ev) => {
             try {
                 const data = new Uint8Array(ev.target.result);
-                const wb = XLSX.read(data, { type: 'array' });
+                // cellDates:false → 날짜를 숫자로 읽어서 직접 변환 (복사·붙여넣기 데이터 포함 처리)
+                const wb = XLSX.read(data, { type: 'array', cellDates: false });
                 const ws = wb.Sheets[wb.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(ws);
+                const rows = XLSX.utils.sheet_to_json(ws, { raw: true });
                 if (rows.length === 0) { showAlert('엑셀 파일에 데이터가 없습니다.'); return; }
                 const firstRow = rows[0];
                 if (!firstRow['날짜'] || !firstRow['고객명']) {
                     showAlert('엑셀 파일 형식이 맞지 않습니다.\n먼저 내보내기로 양식을 받아서 사용해 주세요.');
                     return;
                 }
+
+                // ── 중복 체크: 기존 데이터와 비교해서 중복 제거 ──
+                const existingKeys = new Set(
+                    records.map(r => `${r.date}|${r.name}|${r.racket}|${r.stringType}|${r.labor}`)
+                );
+                const uniqueRows = rows.filter(row => {
+                    const dateStr = parseExcelDate(row['날짜']);
+                    const key = `${dateStr}|${String(row['고객명']||'').trim()}|${String(row['라켓명']||'').trim()}|${String(row['스트링']||'').trim()}|${String(parseFloat(row['공임비'])||0)}`;
+                    return !existingKeys.has(key);
+                });
+                const dupCount = rows.length - uniqueRows.length;
+
                 setConfirmModal({
-                    msg: `${rows.length}건을 불러올까요?\n(기존 데이터에 추가됩니다)`,
+                    msg: dupCount > 0
+                        ? `총 ${rows.length}건 중 중복 ${dupCount}건 제외\n${uniqueRows.length}건을 불러올까요?\n(기존 데이터에 추가됩니다)`
+                        : `${rows.length}건을 불러올까요?\n(기존 데이터에 추가됩니다)`,
                     okLabel: '불러오기',
                     cancelLabel: '취소',
                     onOk: async () => {
                         setConfirmModal(null);
+                        if (uniqueRows.length === 0) { showAlert('중복 데이터만 있어서 추가할 내용이 없습니다.'); return; }
                         try {
                             const ref = db.ref(dbPath(uid, sport, 'records'));
                             const batch = {};
-                            rows.forEach((row, i) => {
+                            uniqueRows.forEach((row, i) => {
                                 const key = ref.push().key;
                                 const sp = parseFloat(row['스트링가격'])||0;
                                 const labor = parseFloat(row['공임비'])||0;
@@ -675,12 +713,12 @@ const StringingApp = ({ sport, uid }) => {
                                 const extra = parseFloat(row['추가작업금액'])||0;
                                 const couponDiscount = parseFloat(row['쿠폰할인'])||0;
                                 const total = row['최종금액'] ? (parseFloat(row['최종금액'])||0) : (sp+labor)*qty+extra-couponDiscount;
-                                const extraNames = row['추가작업'] ? row['추가작업'].split(',').map(n=>n.trim()).filter(Boolean) : [];
+                                const extraNames = row['추가작업'] ? String(row['추가작업']).split(',').map(n=>n.trim()).filter(Boolean) : [];
                                 const extraPrice = extraNames.length > 0 ? Math.round(extra/extraNames.length) : 0;
                                 batch[key] = {
                                     fbKey:key, id:key,
                                     createdAt: Date.now()+i,
-                                    date: String(row['날짜']||getTodayKST()).trim(),
+                                    date: parseExcelDate(row['날짜']),
                                     name: String(row['고객명']||'').trim(),
                                     racket: String(row['라켓명']||'').trim(),
                                     pattern: String(row['패턴']||config.patterns[0]).trim(),
@@ -698,7 +736,7 @@ const StringingApp = ({ sport, uid }) => {
                                 };
                             });
                             await ref.update(batch);
-                            showAlert(`✅ ${rows.length}건을 성공적으로 불러왔습니다!`);
+                            showAlert(`✅ ${uniqueRows.length}건을 성공적으로 불러왔습니다!${dupCount>0?' (중복 '+dupCount+'건 제외)':''}`);
                         } catch(err) {
                             showAlert('저장 오류: ' + err.message);
                         }
