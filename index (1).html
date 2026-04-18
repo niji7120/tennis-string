@@ -1062,27 +1062,6 @@ const StringingApp = ({ sport, uid, activeNav, setActiveNav, triggerForm, setTri
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState('customers');
     const [showAddModal, setShowAddModal] = useState(false);
-
-    // ── 하단 메뉴 연동 ──────────────────────────
-    useEffect(() => {
-        if (!activeNav) return;
-        const navMap = { home:'customers', customers:'customers', monthly:'monthly', strings:'strings' };
-        if (navMap[activeNav]) setViewMode(navMap[activeNav]);
-    }, [activeNav]);
-
-    // ── 하단 FAB 버튼 등록 트리거 ───────────────
-    useEffect(() => {
-        if (triggerForm === undefined) return;
-        setShowForm(true);
-        setEditingId(null);
-        setFormData(makeEmptyForm());
-        setExtraWorks([]);
-        setShowExtraSection(false);
-        setAppliedCoupon(null);
-        setCouponInput('');
-        setCouponMsg('');
-        window.scrollTo({top:0,behavior:'smooth'});
-    }, [triggerForm]);
     const [modalStringName, setModalStringName] = useState('');
     const [modalStringPrice, setModalStringPrice] = useState('');
     const [editingStringKey, setEditingStringKey] = useState(null);
@@ -1122,6 +1101,29 @@ const StringingApp = ({ sport, uid, activeNav, setActiveNav, triggerForm, setTri
         isHybrid:false, hybridString2:'', hybridPrice2:'',
     });
     const [formData, setFormData] = useState(makeEmptyForm());
+
+    // ── 하단 메뉴 연동 ──────────────────────────
+    useEffect(() => {
+        if (!activeNav) return;
+        const navMap = { home:'customers', customers:'customers', monthly:'monthly', strings:'strings' };
+        if (navMap[activeNav]) setViewMode(navMap[activeNav]);
+    }, [activeNav]);
+
+    // ── 하단 FAB 버튼 등록 트리거 ───────────────
+    const isFirstRender = useRef(true);
+    useEffect(() => {
+        if (isFirstRender.current) { isFirstRender.current = false; return; }
+        setShowForm(true);
+        setEditingId(null);
+        setFormData(makeEmptyForm());
+        setExtraWorks([]);
+        setShowExtraSection(false);
+        setAppliedCoupon(null);
+        setCouponInput('');
+        setCouponMsg('');
+        setViewMode('customers');
+        window.scrollTo({top:0,behavior:'smooth'});
+    }, [triggerForm]);
 
     // ── 저장 상태 토스트 ────────────────────────
     const showSaveStatus = (status) => {
