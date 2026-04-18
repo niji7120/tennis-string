@@ -13,122 +13,214 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
+
         :root {
-            --black: #111111;
+            --black: #0A0A0A;
+            --black-2: #111111;
+            --black-3: #1A1A1A;
             --green: #22C55E;
+            --green-vivid: #16FF6A;
             --green-dark: #16A34A;
+            --green-glow: rgba(34,197,94,0.35);
             --green-light: #DCFCE7;
             --white: #FFFFFF;
-            --gray-bg: #F5F5F5;
-            --gray-100: #F0F0F0;
+            --gray-bg: #F2F3F5;
+            --gray-100: #EFEFEF;
             --gray-200: #E0E0E0;
             --gray-400: #9E9E9E;
             --gray-600: #616161;
             --blue: #3B82F6;
             --blue-dark: #2563EB;
+            --surface: #FFFFFF;
+            --surface-2: #FAFAFA;
+            --border: #EBEBEB;
         }
+
         * { box-sizing: border-box; -webkit-overflow-scrolling: touch; }
+
         body {
             margin: 0; padding: 0;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'DM Sans', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
             -webkit-font-smoothing: antialiased;
             background: var(--gray-bg);
             color: var(--black);
             padding-bottom: env(safe-area-inset-bottom);
         }
+
         button, a { -webkit-tap-highlight-color: transparent; }
         html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-        input, select, textarea { font-size: 16px !important; font-family: 'Pretendard', sans-serif; }
-        button { min-height: 40px; touch-action: manipulation; font-family: 'Pretendard', sans-serif; }
+        input, select, textarea { font-size: 16px !important; font-family: 'DM Sans', 'Pretendard', sans-serif; }
+        button { min-height: 40px; touch-action: manipulation; font-family: 'DM Sans', 'Pretendard', sans-serif; }
 
         /* ── 스피너 ── */
-        .spinner { width:40px; height:40px; border:3px solid #E0E0E0; border-top-color: var(--green); border-radius:50%; animation:spin 0.8s linear infinite; }
-        @keyframes spin { to { transform:rotate(360deg); } }
-
-        /* ── 헤더 ── */
-        .app-header {
-            background: var(--black);
-            padding: 16px 16px 0;
-            position: sticky; top: 0; z-index: 30;
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(34,197,94,0.2);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── 헤더 (프리미엄 블랙+그린 그라데이션) ── */
+        .app-header {
+            background: linear-gradient(160deg, #0A0A0A 0%, #0f1f12 55%, #0d2010 100%);
+            padding: 18px 16px 0;
+            position: sticky; top: 0; z-index: 30;
+            border-bottom: 1px solid rgba(34,197,94,0.12);
+            box-shadow: 0 4px 32px rgba(0,0,0,0.4);
+        }
+
         .header-top {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
         }
-        .header-brand { display: flex; align-items: center; gap: 8px; }
+
+        .header-brand { display: flex; align-items: center; gap: 10px; }
+
         .header-logo {
-            width: 32px; height: 32px; background: var(--green);
-            border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            font-size: 16px; font-weight: 900; color: #fff; letter-spacing: -1px;
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--green-dark), var(--green));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 20px; color: #fff; letter-spacing: 0;
+            box-shadow: 0 4px 14px rgba(34,197,94,0.5);
         }
-        .header-title { font-size: 17px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
-        .header-subtitle { font-size: 11px; color: #9E9E9E; margin-top: 1px; }
+
+        .header-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 20px; font-weight: 400;
+            color: #fff; letter-spacing: 1.5px;
+            line-height: 1;
+        }
+
+        .header-subtitle {
+            font-size: 10px; color: rgba(255,255,255,0.35);
+            margin-top: 2px; font-weight: 500; letter-spacing: 0.3px;
+        }
+
         .logout-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #ccc; font-size: 12px; font-weight: 600;
-            padding: 6px 12px; border-radius: 20px; cursor: pointer;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.5);
+            font-size: 11px; font-weight: 600;
+            padding: 6px 14px; border-radius: 20px; cursor: pointer;
+            transition: all 0.2s;
         }
+        .logout-btn:active { background: rgba(255,255,255,0.14); }
+
+        /* ── 오늘 요약 카드 (헤더 안) ── */
+        .today-summary-card {
+            margin: 0 0 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(34,197,94,0.18);
+            border-radius: 18px;
+            padding: 14px 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .today-summary-card::before {
+            content: '';
+            position: absolute; top: -30px; right: -20px;
+            width: 100px; height: 100px;
+            background: radial-gradient(circle, rgba(34,197,94,0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .summary-stat {
+            text-align: center;
+            padding: 0 4px;
+            position: relative;
+        }
+        .summary-stat + .summary-stat::before {
+            content: '';
+            position: absolute; left: 0; top: 10%; height: 80%;
+            width: 1px; background: rgba(255,255,255,0.08);
+        }
+        .summary-stat-icon { font-size: 14px; margin-bottom: 3px; }
+        .summary-stat-label { font-size: 9px; color: rgba(255,255,255,0.35); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+        .summary-stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: #fff; line-height: 1.1; margin-top: 1px; }
+        .summary-stat-val.accent { color: var(--green); }
+        .summary-stat-sub { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 1px; }
 
         /* ── 스포츠 탭 ── */
         .sport-tabs { display: flex; gap: 0; }
         .sport-tab {
-            flex: 1; padding: 10px 0; text-align: center;
+            flex: 1; padding: 11px 0; text-align: center;
             font-size: 13px; font-weight: 700; cursor: pointer;
-            border-bottom: 3px solid transparent;
-            color: #9E9E9E; background: transparent; border-top: none; border-left: none; border-right: none;
-            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+            color: rgba(255,255,255,0.3);
+            background: transparent; border-top: none; border-left: none; border-right: none;
+            transition: all 0.2s; letter-spacing: 0.2px;
         }
-        .sport-tab.active-green { color: var(--green); border-bottom-color: var(--green); }
+        .sport-tab.active-green {
+            color: var(--green);
+            border-bottom-color: var(--green);
+            text-shadow: 0 0 12px rgba(34,197,94,0.6);
+        }
         .sport-tab.active-blue { color: var(--blue); border-bottom-color: var(--blue); }
 
-        /* ── 오늘 요약 배너 ── */
+        /* ── 오늘 요약 배너 (본문용 레거시 호환) ── */
         .today-banner {
-            background: var(--black);
-            padding: 14px 16px 16px;
-            margin-bottom: 12px;
+            background: transparent;
+            padding: 12px 12px 4px;
+            margin-bottom: 4px;
         }
         .today-banner-inner {
-            background: linear-gradient(135deg, #1a1a1a 0%, #222 100%);
-            border: 1px solid #2a2a2a;
-            border-radius: 16px;
-            padding: 16px;
+            background: linear-gradient(135deg, #0f1f12 0%, #0a1a0d 100%);
+            border: 1px solid rgba(34,197,94,0.2);
+            border-radius: 20px;
+            padding: 16px 18px;
             display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         }
-        .today-greeting { font-size: 13px; color: #9E9E9E; margin-bottom: 6px; }
-        .today-stats { display: flex; gap: 20px; }
+        .today-greeting { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 6px; font-weight: 500; letter-spacing: 0.3px; }
+        .today-stats { display: flex; gap: 22px; }
         .today-stat-item { }
-        .today-stat-label { font-size: 11px; color: #616161; margin-bottom: 2px; }
-        .today-stat-val { font-size: 20px; font-weight: 800; color: #fff; }
-        .today-stat-val.green { color: var(--green); }
-        .new-work-btn {
-            background: var(--green);
-            color: #fff; font-size: 13px; font-weight: 700;
-            padding: 10px 16px; border-radius: 12px;
-            border: none; cursor: pointer; white-space: nowrap;
-            box-shadow: 0 4px 12px rgba(34,197,94,0.35);
+        .today-stat-label { font-size: 10px; color: rgba(255,255,255,0.35); margin-bottom: 2px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+        .today-stat-val {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 26px; color: #fff; line-height: 1;
         }
+        .today-stat-val.green { color: var(--green); text-shadow: 0 0 10px rgba(34,197,94,0.5); }
+
+        .new-work-btn {
+            background: linear-gradient(135deg, var(--green-dark), var(--green));
+            color: #fff; font-size: 13px; font-weight: 800;
+            padding: 12px 18px; border-radius: 16px;
+            border: none; cursor: pointer; white-space: nowrap;
+            box-shadow: 0 6px 20px rgba(34,197,94,0.45);
+            letter-spacing: 0.2px;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .new-work-btn:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(34,197,94,0.3); }
 
         /* ── 메인 탭 바 ── */
         .main-tabs {
             display: flex; gap: 6px;
-            padding: 0 12px 10px;
+            padding: 10px 12px 8px;
             overflow-x: auto;
         }
         .main-tabs::-webkit-scrollbar { display: none; }
         .main-tab {
             flex-shrink: 0;
-            padding: 7px 14px; border-radius: 20px;
+            padding: 8px 16px; border-radius: 24px;
             font-size: 12px; font-weight: 700;
             border: none; cursor: pointer;
-            background: #E8E8E8; color: #616161;
-            transition: all 0.18s;
+            background: rgba(0,0,0,0.06); color: #888;
+            transition: all 0.18s; letter-spacing: 0.2px;
         }
-        .main-tab.active { background: var(--black); color: #fff; }
-        .main-tab.active-green { background: var(--green); color: #fff; }
+        .main-tab.active { background: var(--black); color: #fff; box-shadow: 0 3px 10px rgba(0,0,0,0.2); }
+        .main-tab.active-green { background: linear-gradient(135deg, var(--green-dark), var(--green)); color: #fff; box-shadow: 0 3px 12px rgba(34,197,94,0.35); }
         .main-tab.active-pink { background: #EC4899; color: #fff; }
         .main-tab.active-yellow { background: #EAB308; color: #fff; }
         .main-tab.active-orange { background: #F97316; color: #fff; }
@@ -140,22 +232,30 @@
             padding: 0 12px 8px;
         }
         .search-input {
-            flex: 1; padding: 11px 14px;
-            border: 1.5px solid #E0E0E0;
-            border-radius: 12px; font-size: 14px; font-weight: 500;
+            flex: 1; padding: 12px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 16px; font-size: 14px; font-weight: 500;
             background: #fff; outline: none;
-            transition: border-color 0.15s;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
-        .search-input:focus { border-color: var(--green); }
+        .search-input:focus {
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(34,197,94,0.12);
+        }
         .add-btn {
-            padding: 11px 18px; border-radius: 12px;
-            font-size: 13px; font-weight: 700;
+            padding: 12px 20px; border-radius: 16px;
+            font-size: 13px; font-weight: 800;
             border: none; cursor: pointer;
-            color: #fff;
+            color: #fff; transition: transform 0.15s, box-shadow 0.15s;
         }
-        .add-btn-green { background: var(--green); box-shadow: 0 4px 12px rgba(34,197,94,0.3); }
-        .add-btn-blue { background: var(--blue); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
-        .add-btn-cancel { background: #9E9E9E; }
+        .add-btn:active { transform: scale(0.96); }
+        .add-btn-green {
+            background: linear-gradient(135deg, var(--green-dark), var(--green));
+            box-shadow: 0 4px 14px rgba(34,197,94,0.38);
+        }
+        .add-btn-blue { background: linear-gradient(135deg, var(--blue-dark), var(--blue)); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+        .add-btn-cancel { background: #C0C0C0; }
 
         /* ── 엑셀 버튼 행 ── */
         .excel-row {
@@ -163,57 +263,65 @@
             padding: 0 12px 10px;
         }
         .excel-btn {
-            flex: 1; padding: 9px 0;
-            border-radius: 10px; font-size: 12px; font-weight: 700;
+            flex: 1; padding: 10px 0;
+            border-radius: 12px; font-size: 12px; font-weight: 700;
             border: none; cursor: pointer; color: #fff;
             display: flex; align-items: center; justify-content: center; gap: 4px;
         }
-        .excel-btn-export { background: #059669; }
-        .excel-btn-import { background: #0D9488; }
+        .excel-btn-export { background: linear-gradient(135deg, #047857, #059669); }
+        .excel-btn-import { background: linear-gradient(135deg, #0F766E, #0D9488); }
 
         /* ── 고객 카드 ── */
         .customer-card {
             background: #fff;
-            border-radius: 16px;
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
             margin-bottom: 10px;
+            border: 1px solid rgba(0,0,0,0.04);
         }
         .customer-card-header {
-            padding: 12px 14px;
+            padding: 13px 16px;
             display: flex; align-items: center; justify-content: space-between;
         }
-        .customer-card-header.green { background: linear-gradient(90deg, #16A34A, #22C55E); }
-        .customer-card-header.blue { background: linear-gradient(90deg, #1D4ED8, #3B82F6); }
-        .customer-name { font-size: 15px; font-weight: 800; color: #fff; }
-        .customer-badges { display: flex; gap: 5px; margin-top: 3px; flex-wrap: wrap; }
+        .customer-card-header.green {
+            background: linear-gradient(120deg, #0f4f28 0%, #16803d 50%, #22C55E 100%);
+        }
+        .customer-card-header.blue {
+            background: linear-gradient(120deg, #1e3a8a 0%, #1D4ED8 50%, #3B82F6 100%);
+        }
+        .customer-name { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -0.2px; }
+        .customer-badges { display: flex; gap: 5px; margin-top: 4px; flex-wrap: wrap; }
         .badge {
             font-size: 10px; font-weight: 700;
-            padding: 2px 7px; border-radius: 10px;
-            background: rgba(255,255,255,0.2); color: #fff;
+            padding: 2px 8px; border-radius: 12px;
+            background: rgba(255,255,255,0.18); color: #fff;
+            letter-spacing: 0.2px;
         }
         .card-actions { display: flex; gap: 4px; align-items: center; }
-        .card-date { font-size: 11px; color: rgba(255,255,255,0.8); margin-right: 4px; }
+        .card-date { font-size: 11px; color: rgba(255,255,255,0.7); margin-right: 4px; }
         .card-action-btn {
-            width: 32px; height: 32px; border-radius: 8px;
+            width: 34px; height: 34px; border-radius: 10px;
             background: rgba(255,255,255,0.15);
             border: none; cursor: pointer; font-size: 14px;
             display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s;
         }
-        .customer-card-body { padding: 12px 14px; }
+        .card-action-btn:active { background: rgba(255,255,255,0.28); }
+        .customer-card-body { padding: 13px 16px; }
         .card-row {
             display: flex; align-items: flex-start; gap: 8px;
             margin-bottom: 7px;
         }
-        .card-label { font-size: 11px; color: #9E9E9E; font-weight: 600; min-width: 40px; padding-top: 1px; }
+        .card-label { font-size: 11px; color: #aaa; font-weight: 600; min-width: 40px; padding-top: 1px; }
         .card-val { font-size: 12px; color: #111; font-weight: 600; flex: 1; }
         .card-total-row {
             display: flex; justify-content: space-between; align-items: center;
             padding-top: 10px; margin-top: 6px;
             border-top: 1px solid #F0F0F0;
         }
-        .card-total-label { font-size: 12px; color: #9E9E9E; font-weight: 600; }
-        .card-total-val { font-size: 20px; font-weight: 900; }
+        .card-total-label { font-size: 12px; color: #aaa; font-weight: 600; }
+        .card-total-val { font-size: 22px; font-weight: 900; }
         .card-total-val.green { color: var(--green-dark); }
         .card-total-val.blue { color: var(--blue-dark); }
         .tension-badge {
@@ -222,7 +330,7 @@
             padding: 2px 8px; border-radius: 10px; display: inline-block;
         }
         .extra-works-box {
-            background: #EEF2FF; border-radius: 10px; padding: 8px 10px; margin-top: 4px;
+            background: #EEF2FF; border-radius: 12px; padding: 8px 10px; margin-top: 4px;
         }
         .extra-works-label { font-size: 10px; color: #818CF8; font-weight: 700; margin-bottom: 4px; }
         .extra-chip {
@@ -235,81 +343,95 @@
 
         /* ── 히스토리 토글 버튼 ── */
         .history-toggle-btn {
-            width: 100%; padding: 9px;
-            background: #F9F9F9; border: 1px solid #EFEFEF;
-            border-radius: 10px; font-size: 12px; font-weight: 600; color: #9E9E9E;
+            width: 100%; padding: 10px;
+            background: #F6F6F6; border: 1px solid #EFEFEF;
+            border-radius: 12px; font-size: 12px; font-weight: 600; color: #aaa;
             cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;
             margin-top: 8px;
         }
 
         /* ── 등록 폼 ── */
         .form-card {
-            background: #fff; border-radius: 16px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-            padding: 18px; margin-bottom: 10px;
+            background: #fff; border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+            padding: 20px; margin-bottom: 10px;
+            border: 1px solid rgba(0,0,0,0.04);
         }
         .form-title { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 16px; }
-        .form-label { font-size: 12px; font-weight: 700; color: #616161; margin-bottom: 5px; display: block; }
+        .form-label { font-size: 12px; font-weight: 700; color: #888; margin-bottom: 5px; display: block; letter-spacing: 0.2px; }
         .form-input {
-            width: 100%; padding: 11px 13px;
-            border: 1.5px solid #E0E0E0; border-radius: 11px;
+            width: 100%; padding: 12px 14px;
+            border: 1.5px solid var(--border); border-radius: 13px;
             font-size: 14px; font-weight: 500; background: #fff;
-            outline: none; transition: border-color 0.15s;
+            outline: none; transition: border-color 0.15s, box-shadow 0.15s;
         }
-        .form-input:focus { border-color: var(--green); }
-        .form-input-blue:focus { border-color: var(--blue); }
+        .form-input:focus {
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(34,197,94,0.1);
+        }
+        .form-input-blue:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
         .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .form-group { margin-bottom: 10px; position: relative; }
         .form-section-title {
-            font-size: 12px; font-weight: 700; color: #9E9E9E;
-            text-transform: uppercase; letter-spacing: 0.5px;
-            margin: 14px 0 8px;
+            font-size: 11px; font-weight: 700; color: #bbb;
+            text-transform: uppercase; letter-spacing: 0.8px;
+            margin: 16px 0 8px;
         }
         .submit-btn {
-            width: 100%; padding: 14px;
-            border-radius: 13px; border: none; cursor: pointer;
+            width: 100%; padding: 15px;
+            border-radius: 16px; border: none; cursor: pointer;
             font-size: 15px; font-weight: 800; color: #fff;
-            margin-top: 6px;
+            margin-top: 6px; letter-spacing: 0.2px;
+            transition: transform 0.15s, box-shadow 0.15s;
         }
-        .submit-btn-green { background: linear-gradient(135deg, #16A34A, #22C55E); box-shadow: 0 6px 16px rgba(34,197,94,0.35); }
-        .submit-btn-blue { background: linear-gradient(135deg, #1D4ED8, #3B82F6); box-shadow: 0 6px 16px rgba(59,130,246,0.3); }
+        .submit-btn:active { transform: scale(0.98); }
+        .submit-btn-green {
+            background: linear-gradient(135deg, #0f5929, var(--green-dark), var(--green));
+            box-shadow: 0 8px 24px rgba(34,197,94,0.4);
+        }
+        .submit-btn-blue {
+            background: linear-gradient(135deg, #1e3a8a, var(--blue-dark), var(--blue));
+            box-shadow: 0 8px 20px rgba(59,130,246,0.35);
+        }
 
         /* ── 하이브리드 영역 ── */
         .hybrid-box {
-            border: 1.5px dashed #E0E0E0; border-radius: 12px; padding: 12px;
-            margin-bottom: 10px;
+            border: 1.5px dashed var(--border); border-radius: 14px; padding: 12px;
+            margin-bottom: 10px; background: #FAFAFA;
         }
 
         /* ── 추가작업 영역 ── */
         .extra-section {
-            border: 1.5px solid #EEF2FF; border-radius: 12px;
+            border: 1.5px solid #EEF2FF; border-radius: 14px;
             padding: 12px; background: #FAFBFF; margin-bottom: 10px;
         }
 
         /* ── 쿠폰 적용 영역 ── */
         .coupon-box {
-            border: 1.5px dashed #FBB6CE; border-radius: 12px; padding: 12px;
+            border: 1.5px dashed #FBB6CE; border-radius: 14px; padding: 12px;
             background: #FFF0F6; margin-bottom: 10px;
         }
 
         /* ── 총액 박스 ── */
         .total-box {
-            background: #F0FDF4; border: 1.5px solid #DCFCE7;
-            border-radius: 13px; padding: 14px;
+            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            border: 1.5px solid rgba(34,197,94,0.25);
+            border-radius: 16px; padding: 16px;
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 10px;
         }
         .total-box-label { font-size: 13px; font-weight: 700; color: #15803D; }
-        .total-box-val { font-size: 24px; font-weight: 900; color: #15803D; }
-        .total-box.blue { background: #EFF6FF; border-color: #DBEAFE; }
+        .total-box-val { font-size: 26px; font-weight: 900; color: #15803D; }
+        .total-box.blue { background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: rgba(59,130,246,0.25); }
         .total-box.blue .total-box-label { color: #1D4ED8; }
         .total-box.blue .total-box-val { color: #1D4ED8; }
 
         /* ── 통계 카드 ── */
         .stat-card {
-            background: #fff; border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            background: #fff; border-radius: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
             overflow: hidden; margin-bottom: 10px;
+            border: 1px solid rgba(0,0,0,0.04);
         }
         .stat-card-header {
             display: flex; justify-content: space-between; align-items: center;
@@ -317,7 +439,7 @@
             border-bottom: 1px solid #F0F0F0;
         }
         .stat-month { font-size: 15px; font-weight: 800; color: #111; }
-        .stat-count { font-size: 12px; color: #9E9E9E; font-weight: 600; }
+        .stat-count { font-size: 12px; color: #aaa; font-weight: 600; }
         .stat-total { font-size: 18px; font-weight: 900; }
         .stat-total.green { color: var(--green-dark); }
         .stat-total.blue { color: var(--blue-dark); }
@@ -325,10 +447,10 @@
         .stat-rows { padding: 4px 0; }
         .stat-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 16px; border-bottom: 1px solid #F5F5F5;
+            padding: 11px 16px; border-bottom: 1px solid #F5F5F5;
         }
         .stat-row:last-child { border-bottom: none; }
-        .stat-row-label { font-size: 12px; color: #616161; font-weight: 600; }
+        .stat-row-label { font-size: 12px; color: #888; font-weight: 600; }
         .stat-row-val { font-size: 13px; font-weight: 800; }
 
         /* ── 내용 패딩 ── */
@@ -337,56 +459,78 @@
         /* ── 로그인 화면 ── */
         .login-screen {
             min-height: 100vh;
-            background: var(--black);
+            background: linear-gradient(160deg, #050d07 0%, #0a1a0d 50%, #0d1a12 100%);
             display: flex; align-items: center; justify-content: center; padding: 20px;
         }
         .login-card {
-            background: #1A1A1A; border: 1px solid #2A2A2A;
-            border-radius: 24px; padding: 32px 24px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(34,197,94,0.15);
+            border-radius: 28px; padding: 36px 24px;
             width: 100%; max-width: 360px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+            backdrop-filter: blur(20px);
         }
-        .login-logo-area { text-align: center; margin-bottom: 28px; }
+        .login-logo-area { text-align: center; margin-bottom: 32px; }
         .login-logo {
-            width: 60px; height: 60px; background: var(--green);
-            border-radius: 16px; display: flex; align-items: center; justify-content: center;
-            font-size: 28px; margin: 0 auto 12px;
-            box-shadow: 0 8px 24px rgba(34,197,94,0.3);
+            width: 68px; height: 68px;
+            background: linear-gradient(135deg, var(--green-dark), var(--green));
+            border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 34px; color: #fff;
+            margin: 0 auto 14px;
+            box-shadow: 0 12px 32px rgba(34,197,94,0.45);
         }
-        .login-title { font-size: 22px; font-weight: 900; color: #fff; }
-        .login-subtitle { font-size: 13px; color: #616161; margin-top: 4px; }
+        .login-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px; font-weight: 400; color: #fff; letter-spacing: 2px;
+        }
+        .login-subtitle { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 5px; }
         .login-tab-row {
-            display: flex; background: #111; border-radius: 12px; padding: 4px;
-            margin-bottom: 20px;
+            display: flex; background: rgba(0,0,0,0.3); border-radius: 14px; padding: 4px;
+            margin-bottom: 22px; border: 1px solid rgba(255,255,255,0.06);
         }
         .login-tab {
-            flex: 1; padding: 9px; text-align: center;
-            border-radius: 9px; border: none; font-size: 13px; font-weight: 700;
-            cursor: pointer; background: transparent; color: #616161;
+            flex: 1; padding: 10px; text-align: center;
+            border-radius: 11px; border: none; font-size: 13px; font-weight: 700;
+            cursor: pointer; background: transparent; color: rgba(255,255,255,0.3);
+            transition: all 0.2s;
         }
-        .login-tab.active { background: var(--green); color: #fff; }
+        .login-tab.active {
+            background: linear-gradient(135deg, var(--green-dark), var(--green));
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(34,197,94,0.35);
+        }
         .login-input {
-            width: 100%; padding: 13px 14px;
-            background: #111; border: 1.5px solid #2A2A2A; border-radius: 12px;
+            width: 100%; padding: 14px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
             font-size: 15px; color: #fff; outline: none;
-            transition: border-color 0.15s; margin-bottom: 10px;
+            transition: border-color 0.15s, box-shadow 0.15s; margin-bottom: 10px;
         }
-        .login-input:focus { border-color: var(--green); }
-        .login-input::placeholder { color: #444; }
-        .login-label { font-size: 12px; font-weight: 700; color: #616161; margin-bottom: 5px; display: block; }
+        .login-input:focus {
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(34,197,94,0.18);
+        }
+        .login-input::placeholder { color: rgba(255,255,255,0.2); }
+        .login-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.4); margin-bottom: 5px; display: block; letter-spacing: 0.4px; text-transform: uppercase; }
         .login-btn {
-            width: 100%; padding: 14px;
-            background: var(--green); color: #fff;
-            border: none; border-radius: 13px;
+            width: 100%; padding: 15px;
+            background: linear-gradient(135deg, var(--green-dark), var(--green));
+            color: #fff; border: none; border-radius: 16px;
             font-size: 15px; font-weight: 800; cursor: pointer;
-            box-shadow: 0 6px 18px rgba(34,197,94,0.35);
-            margin-top: 4px;
+            box-shadow: 0 8px 24px rgba(34,197,94,0.45);
+            margin-top: 6px; letter-spacing: 0.3px;
+            transition: transform 0.15s, box-shadow 0.15s;
         }
+        .login-btn:active { transform: scale(0.98); }
         .login-error {
-            background: #1F0A0A; border: 1px solid #5A1A1A;
-            border-radius: 10px; padding: 10px 14px;
-            font-size: 12px; color: #F87171; margin-bottom: 10px;
+            background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 12px; padding: 10px 14px;
+            font-size: 12px; color: #FCA5A5; margin-bottom: 10px;
         }
-        .login-link { background: none; border: none; color: #616161; font-size: 12px; cursor: pointer; width: 100%; margin-top: 8px; padding: 6px; }
+        .login-link { background: none; border: none; color: rgba(255,255,255,0.25); font-size: 12px; cursor: pointer; width: 100%; margin-top: 8px; padding: 6px; }
 
         /* ── 섹션 헤더 ── */
         .section-header {
@@ -394,51 +538,60 @@
             padding: 14px 16px; border-bottom: 1px solid #F0F0F0;
         }
         .section-title { font-size: 14px; font-weight: 800; color: #111; }
-        .section-count { font-size: 12px; color: #9E9E9E; font-weight: 600; }
+        .section-count { font-size: 12px; color: #aaa; font-weight: 600; }
 
         /* ── 설정 화면 ── */
-        .settings-section { background: #fff; border-radius: 16px; overflow: hidden; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .settings-section {
+            background: #fff; border-radius: 20px; overflow: hidden;
+            margin-bottom: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0,0,0,0.04);
+        }
 
         /* ── 모달 오버레이 ── */
         .modal-overlay {
             position: fixed; inset: 0; z-index: 50;
             display: flex; align-items: center; justify-content: center; padding: 16px;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
         }
         .modal-card {
-            background: #fff; border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-            padding: 24px; width: 100%; max-width: 320px;
+            background: #fff; border-radius: 24px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+            padding: 26px; width: 100%; max-width: 320px;
         }
         .modal-title { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 16px; }
         .modal-input {
-            width: 100%; padding: 11px 13px;
-            border: 1.5px solid #E0E0E0; border-radius: 11px;
+            width: 100%; padding: 12px 14px;
+            border: 1.5px solid var(--border); border-radius: 13px;
             font-size: 14px; margin-bottom: 10px; outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
-        .modal-input:focus { border-color: var(--green); }
+        .modal-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(34,197,94,0.1); }
         .modal-btn-row { display: flex; gap: 8px; margin-top: 4px; }
         .modal-btn-cancel {
-            flex: 1; padding: 12px; border-radius: 11px;
-            background: #F0F0F0; color: #616161; font-size: 14px; font-weight: 700;
+            flex: 1; padding: 13px; border-radius: 14px;
+            background: #F0F0F0; color: #888; font-size: 14px; font-weight: 700;
             border: none; cursor: pointer;
         }
         .modal-btn-ok {
-            flex: 1; padding: 12px; border-radius: 11px;
-            background: var(--green); color: #fff; font-size: 14px; font-weight: 700;
+            flex: 1; padding: 13px; border-radius: 14px;
+            background: linear-gradient(135deg, var(--green-dark), var(--green));
+            color: #fff; font-size: 14px; font-weight: 700;
             border: none; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(34,197,94,0.35);
         }
-        .modal-btn-ok-red { background: #EF4444; }
-        .modal-btn-ok-purple { background: #A855F7; }
-        .modal-btn-ok-pink { background: #EC4899; }
+        .modal-btn-ok-red { background: linear-gradient(135deg, #b91c1c, #EF4444); box-shadow: 0 4px 12px rgba(239,68,68,0.3); }
+        .modal-btn-ok-purple { background: linear-gradient(135deg, #7c3aed, #A855F7); }
+        .modal-btn-ok-pink { background: linear-gradient(135deg, #be185d, #EC4899); }
         .modal-btn-ok-only {
-            width: 100%; padding: 13px; border-radius: 11px;
-            background: var(--green); color: #fff; font-size: 14px; font-weight: 700;
+            width: 100%; padding: 14px; border-radius: 14px;
+            background: linear-gradient(135deg, var(--green-dark), var(--green));
+            color: #fff; font-size: 14px; font-weight: 700;
             border: none; cursor: pointer; margin-top: 8px;
+            box-shadow: 0 4px 12px rgba(34,197,94,0.35);
         }
 
         /* ── 빈 상태 ── */
-        .empty-state { text-align: center; padding: 40px 20px; color: #9E9E9E; font-size: 13px; font-weight: 600; }
+        .empty-state { text-align: center; padding: 48px 20px; color: #bbb; font-size: 13px; font-weight: 600; }
 
         /* ── 쿠폰 아이템 ── */
         .coupon-item {
@@ -447,19 +600,19 @@
         }
         .coupon-item:last-child { border-bottom: none; }
         .coupon-code { font-size: 13px; font-weight: 800; color: #111; font-family: monospace; }
-        .coupon-amount { font-size: 17px; font-weight: 900; color: #DB2777; }
-        .coupon-meta { font-size: 11px; color: #9E9E9E; margin-top: 2px; }
+        .coupon-amount { font-size: 18px; font-weight: 900; color: #DB2777; }
+        .coupon-meta { font-size: 11px; color: #aaa; margin-top: 2px; }
         .kakao-copy-btn {
             background: #FEE500; color: #111;
-            border: none; border-radius: 8px; padding: 7px 10px;
+            border: none; border-radius: 10px; padding: 8px 12px;
             font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap;
         }
 
         /* ── 토스트 ── */
         .toast {
             position: fixed; top: 16px; right: 16px; z-index: 999;
-            padding: 10px 16px; border-radius: 12px;
-            font-size: 13px; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            padding: 11px 18px; border-radius: 14px;
+            font-size: 13px; font-weight: 700; box-shadow: 0 6px 20px rgba(0,0,0,0.18);
         }
         .toast-saving { background: #FEF9C3; color: #854D0E; }
         .toast-saved { background: #DCFCE7; color: #15803D; }
@@ -468,12 +621,12 @@
         /* ── 드롭다운 ── */
         .dropdown-list {
             position: absolute; z-index: 20; width: 100%; margin-top: 4px;
-            background: #fff; border: 1.5px solid #E0E0E0;
-            border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            background: #fff; border: 1.5px solid var(--border);
+            border-radius: 16px; box-shadow: 0 12px 32px rgba(0,0,0,0.14);
             max-height: 220px; overflow-y: auto;
         }
         .dropdown-item {
-            width: 100%; text-align: left; padding: 12px 14px;
+            width: 100%; text-align: left; padding: 13px 16px;
             font-size: 13px; font-weight: 600; color: #111;
             background: none; border: none; border-bottom: 1px solid #F5F5F5;
             cursor: pointer;
@@ -483,6 +636,15 @@
 
         /* ── 스크롤바 숨기기 ── */
         ::-webkit-scrollbar { display: none; }
+
+        /* ── 애니메이션 ── */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .customer-card, .stat-card, .form-card {
+            animation: fadeInUp 0.25s ease both;
+        }
     </style>
 </head>
 <body>
@@ -1436,20 +1598,24 @@ const StringingApp = ({ sport, uid }) => {
                 <div className="today-banner">
                     <div className="today-banner-inner">
                         <div>
-                            <div className="today-greeting">안녕하세요 👋</div>
+                            <div className="today-greeting">TODAY OVERVIEW ✦</div>
                             <div className="today-stats">
                                 <div className="today-stat-item">
-                                    <div className="today-stat-label">오늘 작업</div>
-                                    <div className="today-stat-val">{records.filter(r=>r.date===getTodayKST()).length}<span style={{fontSize:'13px',color:'#9E9E9E',fontWeight:600}}>건</span></div>
+                                    <div className="today-stat-label">작업</div>
+                                    <div className="today-stat-val">{records.filter(r=>r.date===getTodayKST()).length}<span style={{fontSize:'12px',color:'rgba(255,255,255,0.4)',fontWeight:600,marginLeft:'2px'}}>건</span></div>
                                 </div>
                                 <div className="today-stat-item">
-                                    <div className="today-stat-label">오늘 매출</div>
-                                    <div className="today-stat-val green">{records.filter(r=>r.date===getTodayKST()).reduce((s,r)=>s+(r.total||0),0).toLocaleString()}<span style={{fontSize:'13px',fontWeight:600}}>원</span></div>
+                                    <div className="today-stat-label">매출</div>
+                                    <div className="today-stat-val green">{records.filter(r=>r.date===getTodayKST()).reduce((s,r)=>s+(r.total||0),0).toLocaleString()}<span style={{fontSize:'12px',fontWeight:600,marginLeft:'2px',color:'rgba(34,197,94,0.7)'}}>원</span></div>
+                                </div>
+                                <div className="today-stat-item">
+                                    <div className="today-stat-label">최근 고객</div>
+                                    <div style={{fontSize:'14px',fontWeight:800,color:'#fff',marginTop:'2px'}}>{records.length>0?records[0].name:'—'}</div>
                                 </div>
                             </div>
                         </div>
                         <button className="new-work-btn" onClick={()=>{if(!showForm){setShowForm(true);setEditingId(null);setFormData(makeEmptyForm());setExtraWorks([]);setShowExtraSection(false);setAppliedCoupon(null);setCouponInput('');setCouponMsg('');}}}>
-                            ➕ 새 작업
+                            ＋ 새 작업
                         </button>
                     </div>
                 </div>
