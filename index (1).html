@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -30,7 +31,7 @@
             --green-glow: rgba(34,197,94,0.35);
             --green-light: #DCFCE7;
             --white: #FFFFFF;
-            --gray-bg: #F0F2F5;
+            --gray-bg: #F2F3F5;
             --gray-100: #EFEFEF;
             --gray-200: #E0E0E0;
             --gray-400: #9E9E9E;
@@ -50,7 +51,7 @@
             -webkit-font-smoothing: antialiased;
             background: var(--gray-bg);
             color: var(--black);
-            padding-bottom: calc(72px + env(safe-area-inset-bottom));
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         button, a { -webkit-tap-highlight-color: transparent; }
@@ -68,66 +69,48 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ── 카드 등장 애니메이션 ── */
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; } to { opacity: 1; }
-        }
-        .anim-card {
-            animation: fadeSlideUp 0.32s cubic-bezier(0.22,1,0.36,1) both;
-        }
-        .anim-card:nth-child(1) { animation-delay: 0.02s; }
-        .anim-card:nth-child(2) { animation-delay: 0.06s; }
-        .anim-card:nth-child(3) { animation-delay: 0.10s; }
-        .anim-card:nth-child(4) { animation-delay: 0.14s; }
-        .anim-card:nth-child(5) { animation-delay: 0.18s; }
-        .anim-card:nth-child(n+6) { animation-delay: 0.22s; }
-
         /* ── 헤더 (프리미엄 블랙+그린 그라데이션) ── */
         .app-header {
-            background: linear-gradient(160deg, #080e09 0%, #0b1a0e 45%, #0d2312 100%);
-            padding: 16px 16px 0;
+            background: linear-gradient(160deg, #0A0A0A 0%, #0f1f12 55%, #0d2010 100%);
+            padding: 18px 16px 0;
             position: sticky; top: 0; z-index: 30;
-            border-bottom: 1px solid rgba(34,197,94,0.14);
-            box-shadow: 0 4px 32px rgba(0,0,0,0.5), 0 1px 0 rgba(34,197,94,0.1);
+            border-bottom: 1px solid rgba(34,197,94,0.12);
+            box-shadow: 0 4px 32px rgba(0,0,0,0.4);
         }
 
         .header-top {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
         }
 
         .header-brand { display: flex; align-items: center; gap: 10px; }
 
         .header-logo {
-            width: 38px; height: 38px;
+            width: 36px; height: 36px;
             background: linear-gradient(135deg, var(--green-dark), var(--green));
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 22px; color: #fff; letter-spacing: 0;
-            box-shadow: 0 4px 16px rgba(34,197,94,0.55);
+            font-size: 20px; color: #fff; letter-spacing: 0;
+            box-shadow: 0 4px 14px rgba(34,197,94,0.5);
         }
 
         .header-title {
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 21px; font-weight: 400;
-            color: #fff; letter-spacing: 2px;
+            font-size: 20px; font-weight: 400;
+            color: #fff; letter-spacing: 1.5px;
             line-height: 1;
         }
 
         .header-subtitle {
-            font-size: 10px; color: rgba(255,255,255,0.3);
+            font-size: 10px; color: rgba(255,255,255,0.35);
             margin-top: 2px; font-weight: 500; letter-spacing: 0.3px;
         }
 
         .logout-btn {
             background: rgba(255,255,255,0.07);
             border: 1px solid rgba(255,255,255,0.12);
-            color: rgba(255,255,255,0.45);
+            color: rgba(255,255,255,0.5);
             font-size: 11px; font-weight: 600;
             padding: 6px 14px; border-radius: 20px; cursor: pointer;
             transition: all 0.2s;
@@ -137,8 +120,8 @@
         /* ── 오늘 요약 카드 (헤더 안) ── */
         .today-summary-card {
             margin: 0 0 14px;
-            background: rgba(255,255,255,0.045);
-            border: 1px solid rgba(34,197,94,0.2);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(34,197,94,0.18);
             border-radius: 18px;
             padding: 14px 16px;
             display: grid;
@@ -150,15 +133,8 @@
         .today-summary-card::before {
             content: '';
             position: absolute; top: -30px; right: -20px;
-            width: 120px; height: 120px;
-            background: radial-gradient(circle, rgba(34,197,94,0.18) 0%, transparent 70%);
-            pointer-events: none;
-        }
-        .today-summary-card::after {
-            content: '';
-            position: absolute; bottom: -20px; left: 20px;
-            width: 80px; height: 80px;
-            background: radial-gradient(circle, rgba(34,197,94,0.08) 0%, transparent 70%);
+            width: 100px; height: 100px;
+            background: radial-gradient(circle, rgba(34,197,94,0.15) 0%, transparent 70%);
             pointer-events: none;
         }
         .summary-stat {
@@ -172,7 +148,7 @@
             width: 1px; background: rgba(255,255,255,0.08);
         }
         .summary-stat-icon { font-size: 14px; margin-bottom: 3px; }
-        .summary-stat-label { font-size: 9px; color: rgba(255,255,255,0.3); font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; }
+        .summary-stat-label { font-size: 9px; color: rgba(255,255,255,0.35); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
         .summary-stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: #fff; line-height: 1.1; margin-top: 1px; }
         .summary-stat-val.accent { color: var(--green); }
         .summary-stat-sub { font-size: 9px; color: rgba(255,255,255,0.3); margin-top: 1px; }
@@ -190,52 +166,44 @@
         .sport-tab.active-green {
             color: var(--green);
             border-bottom-color: var(--green);
-            text-shadow: 0 0 14px rgba(34,197,94,0.7);
+            text-shadow: 0 0 12px rgba(34,197,94,0.6);
         }
         .sport-tab.active-blue { color: var(--blue); border-bottom-color: var(--blue); }
 
-        /* ── 오늘 요약 배너 ── */
+        /* ── 오늘 요약 배너 (본문용 레거시 호환) ── */
         .today-banner {
             background: transparent;
             padding: 12px 12px 4px;
             margin-bottom: 4px;
         }
         .today-banner-inner {
-            background: linear-gradient(135deg, #0c1a0f 0%, #0a1a0d 100%);
-            border: 1px solid rgba(34,197,94,0.22);
-            border-radius: 22px;
+            background: linear-gradient(135deg, #0f1f12 0%, #0a1a0d 100%);
+            border: 1px solid rgba(34,197,94,0.2);
+            border-radius: 20px;
             padding: 16px 18px;
             display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 8px 28px rgba(0,0,0,0.18);
-            position: relative; overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         }
-        .today-banner-inner::before {
-            content: '🎾';
-            position: absolute; right: 16px; bottom: -8px;
-            font-size: 52px; opacity: 0.06;
-            pointer-events: none;
-        }
-        .today-greeting { font-size: 10px; color: rgba(255,255,255,0.35); margin-bottom: 8px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
-        .today-stats { display: flex; gap: 24px; }
+        .today-greeting { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 6px; font-weight: 500; letter-spacing: 0.3px; }
+        .today-stats { display: flex; gap: 22px; }
         .today-stat-item { }
-        .today-stat-label { font-size: 9px; color: rgba(255,255,255,0.3); margin-bottom: 2px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
+        .today-stat-label { font-size: 10px; color: rgba(255,255,255,0.35); margin-bottom: 2px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
         .today-stat-val {
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 28px; color: #fff; line-height: 1;
+            font-size: 26px; color: #fff; line-height: 1;
         }
-        .today-stat-val.green { color: var(--green); text-shadow: 0 0 12px rgba(34,197,94,0.55); }
+        .today-stat-val.green { color: var(--green); text-shadow: 0 0 10px rgba(34,197,94,0.5); }
 
         .new-work-btn {
             background: linear-gradient(135deg, var(--green-dark), var(--green));
             color: #fff; font-size: 13px; font-weight: 800;
-            padding: 13px 20px; border-radius: 18px;
+            padding: 12px 18px; border-radius: 16px;
             border: none; cursor: pointer; white-space: nowrap;
-            box-shadow: 0 6px 22px rgba(34,197,94,0.5);
+            box-shadow: 0 6px 20px rgba(34,197,94,0.45);
             letter-spacing: 0.2px;
             transition: transform 0.15s, box-shadow 0.15s;
-            position: relative; z-index: 1;
         }
-        .new-work-btn:active { transform: scale(0.96); box-shadow: 0 3px 12px rgba(34,197,94,0.3); }
+        .new-work-btn:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(34,197,94,0.3); }
 
         /* ── 메인 탭 바 ── */
         .main-tabs {
@@ -304,52 +272,35 @@
         .excel-btn-export { background: linear-gradient(135deg, #047857, #059669); }
         .excel-btn-import { background: linear-gradient(135deg, #0F766E, #0D9488); }
 
-        /* ── 고객 카드 (프리미엄 업그레이드) ── */
+        /* ── 고객 카드 ── */
         .customer-card {
             background: #fff;
-            border-radius: 22px;
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 2px 16px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
-            margin-bottom: 12px;
-            border: 1px solid rgba(0,0,0,0.035);
-            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            margin-bottom: 10px;
+            border: 1px solid rgba(0,0,0,0.04);
         }
-        .customer-card:active { transform: scale(0.99); }
         .customer-card-header {
-            padding: 14px 16px;
+            padding: 13px 16px;
             display: flex; align-items: center; justify-content: space-between;
-            position: relative; overflow: hidden;
-        }
-        .customer-card-header::after {
-            content: '';
-            position: absolute; top: 0; right: 0; bottom: 0; width: 40%;
-            background: linear-gradient(to left, rgba(255,255,255,0.06), transparent);
-            pointer-events: none;
         }
         .customer-card-header.green {
-            background: linear-gradient(130deg, #0a3d1e 0%, #15693a 45%, #22C55E 100%);
+            background: linear-gradient(120deg, #0f4f28 0%, #16803d 50%, #22C55E 100%);
         }
         .customer-card-header.blue {
-            background: linear-gradient(130deg, #1a3270 0%, #1D4ED8 50%, #60A5FA 100%);
+            background: linear-gradient(120deg, #1e3a8a 0%, #1D4ED8 50%, #3B82F6 100%);
         }
-        .customer-name { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -0.2px; }
-        .customer-badges { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+        .customer-name { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -0.2px; }
+        .customer-badges { display: flex; gap: 5px; margin-top: 4px; flex-wrap: wrap; }
         .badge {
             font-size: 10px; font-weight: 700;
-            padding: 3px 9px; border-radius: 20px;
+            padding: 2px 8px; border-radius: 12px;
             background: rgba(255,255,255,0.18); color: #fff;
-            letter-spacing: 0.2px; backdrop-filter: blur(4px);
+            letter-spacing: 0.2px;
         }
-        .badge-vip {
-            background: linear-gradient(135deg, #F59E0B, #FCD34D);
-            color: #78350F;
-        }
-        .badge-alert {
-            background: linear-gradient(135deg, #EF4444, #F87171);
-            color: #fff;
-        }
-        .card-actions { display: flex; gap: 4px; align-items: center; position: relative; z-index: 1; }
-        .card-date { font-size: 11px; color: rgba(255,255,255,0.65); margin-right: 4px; }
+        .card-actions { display: flex; gap: 4px; align-items: center; }
+        .card-date { font-size: 11px; color: rgba(255,255,255,0.7); margin-right: 4px; }
         .card-action-btn {
             width: 34px; height: 34px; border-radius: 10px;
             background: rgba(255,255,255,0.15);
@@ -357,33 +308,32 @@
             display: flex; align-items: center; justify-content: center;
             transition: background 0.15s;
         }
-        .card-action-btn:active { background: rgba(255,255,255,0.3); }
-        .customer-card-body { padding: 14px 16px; }
+        .card-action-btn:active { background: rgba(255,255,255,0.28); }
+        .customer-card-body { padding: 13px 16px; }
         .card-row {
             display: flex; align-items: flex-start; gap: 8px;
             margin-bottom: 7px;
         }
-        .card-label { font-size: 11px; color: #aaa; font-weight: 700; min-width: 40px; padding-top: 1px; letter-spacing: 0.2px; }
+        .card-label { font-size: 11px; color: #aaa; font-weight: 600; min-width: 40px; padding-top: 1px; }
         .card-val { font-size: 12px; color: #111; font-weight: 600; flex: 1; }
         .card-total-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding-top: 11px; margin-top: 8px;
-            border-top: 1.5px solid #F0F0F0;
+            padding-top: 10px; margin-top: 6px;
+            border-top: 1px solid #F0F0F0;
         }
-        .card-total-label { font-size: 12px; color: #aaa; font-weight: 700; }
-        .card-total-val { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; }
+        .card-total-label { font-size: 12px; color: #aaa; font-weight: 600; }
+        .card-total-val { font-size: 22px; font-weight: 900; }
         .card-total-val.green { color: var(--green-dark); }
         .card-total-val.blue { color: var(--blue-dark); }
         .tension-badge {
             font-size: 11px; font-weight: 700;
-            background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: #92400E;
-            padding: 3px 9px; border-radius: 10px; display: inline-block;
-            border: 1px solid rgba(234,179,8,0.2);
+            background: #FEF9C3; color: #854D0E;
+            padding: 2px 8px; border-radius: 10px; display: inline-block;
         }
         .extra-works-box {
-            background: linear-gradient(135deg, #EEF2FF, #E0E7FF); border-radius: 12px; padding: 8px 10px; margin-top: 4px;
+            background: #EEF2FF; border-radius: 12px; padding: 8px 10px; margin-top: 4px;
         }
-        .extra-works-label { font-size: 10px; color: #6366F1; font-weight: 700; margin-bottom: 4px; }
+        .extra-works-label { font-size: 10px; color: #818CF8; font-weight: 700; margin-bottom: 4px; }
         .extra-chip {
             display: inline-block; font-size: 11px; font-weight: 600;
             background: #fff; color: #4F46E5;
@@ -398,16 +348,15 @@
             background: #F6F6F6; border: 1px solid #EFEFEF;
             border-radius: 12px; font-size: 12px; font-weight: 600; color: #aaa;
             cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;
-            margin-top: 8px; transition: background 0.15s;
+            margin-top: 8px;
         }
-        .history-toggle-btn:active { background: #EFEFEF; }
 
         /* ── 등록 폼 ── */
         .form-card {
-            background: #fff; border-radius: 22px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-            padding: 20px; margin-bottom: 12px;
-            border: 1px solid rgba(0,0,0,0.035);
+            background: #fff; border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+            padding: 20px; margin-bottom: 10px;
+            border: 1px solid rgba(0,0,0,0.04);
         }
         .form-title { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 16px; }
         .form-label { font-size: 12px; font-weight: 700; color: #888; margin-bottom: 5px; display: block; letter-spacing: 0.2px; }
@@ -431,15 +380,15 @@
         }
         .submit-btn {
             width: 100%; padding: 15px;
-            border-radius: 18px; border: none; cursor: pointer;
+            border-radius: 16px; border: none; cursor: pointer;
             font-size: 15px; font-weight: 800; color: #fff;
             margin-top: 6px; letter-spacing: 0.2px;
             transition: transform 0.15s, box-shadow 0.15s;
         }
         .submit-btn:active { transform: scale(0.98); }
         .submit-btn-green {
-            background: linear-gradient(135deg, #0a4020, var(--green-dark), var(--green));
-            box-shadow: 0 8px 28px rgba(34,197,94,0.45);
+            background: linear-gradient(135deg, #0f5929, var(--green-dark), var(--green));
+            box-shadow: 0 8px 24px rgba(34,197,94,0.4);
         }
         .submit-btn-blue {
             background: linear-gradient(135deg, #1e3a8a, var(--blue-dark), var(--blue));
@@ -450,56 +399,6 @@
         .hybrid-box {
             border: 1.5px dashed var(--border); border-radius: 14px; padding: 12px;
             margin-bottom: 10px; background: #FAFAFA;
-        }
-
-        /* ── 하단 고정 메뉴바 ── */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            height: calc(66px + env(safe-area-inset-bottom));
-            background: rgba(255,255,255,0.97);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(0,0,0,0.08);
-            box-shadow: 0 -4px 24px rgba(0,0,0,0.09);
-            display: flex; align-items: flex-start;
-            padding-top: 8px;
-            z-index: 100;
-        }
-        .bottom-nav-item {
-            flex: 1; display: flex; flex-direction: column; align-items: center;
-            gap: 4px; cursor: pointer; background: none; border: none;
-            padding: 2px 0 0; transition: all 0.18s;
-            position: relative;
-        }
-        .bottom-nav-icon {
-            font-size: 22px; line-height: 1;
-            transition: transform 0.18s;
-        }
-        .bottom-nav-item.active .bottom-nav-icon { transform: translateY(-2px); }
-        .bottom-nav-label {
-            font-size: 10px; font-weight: 700; letter-spacing: 0.2px;
-            color: #BDBDBD; transition: color 0.18s;
-        }
-        .bottom-nav-item.active .bottom-nav-label { color: var(--green-dark); }
-        .bottom-nav-item.active-blue .bottom-nav-label { color: var(--blue-dark); }
-        .bottom-nav-center {
-            flex: 1; display: flex; flex-direction: column; align-items: center;
-            padding-top: 0; position: relative; top: -14px;
-        }
-        .bottom-nav-fab {
-            width: 54px; height: 54px; border-radius: 18px;
-            background: linear-gradient(135deg, var(--green-dark), var(--green));
-            box-shadow: 0 6px 22px rgba(34,197,94,0.5);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 26px; border: none; cursor: pointer;
-            transition: transform 0.18s, box-shadow 0.18s;
-        }
-        .bottom-nav-fab:active { transform: scale(0.92); box-shadow: 0 3px 12px rgba(34,197,94,0.35); }
-        .bottom-nav-fab.blue {
-            background: linear-gradient(135deg, var(--blue-dark), var(--blue));
-            box-shadow: 0 6px 20px rgba(59,130,246,0.45);
-        }
-        .bottom-nav-fab-label {
-            font-size: 10px; font-weight: 700; color: var(--green-dark); margin-top: 3px;
         }
 
         /* ── 추가작업 영역 ── */
@@ -534,59 +433,6 @@
             box-shadow: 0 2px 12px rgba(0,0,0,0.06);
             overflow: hidden; margin-bottom: 10px;
             border: 1px solid rgba(0,0,0,0.04);
-        }
-        .stat-card-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 14px 16px; background: #FAFAFA;
-            border-bottom: 1px solid #F0F0F0;
-        }
-        .stat-month { font-size: 15px; font-weight: 800; color: #111; }
-        .stat-count { font-size: 12px; color: #aaa; font-weight: 600; }
-        .stat-total { font-size: 18px; font-weight: 900; }
-        .stat-total.green { color: var(--green-dark); }
-        .stat-total.blue { color: var(--blue-dark); }
-        .stat-total.purple { color: #9333EA; }
-        .stat-rows { padding: 4px 0; }
-        .stat-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 11px 16px; border-bottom: 1px solid #F5F5F5;
-        }
-        .stat-row:last-child { border-bottom: none; }
-        .stat-row-label { font-size: 12px; color: #888; font-weight: 600; }
-        .stat-row-val { font-size: 13px; font-weight: 800; }
-
-        /* ── 추가작업 영역 ── */
-        .extra-section {
-            border: 1.5px solid #EEF2FF; border-radius: 14px;
-            padding: 12px; background: #FAFBFF; margin-bottom: 10px;
-        }
-
-        /* ── 쿠폰 적용 영역 ── */
-        .coupon-box {
-            border: 1.5px dashed #FBB6CE; border-radius: 14px; padding: 12px;
-            background: #FFF0F6; margin-bottom: 10px;
-        }
-
-        /* ── 총액 박스 ── */
-        .total-box {
-            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-            border: 1.5px solid rgba(34,197,94,0.25);
-            border-radius: 16px; padding: 16px;
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px;
-        }
-        .total-box-label { font-size: 13px; font-weight: 700; color: #15803D; }
-        .total-box-val { font-size: 26px; font-weight: 900; color: #15803D; }
-        .total-box.blue { background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: rgba(59,130,246,0.25); }
-        .total-box.blue .total-box-label { color: #1D4ED8; }
-        .total-box.blue .total-box-val { color: #1D4ED8; }
-
-        /* ── 통계 카드 ── */
-        .stat-card {
-            background: #fff; border-radius: 22px;
-            box-shadow: 0 2px 14px rgba(0,0,0,0.07);
-            overflow: hidden; margin-bottom: 12px;
-            border: 1px solid rgba(0,0,0,0.035);
         }
         .stat-card-header {
             display: flex; justify-content: space-between; align-items: center;
@@ -697,23 +543,21 @@
 
         /* ── 설정 화면 ── */
         .settings-section {
-            background: #fff; border-radius: 22px; overflow: hidden;
-            margin-bottom: 12px; box-shadow: 0 2px 14px rgba(0,0,0,0.07);
-            border: 1px solid rgba(0,0,0,0.035);
+            background: #fff; border-radius: 20px; overflow: hidden;
+            margin-bottom: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0,0,0,0.04);
         }
 
         /* ── 모달 오버레이 ── */
         .modal-overlay {
-            position: fixed; inset: 0; z-index: 200;
+            position: fixed; inset: 0; z-index: 50;
             display: flex; align-items: center; justify-content: center; padding: 16px;
-            background: rgba(0,0,0,0.7); backdrop-filter: blur(10px);
-            animation: fadeIn 0.15s ease;
+            background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
         }
         .modal-card {
-            background: #fff; border-radius: 26px;
-            box-shadow: 0 28px 72px rgba(0,0,0,0.3);
+            background: #fff; border-radius: 24px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.28);
             padding: 26px; width: 100%; max-width: 320px;
-            animation: fadeSlideUp 0.25s cubic-bezier(0.22,1,0.36,1);
         }
         .modal-title { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 16px; }
         .modal-input {
@@ -770,7 +614,6 @@
             position: fixed; top: 16px; right: 16px; z-index: 999;
             padding: 11px 18px; border-radius: 14px;
             font-size: 13px; font-weight: 700; box-shadow: 0 6px 20px rgba(0,0,0,0.18);
-            animation: fadeSlideUp 0.2s ease;
         }
         .toast-saving { background: #FEF9C3; color: #854D0E; }
         .toast-saved { background: #DCFCE7; color: #15803D; }
@@ -795,13 +638,13 @@
         /* ── 스크롤바 숨기기 ── */
         ::-webkit-scrollbar { display: none; }
 
-        /* ── 드롭다운 행 (고객 아코디언) ── */
-        .customer-row-card {
-            background: #fff; border-radius: 16px; overflow: hidden;
-            box-shadow: 0 1px 6px rgba(0,0,0,0.06); margin-bottom: 8px;
-            border: 1px solid rgba(0,0,0,0.04);
-            transition: box-shadow 0.2s;
-            animation: fadeSlideUp 0.28s cubic-bezier(0.22,1,0.36,1) both;
+        /* ── 애니메이션 ── */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .customer-card, .stat-card, .form-card {
+            animation: fadeInUp 0.25s ease both;
         }
     </style>
 </head>
@@ -1045,7 +888,7 @@ const RecordCard = ({r, visitCount, records, color, statColor, handleEdit, handl
     </div>
 );
 
-const StringingApp = ({ sport, uid, activeNav, setActiveNav, triggerForm, setTriggerForm }) => {
+const StringingApp = ({ sport, uid }) => {
     const config = SPORTS_CONFIG[sport];
     const color = config.color;
     const DEFAULT_EXTRA_ITEMS = ['스텐실 작업','범퍼 교체','오버그립','그립테이프','진동방지구','기타'];
@@ -1101,29 +944,6 @@ const StringingApp = ({ sport, uid, activeNav, setActiveNav, triggerForm, setTri
         isHybrid:false, hybridString2:'', hybridPrice2:'',
     });
     const [formData, setFormData] = useState(makeEmptyForm());
-
-    // ── 하단 메뉴 연동 ──────────────────────────
-    useEffect(() => {
-        if (!activeNav) return;
-        const navMap = { home:'customers', customers:'customers', monthly:'monthly', strings:'strings' };
-        if (navMap[activeNav]) setViewMode(navMap[activeNav]);
-    }, [activeNav]);
-
-    // ── 하단 FAB 버튼 등록 트리거 ───────────────
-    const isFirstRender = useRef(true);
-    useEffect(() => {
-        if (isFirstRender.current) { isFirstRender.current = false; return; }
-        setShowForm(true);
-        setEditingId(null);
-        setFormData(makeEmptyForm());
-        setExtraWorks([]);
-        setShowExtraSection(false);
-        setAppliedCoupon(null);
-        setCouponInput('');
-        setCouponMsg('');
-        setViewMode('customers');
-        window.scrollTo({top:0,behavior:'smooth'});
-    }, [triggerForm]);
 
     // ── 저장 상태 토스트 ────────────────────────
     const showSaveStatus = (status) => {
@@ -1811,7 +1631,7 @@ const StringingApp = ({ sport, uid, activeNav, setActiveNav, triggerForm, setTri
                     ['monthly','📅 월별','active-orange'],
                     ['yearly','📈 연도별','active-purple'],
                 ].map(([mode, label, activeCls])=>(
-                    <button key={mode} onClick={()=>{setViewMode(mode);if(setActiveNav){const m={customers:'customers',monthly:'monthly',strings:'strings'};setActiveNav(m[mode]||'home');}}}
+                    <button key={mode} onClick={()=>setViewMode(mode)}
                         className={`main-tab ${viewMode===mode?activeCls:''}`}>{label}</button>
                 ))}
             </div>
@@ -2113,20 +1933,13 @@ const StringingApp = ({ sport, uid, activeNav, setActiveNav, triggerForm, setTri
                             const history = recs.slice(1);
                             const visitCount = recs.length;
                             const isOpen = expandedCustomers[name];
-                            // VIP: 5회 이상
-                            const isVip = visitCount >= 5;
-                            // 교체 알림: 마지막 방문 90일 초과
-                            const daysSinceLast = latest.date ? Math.floor((Date.now() - new Date(latest.date).getTime()) / 86400000) : 0;
-                            const needsAlert = daysSinceLast >= 90;
                             return (
-                                <div key={name} className="customer-card anim-card">
+                                <div key={name} className="customer-card">
                                     <div className={`customer-card-header ${color}`}>
                                         <div>
-                                            <div className="customer-name">{isVip && '⭐ '}{latest.name}</div>
+                                            <div className="customer-name">{latest.name}</div>
                                             <div className="customer-badges">
                                                 <span className="badge">👤 {visitCount}회</span>
-                                                {isVip && <span className="badge badge-vip">⭐ VIP</span>}
-                                                {needsAlert && <span className="badge badge-alert">🔔 교체 알림</span>}
                                                 {latest.couponCode && <span className="badge">🎫 쿠폰</span>}
                                                 {latest.isHybrid && <span className="badge">하이브리드</span>}
                                             </div>
@@ -2212,26 +2025,21 @@ const StringingApp = ({ sport, uid, activeNav, setActiveNav, triggerForm, setTri
                             const history = recs.slice(1);
                             const accentColor = color==='green'?'#22C55E':'#3B82F6';
                             const accentColorDark = color==='green'?'#16A34A':'#1D4ED8';
-                            const isVip = visitCount >= 5;
-                            const daysSinceLast = latest.date ? Math.floor((Date.now() - new Date(latest.date).getTime()) / 86400000) : 0;
-                            const needsAlert = daysSinceLast >= 90;
                             return (
-                                <div key={name} className="customer-row-card anim-card">
+                                <div key={name} style={{background:'#fff',borderRadius:'14px',overflow:'hidden',boxShadow:'0 1px 4px rgba(0,0,0,0.06)',marginBottom:'8px'}}>
                                     {/* 드롭다운 헤더 행 */}
                                     <div onClick={()=>toggleCustomerHistory(name)}
-                                        style={{display:'flex',alignItems:'center',padding:'12px 14px',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none'}}>
+                                        style={{display:'flex',alignItems:'center',padding:'11px 14px',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none'}}>
                                         {/* 이름 */}
-                                        <div style={{flex:1,display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
+                                        <div style={{flex:1,display:'flex',alignItems:'center',gap:'8px'}}>
                                             <div style={{width:'8px',height:'8px',borderRadius:'50%',background:accentColor,flexShrink:0}}></div>
-                                            <span style={{fontSize:'15px',fontWeight:800,color:'#111'}}>{isVip?'⭐ ':''}{latest.name}</span>
+                                            <span style={{fontSize:'15px',fontWeight:800,color:'#111'}}>{latest.name}</span>
                                             <span style={{fontSize:'11px',background: color==='green'?'#DCFCE7':'#DBEAFE',color:accentColorDark,fontWeight:700,padding:'2px 7px',borderRadius:'10px'}}>{visitCount}회</span>
-                                            {isVip && <span style={{fontSize:'10px',background:'linear-gradient(135deg,#F59E0B,#FCD34D)',color:'#78350F',fontWeight:700,padding:'2px 7px',borderRadius:'10px'}}>⭐ VIP</span>}
-                                            {needsAlert && <span style={{fontSize:'10px',background:'#FEE2E2',color:'#B91C1C',fontWeight:700,padding:'2px 7px',borderRadius:'10px'}}>🔔 교체</span>}
                                         </div>
                                         {/* 마지막 작업일 */}
                                         <span style={{fontSize:'12px',color:'#9E9E9E',fontWeight:600,marginRight:'8px'}}>{latest.date}</span>
                                         {/* 화살표 */}
-                                        <span style={{fontSize:'12px',color:'#9E9E9E',transition:'transform 0.25s',display:'inline-block',transform:isOpen?'rotate(180deg)':'rotate(0deg)'}}>▼</span>
+                                        <span style={{fontSize:'12px',color:'#9E9E9E',transition:'transform 0.2s',display:'inline-block',transform:isOpen?'rotate(180deg)':'rotate(0deg)'}}>▼</span>
                                     </div>
                                     {/* 펼쳐지면 보이는 상세 내용 */}
                                     {isOpen && (
@@ -2546,11 +2354,8 @@ const App = () => {
 
     if (!user) return <LoginScreen />;
 
-    const [activeNav, setActiveNav] = React.useState('home');
-    const [triggerForm, setTriggerForm] = React.useState(false);
-
     return (
-        <div style={{minHeight:'100vh',background:'#F0F2F5'}}>
+        <div style={{minHeight:'100vh',background:'#F5F5F5'}}>
             <div className="app-header">
                 <div className="header-top">
                     <div className="header-brand">
@@ -2567,31 +2372,7 @@ const App = () => {
                     <button onClick={()=>setSport('badminton')} className={`sport-tab ${sport==='badminton'?'active-blue':''}`}>🏸 배드민턴</button>
                 </div>
             </div>
-            <StringingApp key={`${user.uid}-${sport}`} sport={sport} uid={user.uid} activeNav={activeNav} setActiveNav={setActiveNav} triggerForm={triggerForm} setTriggerForm={setTriggerForm} />
-
-            {/* ── 하단 고정 메뉴바 ── */}
-            <nav className="bottom-nav">
-                <button className={`bottom-nav-item ${activeNav==='home'?'active':''}`} onClick={()=>setActiveNav('home')}>
-                    <span className="bottom-nav-icon">🏠</span>
-                    <span className="bottom-nav-label">홈</span>
-                </button>
-                <button className={`bottom-nav-item ${activeNav==='customers'?'active':''}`} onClick={()=>setActiveNav('customers')}>
-                    <span className="bottom-nav-icon">👥</span>
-                    <span className="bottom-nav-label">고객</span>
-                </button>
-                <div className="bottom-nav-center">
-                    <button className={`bottom-nav-fab ${sport==='badminton'?'blue':''}`} onClick={()=>{setActiveNav('customers');setTriggerForm(prev=>!prev);}}>➕</button>
-                    <span className="bottom-nav-fab-label">등록</span>
-                </div>
-                <button className={`bottom-nav-item ${activeNav==='monthly'?'active':''}`} onClick={()=>setActiveNav('monthly')}>
-                    <span className="bottom-nav-icon">📊</span>
-                    <span className="bottom-nav-label">통계</span>
-                </button>
-                <button className={`bottom-nav-item ${activeNav==='strings'?'active':''}`} onClick={()=>setActiveNav('strings')}>
-                    <span className="bottom-nav-icon">⚙️</span>
-                    <span className="bottom-nav-label">설정</span>
-                </button>
-            </nav>
+            <StringingApp key={`${user.uid}-${sport}`} sport={sport} uid={user.uid} />
         </div>
     );
 };
