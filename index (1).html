@@ -13,13 +13,473 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
     <style>
-        body { margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif; -webkit-font-smoothing:antialiased; }
-        input,select,textarea { font-size:16px !important; }
-        button { min-height:40px; touch-action:manipulation; }
-        * { -webkit-overflow-scrolling:touch; }
-        .spinner { width:40px; height:40px; border:4px solid #e5e7eb; border-top-color:#16a34a; border-radius:50%; animation:spin 0.8s linear infinite; }
+        :root {
+            --black: #111111;
+            --green: #22C55E;
+            --green-dark: #16A34A;
+            --green-light: #DCFCE7;
+            --white: #FFFFFF;
+            --gray-bg: #F5F5F5;
+            --gray-100: #F0F0F0;
+            --gray-200: #E0E0E0;
+            --gray-400: #9E9E9E;
+            --gray-600: #616161;
+            --blue: #3B82F6;
+            --blue-dark: #2563EB;
+        }
+        * { box-sizing: border-box; -webkit-overflow-scrolling: touch; }
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background: var(--gray-bg);
+            color: var(--black);
+        }
+        input, select, textarea { font-size: 16px !important; font-family: 'Pretendard', sans-serif; }
+        button { min-height: 40px; touch-action: manipulation; font-family: 'Pretendard', sans-serif; }
+
+        /* ── 스피너 ── */
+        .spinner { width:40px; height:40px; border:3px solid #E0E0E0; border-top-color: var(--green); border-radius:50%; animation:spin 0.8s linear infinite; }
         @keyframes spin { to { transform:rotate(360deg); } }
+
+        /* ── 헤더 ── */
+        .app-header {
+            background: var(--black);
+            padding: 16px 16px 0;
+            position: sticky; top: 0; z-index: 30;
+        }
+        .header-top {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 14px;
+        }
+        .header-brand { display: flex; align-items: center; gap: 8px; }
+        .header-logo {
+            width: 32px; height: 32px; background: var(--green);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 16px; font-weight: 900; color: #fff; letter-spacing: -1px;
+        }
+        .header-title { font-size: 17px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+        .header-subtitle { font-size: 11px; color: #9E9E9E; margin-top: 1px; }
+        .logout-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #ccc; font-size: 12px; font-weight: 600;
+            padding: 6px 12px; border-radius: 20px; cursor: pointer;
+        }
+
+        /* ── 스포츠 탭 ── */
+        .sport-tabs { display: flex; gap: 0; }
+        .sport-tab {
+            flex: 1; padding: 10px 0; text-align: center;
+            font-size: 13px; font-weight: 700; cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: #9E9E9E; background: transparent; border-top: none; border-left: none; border-right: none;
+            transition: all 0.2s;
+        }
+        .sport-tab.active-green { color: var(--green); border-bottom-color: var(--green); }
+        .sport-tab.active-blue { color: var(--blue); border-bottom-color: var(--blue); }
+
+        /* ── 오늘 요약 배너 ── */
+        .today-banner {
+            background: var(--black);
+            padding: 14px 16px 16px;
+            margin-bottom: 12px;
+        }
+        .today-banner-inner {
+            background: linear-gradient(135deg, #1a1a1a 0%, #222 100%);
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 16px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .today-greeting { font-size: 13px; color: #9E9E9E; margin-bottom: 6px; }
+        .today-stats { display: flex; gap: 20px; }
+        .today-stat-item { }
+        .today-stat-label { font-size: 11px; color: #616161; margin-bottom: 2px; }
+        .today-stat-val { font-size: 20px; font-weight: 800; color: #fff; }
+        .today-stat-val.green { color: var(--green); }
+        .new-work-btn {
+            background: var(--green);
+            color: #fff; font-size: 13px; font-weight: 700;
+            padding: 10px 16px; border-radius: 12px;
+            border: none; cursor: pointer; white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(34,197,94,0.35);
+        }
+
+        /* ── 메인 탭 바 ── */
+        .main-tabs {
+            display: flex; gap: 6px;
+            padding: 0 12px 10px;
+            overflow-x: auto;
+        }
+        .main-tabs::-webkit-scrollbar { display: none; }
+        .main-tab {
+            flex-shrink: 0;
+            padding: 7px 14px; border-radius: 20px;
+            font-size: 12px; font-weight: 700;
+            border: none; cursor: pointer;
+            background: #E8E8E8; color: #616161;
+            transition: all 0.18s;
+        }
+        .main-tab.active { background: var(--black); color: #fff; }
+        .main-tab.active-green { background: var(--green); color: #fff; }
+        .main-tab.active-pink { background: #EC4899; color: #fff; }
+        .main-tab.active-yellow { background: #EAB308; color: #fff; }
+        .main-tab.active-orange { background: #F97316; color: #fff; }
+        .main-tab.active-purple { background: #A855F7; color: #fff; }
+
+        /* ── 검색 바 ── */
+        .search-row {
+            display: flex; gap: 8px;
+            padding: 0 12px 8px;
+        }
+        .search-input {
+            flex: 1; padding: 11px 14px;
+            border: 1.5px solid #E0E0E0;
+            border-radius: 12px; font-size: 14px; font-weight: 500;
+            background: #fff; outline: none;
+            transition: border-color 0.15s;
+        }
+        .search-input:focus { border-color: var(--green); }
+        .add-btn {
+            padding: 11px 18px; border-radius: 12px;
+            font-size: 13px; font-weight: 700;
+            border: none; cursor: pointer;
+            color: #fff;
+        }
+        .add-btn-green { background: var(--green); box-shadow: 0 4px 12px rgba(34,197,94,0.3); }
+        .add-btn-blue { background: var(--blue); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+        .add-btn-cancel { background: #9E9E9E; }
+
+        /* ── 엑셀 버튼 행 ── */
+        .excel-row {
+            display: flex; gap: 6px;
+            padding: 0 12px 10px;
+        }
+        .excel-btn {
+            flex: 1; padding: 9px 0;
+            border-radius: 10px; font-size: 12px; font-weight: 700;
+            border: none; cursor: pointer; color: #fff;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+        }
+        .excel-btn-export { background: #059669; }
+        .excel-btn-import { background: #0D9488; }
+
+        /* ── 고객 카드 ── */
+        .customer-card {
+            background: #fff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 10px;
+        }
+        .customer-card-header {
+            padding: 12px 14px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .customer-card-header.green { background: linear-gradient(90deg, #16A34A, #22C55E); }
+        .customer-card-header.blue { background: linear-gradient(90deg, #1D4ED8, #3B82F6); }
+        .customer-name { font-size: 15px; font-weight: 800; color: #fff; }
+        .customer-badges { display: flex; gap: 5px; margin-top: 3px; flex-wrap: wrap; }
+        .badge {
+            font-size: 10px; font-weight: 700;
+            padding: 2px 7px; border-radius: 10px;
+            background: rgba(255,255,255,0.2); color: #fff;
+        }
+        .card-actions { display: flex; gap: 4px; align-items: center; }
+        .card-date { font-size: 11px; color: rgba(255,255,255,0.8); margin-right: 4px; }
+        .card-action-btn {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: rgba(255,255,255,0.15);
+            border: none; cursor: pointer; font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .customer-card-body { padding: 12px 14px; }
+        .card-row {
+            display: flex; align-items: flex-start; gap: 8px;
+            margin-bottom: 7px;
+        }
+        .card-label { font-size: 11px; color: #9E9E9E; font-weight: 600; min-width: 40px; padding-top: 1px; }
+        .card-val { font-size: 12px; color: #111; font-weight: 600; flex: 1; }
+        .card-total-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding-top: 10px; margin-top: 6px;
+            border-top: 1px solid #F0F0F0;
+        }
+        .card-total-label { font-size: 12px; color: #9E9E9E; font-weight: 600; }
+        .card-total-val { font-size: 20px; font-weight: 900; }
+        .card-total-val.green { color: var(--green-dark); }
+        .card-total-val.blue { color: var(--blue-dark); }
+        .tension-badge {
+            font-size: 11px; font-weight: 700;
+            background: #FEF9C3; color: #854D0E;
+            padding: 2px 8px; border-radius: 10px; display: inline-block;
+        }
+        .extra-works-box {
+            background: #EEF2FF; border-radius: 10px; padding: 8px 10px; margin-top: 4px;
+        }
+        .extra-works-label { font-size: 10px; color: #818CF8; font-weight: 700; margin-bottom: 4px; }
+        .extra-chip {
+            display: inline-block; font-size: 11px; font-weight: 600;
+            background: #fff; color: #4F46E5;
+            border: 1px solid #C7D2FE; border-radius: 8px;
+            padding: 2px 8px; margin: 2px 2px 0 0;
+        }
+        .coupon-discount { font-size: 12px; color: #DB2777; font-weight: 700; }
+
+        /* ── 히스토리 토글 버튼 ── */
+        .history-toggle-btn {
+            width: 100%; padding: 9px;
+            background: #F9F9F9; border: 1px solid #EFEFEF;
+            border-radius: 10px; font-size: 12px; font-weight: 600; color: #9E9E9E;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;
+            margin-top: 8px;
+        }
+
+        /* ── 등록 폼 ── */
+        .form-card {
+            background: #fff; border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            padding: 18px; margin-bottom: 10px;
+        }
+        .form-title { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 16px; }
+        .form-label { font-size: 12px; font-weight: 700; color: #616161; margin-bottom: 5px; display: block; }
+        .form-input {
+            width: 100%; padding: 11px 13px;
+            border: 1.5px solid #E0E0E0; border-radius: 11px;
+            font-size: 14px; font-weight: 500; background: #fff;
+            outline: none; transition: border-color 0.15s;
+        }
+        .form-input:focus { border-color: var(--green); }
+        .form-input-blue:focus { border-color: var(--blue); }
+        .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .form-group { margin-bottom: 10px; position: relative; }
+        .form-section-title {
+            font-size: 12px; font-weight: 700; color: #9E9E9E;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin: 14px 0 8px;
+        }
+        .submit-btn {
+            width: 100%; padding: 14px;
+            border-radius: 13px; border: none; cursor: pointer;
+            font-size: 15px; font-weight: 800; color: #fff;
+            margin-top: 6px;
+        }
+        .submit-btn-green { background: linear-gradient(135deg, #16A34A, #22C55E); box-shadow: 0 6px 16px rgba(34,197,94,0.35); }
+        .submit-btn-blue { background: linear-gradient(135deg, #1D4ED8, #3B82F6); box-shadow: 0 6px 16px rgba(59,130,246,0.3); }
+
+        /* ── 하이브리드 영역 ── */
+        .hybrid-box {
+            border: 1.5px dashed #E0E0E0; border-radius: 12px; padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        /* ── 추가작업 영역 ── */
+        .extra-section {
+            border: 1.5px solid #EEF2FF; border-radius: 12px;
+            padding: 12px; background: #FAFBFF; margin-bottom: 10px;
+        }
+
+        /* ── 쿠폰 적용 영역 ── */
+        .coupon-box {
+            border: 1.5px dashed #FBB6CE; border-radius: 12px; padding: 12px;
+            background: #FFF0F6; margin-bottom: 10px;
+        }
+
+        /* ── 총액 박스 ── */
+        .total-box {
+            background: #F0FDF4; border: 1.5px solid #DCFCE7;
+            border-radius: 13px; padding: 14px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px;
+        }
+        .total-box-label { font-size: 13px; font-weight: 700; color: #15803D; }
+        .total-box-val { font-size: 24px; font-weight: 900; color: #15803D; }
+        .total-box.blue { background: #EFF6FF; border-color: #DBEAFE; }
+        .total-box.blue .total-box-label { color: #1D4ED8; }
+        .total-box.blue .total-box-val { color: #1D4ED8; }
+
+        /* ── 통계 카드 ── */
+        .stat-card {
+            background: #fff; border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            overflow: hidden; margin-bottom: 10px;
+        }
+        .stat-card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 16px; background: #FAFAFA;
+            border-bottom: 1px solid #F0F0F0;
+        }
+        .stat-month { font-size: 15px; font-weight: 800; color: #111; }
+        .stat-count { font-size: 12px; color: #9E9E9E; font-weight: 600; }
+        .stat-total { font-size: 18px; font-weight: 900; }
+        .stat-total.green { color: var(--green-dark); }
+        .stat-total.blue { color: var(--blue-dark); }
+        .stat-total.purple { color: #9333EA; }
+        .stat-rows { padding: 4px 0; }
+        .stat-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 16px; border-bottom: 1px solid #F5F5F5;
+        }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-row-label { font-size: 12px; color: #616161; font-weight: 600; }
+        .stat-row-val { font-size: 13px; font-weight: 800; }
+
+        /* ── 내용 패딩 ── */
+        .content-pad { padding: 0 12px 80px; }
+
+        /* ── 로그인 화면 ── */
+        .login-screen {
+            min-height: 100vh;
+            background: var(--black);
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .login-card {
+            background: #1A1A1A; border: 1px solid #2A2A2A;
+            border-radius: 24px; padding: 32px 24px;
+            width: 100%; max-width: 360px;
+        }
+        .login-logo-area { text-align: center; margin-bottom: 28px; }
+        .login-logo {
+            width: 60px; height: 60px; background: var(--green);
+            border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            font-size: 28px; margin: 0 auto 12px;
+            box-shadow: 0 8px 24px rgba(34,197,94,0.3);
+        }
+        .login-title { font-size: 22px; font-weight: 900; color: #fff; }
+        .login-subtitle { font-size: 13px; color: #616161; margin-top: 4px; }
+        .login-tab-row {
+            display: flex; background: #111; border-radius: 12px; padding: 4px;
+            margin-bottom: 20px;
+        }
+        .login-tab {
+            flex: 1; padding: 9px; text-align: center;
+            border-radius: 9px; border: none; font-size: 13px; font-weight: 700;
+            cursor: pointer; background: transparent; color: #616161;
+        }
+        .login-tab.active { background: var(--green); color: #fff; }
+        .login-input {
+            width: 100%; padding: 13px 14px;
+            background: #111; border: 1.5px solid #2A2A2A; border-radius: 12px;
+            font-size: 15px; color: #fff; outline: none;
+            transition: border-color 0.15s; margin-bottom: 10px;
+        }
+        .login-input:focus { border-color: var(--green); }
+        .login-input::placeholder { color: #444; }
+        .login-label { font-size: 12px; font-weight: 700; color: #616161; margin-bottom: 5px; display: block; }
+        .login-btn {
+            width: 100%; padding: 14px;
+            background: var(--green); color: #fff;
+            border: none; border-radius: 13px;
+            font-size: 15px; font-weight: 800; cursor: pointer;
+            box-shadow: 0 6px 18px rgba(34,197,94,0.35);
+            margin-top: 4px;
+        }
+        .login-error {
+            background: #1F0A0A; border: 1px solid #5A1A1A;
+            border-radius: 10px; padding: 10px 14px;
+            font-size: 12px; color: #F87171; margin-bottom: 10px;
+        }
+        .login-link { background: none; border: none; color: #616161; font-size: 12px; cursor: pointer; width: 100%; margin-top: 8px; padding: 6px; }
+
+        /* ── 섹션 헤더 ── */
+        .section-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 16px; border-bottom: 1px solid #F0F0F0;
+        }
+        .section-title { font-size: 14px; font-weight: 800; color: #111; }
+        .section-count { font-size: 12px; color: #9E9E9E; font-weight: 600; }
+
+        /* ── 설정 화면 ── */
+        .settings-section { background: #fff; border-radius: 16px; overflow: hidden; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+        /* ── 모달 오버레이 ── */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 50;
+            display: flex; align-items: center; justify-content: center; padding: 16px;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+        }
+        .modal-card {
+            background: #fff; border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            padding: 24px; width: 100%; max-width: 320px;
+        }
+        .modal-title { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 16px; }
+        .modal-input {
+            width: 100%; padding: 11px 13px;
+            border: 1.5px solid #E0E0E0; border-radius: 11px;
+            font-size: 14px; margin-bottom: 10px; outline: none;
+        }
+        .modal-input:focus { border-color: var(--green); }
+        .modal-btn-row { display: flex; gap: 8px; margin-top: 4px; }
+        .modal-btn-cancel {
+            flex: 1; padding: 12px; border-radius: 11px;
+            background: #F0F0F0; color: #616161; font-size: 14px; font-weight: 700;
+            border: none; cursor: pointer;
+        }
+        .modal-btn-ok {
+            flex: 1; padding: 12px; border-radius: 11px;
+            background: var(--green); color: #fff; font-size: 14px; font-weight: 700;
+            border: none; cursor: pointer;
+        }
+        .modal-btn-ok-red { background: #EF4444; }
+        .modal-btn-ok-purple { background: #A855F7; }
+        .modal-btn-ok-pink { background: #EC4899; }
+        .modal-btn-ok-only {
+            width: 100%; padding: 13px; border-radius: 11px;
+            background: var(--green); color: #fff; font-size: 14px; font-weight: 700;
+            border: none; cursor: pointer; margin-top: 8px;
+        }
+
+        /* ── 빈 상태 ── */
+        .empty-state { text-align: center; padding: 40px 20px; color: #9E9E9E; font-size: 13px; font-weight: 600; }
+
+        /* ── 쿠폰 아이템 ── */
+        .coupon-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px; border-bottom: 1px solid #F5F5F5;
+        }
+        .coupon-item:last-child { border-bottom: none; }
+        .coupon-code { font-size: 13px; font-weight: 800; color: #111; font-family: monospace; }
+        .coupon-amount { font-size: 17px; font-weight: 900; color: #DB2777; }
+        .coupon-meta { font-size: 11px; color: #9E9E9E; margin-top: 2px; }
+        .kakao-copy-btn {
+            background: #FEE500; color: #111;
+            border: none; border-radius: 8px; padding: 7px 10px;
+            font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap;
+        }
+
+        /* ── 토스트 ── */
+        .toast {
+            position: fixed; top: 16px; right: 16px; z-index: 999;
+            padding: 10px 16px; border-radius: 12px;
+            font-size: 13px; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .toast-saving { background: #FEF9C3; color: #854D0E; }
+        .toast-saved { background: #DCFCE7; color: #15803D; }
+        .toast-error { background: #FEE2E2; color: #B91C1C; }
+
+        /* ── 드롭다운 ── */
+        .dropdown-list {
+            position: absolute; z-index: 20; width: 100%; margin-top: 4px;
+            background: #fff; border: 1.5px solid #E0E0E0;
+            border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            max-height: 220px; overflow-y: auto;
+        }
+        .dropdown-item {
+            width: 100%; text-align: left; padding: 12px 14px;
+            font-size: 13px; font-weight: 600; color: #111;
+            background: none; border: none; border-bottom: 1px solid #F5F5F5;
+            cursor: pointer;
+        }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item:active { background: #F5F5F5; }
+
+        /* ── 스크롤바 숨기기 ── */
+        ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
@@ -142,55 +602,52 @@ const LoginScreen = () => {
     };
 
     if (resetSent) return (
-        <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm text-center">
-                <div className="text-5xl mb-4">📧</div>
-                <h2 className="text-lg font-bold text-gray-800 mb-2">이메일을 확인하세요</h2>
-                <p className="text-sm text-gray-500 mb-6">{email}로 비밀번호 재설정 링크를 보냈습니다.</p>
-                <button onClick={()=>{setMode('login');setResetSent(false);}} className="w-full py-3 bg-green-500 text-white rounded-xl font-medium">로그인으로 돌아가기</button>
+        <div className="login-screen">
+            <div className="login-card" style={{textAlign:'center'}}>
+                <div style={{fontSize:'48px',marginBottom:'12px'}}>📧</div>
+                <h2 style={{fontSize:'18px',fontWeight:800,color:'#fff',marginBottom:'8px'}}>이메일을 확인하세요</h2>
+                <p style={{fontSize:'13px',color:'#616161',marginBottom:'24px'}}>{email}로 비밀번호 재설정 링크를 보냈습니다.</p>
+                <button onClick={()=>{setMode('login');setResetSent(false);}} className="login-btn">로그인으로 돌아가기</button>
             </div>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm">
-                <div className="text-center mb-6">
-                    <div className="text-5xl mb-2">🏆</div>
-                    <h1 className="text-xl font-bold text-gray-800">니지스트링</h1>
-                    <p className="text-sm text-gray-400 mt-1">스트링 작업 관리 시스템</p>
+        <div className="login-screen">
+            <div className="login-card">
+                <div className="login-logo-area">
+                    <div className="login-logo">🎾</div>
+                    <h1 className="login-title">NIJI STRING</h1>
+                    <p className="login-subtitle">프로 스트링 작업 관리</p>
                 </div>
-                <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
-                    <button onClick={()=>{setMode('login');setError('');}} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${mode==='login'?'bg-white text-green-600 shadow':'text-gray-500'}`}>로그인</button>
-                    <button onClick={()=>{setMode('register');setError('');}} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${mode==='register'?'bg-white text-green-600 shadow':'text-gray-500'}`}>회원가입</button>
+                <div className="login-tab-row">
+                    <button onClick={()=>{setMode('login');setError('');}} className={`login-tab ${mode==='login'?'active':''}`}>로그인</button>
+                    <button onClick={()=>{setMode('register');setError('');}} className={`login-tab ${mode==='register'?'active':''}`}>회원가입</button>
                 </div>
-                <div className="space-y-3">
-                    <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">이메일</label>
-                        <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
-                            onKeyDown={e=>e.key==='Enter'&&handleSubmit()}
-                            placeholder="이메일 입력"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400"/>
-                    </div>
+                <div>
+                    <label className="login-label">이메일</label>
+                    <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
+                        onKeyDown={e=>e.key==='Enter'&&handleSubmit()}
+                        placeholder="이메일 입력"
+                        className="login-input"/>
                     {mode !== 'reset' && (
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">비밀번호</label>
+                        <>
+                            <label className="login-label">비밀번호</label>
                             <input type="password" value={password} onChange={e=>setPassword(e.target.value)}
                                 onKeyDown={e=>e.key==='Enter'&&handleSubmit()}
                                 placeholder={mode==='register'?'6자리 이상':'비밀번호 입력'}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400"/>
-                        </div>
+                                className="login-input"/>
+                        </>
                     )}
-                    {error && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">{error}</div>}
-                    <button onClick={handleSubmit} disabled={loading}
-                        className="w-full py-3 bg-green-500 text-white rounded-xl font-bold text-base disabled:opacity-50 mt-2">
-                        {loading ? '처리 중...' : mode==='login'?'로그인':mode==='register'?'회원가입':'재설정 메일 발송'}
+                    {error && <div className="login-error">{error}</div>}
+                    <button onClick={handleSubmit} disabled={loading} className="login-btn" style={loading?{opacity:0.5}:{}}>
+                        {loading ? '처리 중...' : mode==='login'?'🔐 로그인':mode==='register'?'✅ 회원가입':'📧 재설정 메일 발송'}
                     </button>
                     {mode === 'login' && (
-                        <button onClick={()=>{setMode('reset');setError('');}} className="w-full py-2 text-sm text-gray-400 hover:text-gray-600">비밀번호를 잊으셨나요?</button>
+                        <button onClick={()=>{setMode('reset');setError('');}} className="login-link">비밀번호를 잊으셨나요?</button>
                     )}
                     {mode === 'reset' && (
-                        <button onClick={()=>{setMode('login');setError('');}} className="w-full py-2 text-sm text-gray-400">← 로그인으로 돌아가기</button>
+                        <button onClick={()=>{setMode('login');setError('');}} className="login-link">← 로그인으로 돌아가기</button>
                     )}
                 </div>
             </div>
@@ -204,49 +661,62 @@ const LoginScreen = () => {
 
 // 검색 결과용 개별 카드 컴포넌트
 const RecordCard = ({r, visitCount, records, color, statColor, handleEdit, handleDelete}) => (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className={`px-3 py-2 flex justify-between items-center ${color==='green'?'bg-green-500':'bg-blue-500'}`}>
-            <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-white font-bold text-sm">{r.name}</span>
-                <span className="text-xs bg-white bg-opacity-20 text-white px-1.5 py-0.5 rounded-full">👤 {visitCount}회</span>
-                {r.couponCode && <span className="text-xs bg-white bg-opacity-30 text-white px-1.5 py-0.5 rounded-full">🎫 쿠폰</span>}
-                {r.isHybrid && <span className="text-xs bg-white bg-opacity-30 text-white px-1.5 py-0.5 rounded-full">하이브리드</span>}
+    <div className="customer-card">
+        <div className={`customer-card-header ${color}`}>
+            <div>
+                <div className="customer-name">{r.name}</div>
+                <div className="customer-badges">
+                    <span className="badge">👤 {visitCount}회</span>
+                    {r.couponCode && <span className="badge">🎫 쿠폰</span>}
+                    {r.isHybrid && <span className="badge">하이브리드</span>}
+                </div>
             </div>
-            <div className="flex items-center gap-1">
-                <span className="text-white text-xs mr-1">{r.date}</span>
-                <button onClick={()=>handleEdit(r)} className="p-1.5 text-white hover:bg-white hover:bg-opacity-20 rounded-lg">✏️</button>
-                <button onClick={()=>handleDelete(r)} className="p-1.5 text-white hover:bg-white hover:bg-opacity-20 rounded-lg">🗑️</button>
+            <div className="card-actions">
+                <span className="card-date">{r.date}</span>
+                <button onClick={()=>handleEdit(r)} className="card-action-btn">✏️</button>
+                <button onClick={()=>handleDelete(r)} className="card-action-btn">🗑️</button>
             </div>
         </div>
-        <div className="p-3 space-y-2">
-            <div className="flex items-start gap-2">
-                <span className="text-xs text-gray-400 w-12 flex-shrink-0 mt-0.5">라켓</span>
-                <span className="text-xs font-medium text-gray-800">{r.racket}</span>
-                <span className="text-xs text-gray-400 ml-auto flex-shrink-0">{r.pattern}</span>
+        <div className="customer-card-body">
+            <div className="card-row">
+                <span className="card-label">라켓</span>
+                <span className="card-val">{r.racket}</span>
+                <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600,flexShrink:0}}>{r.pattern}</span>
             </div>
-            <div className="flex items-start gap-2">
-                <span className="text-xs text-gray-400 w-12 flex-shrink-0 mt-0.5">스트링</span>
-                <div className="flex-1">
-                    <span className="text-xs font-medium text-gray-800">{r.stringType}</span>
-                    {r.isHybrid&&r.hybridString2&&<span className="text-xs text-purple-600"> + {r.hybridString2}</span>}
-                    <span className="text-xs text-gray-400 ml-1">{parseInt(r.stringPrice||0).toLocaleString()}원</span>
+            <div className="card-row">
+                <span className="card-label">스트링</span>
+                <div style={{flex:1}}>
+                    <span className="card-val">{r.stringType}</span>
+                    {r.isHybrid&&r.hybridString2&&<span style={{fontSize:'11px',color:'#7C3AED',fontWeight:600}}> + {r.hybridString2}</span>}
+                    <span style={{fontSize:'11px',color:'#9E9E9E',marginLeft:'4px'}}>{parseInt(r.stringPrice||0).toLocaleString()}원</span>
                 </div>
             </div>
-            {r.tension && <div className="flex items-center gap-2"><span className="text-xs text-gray-400 w-12">텐션</span><span className="text-xs text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">⚡ {r.tension} lbs</span></div>}
-            <div className="flex gap-4">
-                <div className="flex items-center gap-1"><span className="text-xs text-gray-400">공임</span><span className="text-xs font-medium text-gray-700">{parseInt(r.labor||0).toLocaleString()}원</span></div>
-                <div className="flex items-center gap-1"><span className="text-xs text-gray-400">수량</span><span className="text-xs font-medium text-gray-700">{r.quantity}개</span></div>
-            </div>
-            {r.extraWorks&&r.extraWorks.length>0 && (
-                <div className="bg-indigo-50 rounded-lg px-2 py-1.5">
-                    <p className="text-xs text-indigo-400 mb-1">🛠️ 추가작업</p>
-                    <div className="flex flex-wrap gap-1">{r.extraWorks.map((w,i)=>(<span key={i} className="text-xs bg-white text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">{w.name} {parseInt(w.price||0).toLocaleString()}원</span>))}</div>
+            {r.tension && (
+                <div className="card-row">
+                    <span className="card-label">텐션</span>
+                    <span className="tension-badge">⚡ {r.tension} lbs</span>
                 </div>
             )}
-            {r.couponCode && <div className="flex items-center gap-1"><span className="text-xs text-gray-400">쿠폰할인</span><span className="text-xs text-pink-600 font-medium">-{parseInt(r.couponDiscount||0).toLocaleString()}원</span></div>}
-            <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
-                <span className="text-xs text-gray-400">최종 금액</span>
-                <span className={`text-lg font-bold ${statColor}`}>{(r.total||0).toLocaleString()}원</span>
+            <div className="card-row" style={{marginBottom:0}}>
+                <span className="card-label">공임</span>
+                <span className="card-val" style={{color:'#616161'}}>{parseInt(r.labor||0).toLocaleString()}원</span>
+                <span style={{fontSize:'11px',color:'#9E9E9E',marginLeft:'12px'}}>수량</span>
+                <span className="card-val" style={{color:'#616161',marginLeft:'4px'}}>{r.quantity}개</span>
+            </div>
+            {r.extraWorks&&r.extraWorks.length>0 && (
+                <div className="extra-works-box" style={{marginTop:'8px'}}>
+                    <div className="extra-works-label">🛠️ 추가작업</div>
+                    <div>{r.extraWorks.map((w,i)=>(<span key={i} className="extra-chip">{w.name} {parseInt(w.price||0).toLocaleString()}원</span>))}</div>
+                </div>
+            )}
+            {r.couponCode && (
+                <div style={{marginTop:'6px'}}>
+                    <span className="coupon-discount">🎫 쿠폰 -{parseInt(r.couponDiscount||0).toLocaleString()}원</span>
+                </div>
+            )}
+            <div className="card-total-row">
+                <span className="card-total-label">최종 금액</span>
+                <span className={`card-total-val ${color==='green'?'green':'blue'}`}>{(r.total||0).toLocaleString()}원</span>
             </div>
         </div>
     </div>
@@ -871,43 +1341,45 @@ const StringingApp = ({ sport, uid }) => {
 
     // ── 스트링 드롭다운 컴포넌트 ────────────────
     const StringDropdown = ({ strings, onSelect }) => (
-        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-64 overflow-y-auto" onMouseDown={e=>e.preventDefault()}>
+        <div className="dropdown-list" onMouseDown={e=>e.preventDefault()}>
             {strings.map(s=>(
-                <button key={s} type="button" onClick={()=>onSelect(s)}
-                    className={`w-full text-left px-4 py-3 ${hoverBgClass} flex justify-between items-center border-b border-gray-100 last:border-0`}>
-                    <span className="text-sm">{s}</span>
-                    <span className="text-xs text-gray-500">{(stringPrices[s]||0).toLocaleString()}원</span>
+                <button key={s} type="button" onClick={()=>onSelect(s)} className="dropdown-item"
+                    style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <span>{s}</span>
+                    <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>{(stringPrices[s]||0).toLocaleString()}원</span>
                 </button>
             ))}
-            <div className="p-2 border-t border-gray-200">
+            <div style={{padding:'6px',borderTop:'1px solid #F0F0F0'}}>
                 <button type="button" onMouseDown={e=>e.preventDefault()}
                     onClick={()=>{ setShowStringDropdown(false); setShowHybridDropdown(false); setShowAddModal(true); }}
-                    className="w-full px-3 py-2 bg-yellow-500 text-white rounded-lg text-sm font-medium">➕ 새 스트링 추가</button>
+                    style={{width:'100%',padding:'9px',background:'#FFFBEB',color:'#B45309',borderRadius:'8px',border:'none',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>
+                    ➕ 새 스트링 추가
+                </button>
             </div>
         </div>
     );
 
     // ── 로딩 화면 ───────────────────────────────
     if (dbLoading) return (
-        <div className="flex flex-col items-center justify-center py-20">
-            <div className="spinner mb-4"></div>
-            <p className="text-gray-400 text-sm">데이터 불러오는 중...</p>
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'80px 20px'}}>
+            <div className="spinner" style={{marginBottom:'16px'}}></div>
+            <p style={{color:'#9E9E9E',fontSize:'13px',fontWeight:600}}>데이터 불러오는 중...</p>
         </div>
     );
 
     return (
-        <div>
-            {/* ── 확인/알림 모달 (window.confirm 대체) ── */}
+        <div style={{maxWidth:'640px',margin:'0 auto'}}>
+            {/* ── 확인/알림 모달 ── */}
             {confirmModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.5)'}}>
-                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xs">
-                        <p className="text-base font-medium text-gray-800 mb-5 text-center whitespace-pre-line">{confirmModal.msg}</p>
-                        <div className="flex gap-2">
+                <div className="modal-overlay">
+                    <div className="modal-card">
+                        <p style={{fontSize:'15px',fontWeight:700,color:'#111',textAlign:'center',marginBottom:'20px',whiteSpace:'pre-line'}}>{confirmModal.msg}</p>
+                        <div className="modal-btn-row">
                             {confirmModal.cancelLabel !== null && confirmModal.cancelLabel !== undefined && (
-                                <button onClick={()=>setConfirmModal(null)} className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium">{confirmModal.cancelLabel||'취소'}</button>
+                                <button onClick={()=>setConfirmModal(null)} className="modal-btn-cancel">{confirmModal.cancelLabel||'취소'}</button>
                             )}
                             <button onClick={confirmModal.onOk}
-                                className={`flex-1 py-3 rounded-xl font-medium text-white ${(confirmModal.cancelLabel===null||confirmModal.cancelLabel===undefined)?'bg-green-500':(confirmModal.okLabel==='삭제'?'bg-red-500':'bg-green-500')}`}>
+                                className={`modal-btn-ok ${confirmModal.okLabel==='삭제'?'modal-btn-ok-red':''} ${(confirmModal.cancelLabel===null||confirmModal.cancelLabel===undefined)?'modal-btn-ok-only':''}`}>
                                 {confirmModal.okLabel||'확인'}
                             </button>
                         </div>
@@ -917,20 +1389,18 @@ const StringingApp = ({ sport, uid }) => {
 
             {/* ── 추가작업 항목 모달 ── */}
             {showAddExtraItemModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.5)'}}>
-                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">🛠️ 새 항목 저장</h3>
-                        <div className="space-y-3">
-                            <input type="text" value={newExtraItemName} onChange={e=>setNewExtraItemName(e.target.value)} placeholder="예) 스텐실 작업" className="w-full px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-400" autoFocus/>
-                            <input type="number" value={newExtraItemPrice} onChange={e=>setNewExtraItemPrice(e.target.value)} placeholder="기본 가격 (선택)" className="w-full px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"/>
-                            <div className="flex gap-2">
-                                <button onClick={()=>{setShowAddExtraItemModal(false);setNewExtraItemName('');setNewExtraItemPrice('');}} className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium">취소</button>
-                                <button onClick={async ()=>{
-                                    if(!newExtraItemName.trim()) return;
-                                    await saveExtraItems([...savedExtraItems, {name:newExtraItemName.trim(), price:newExtraItemPrice}]);
-                                    setShowAddExtraItemModal(false); setNewExtraItemName(''); setNewExtraItemPrice('');
-                                }} className="flex-1 py-3 bg-indigo-500 text-white rounded-xl font-medium">저장</button>
-                            </div>
+                <div className="modal-overlay">
+                    <div className="modal-card">
+                        <div className="modal-title">🛠️ 새 항목 저장</div>
+                        <input type="text" value={newExtraItemName} onChange={e=>setNewExtraItemName(e.target.value)} placeholder="예) 스텐실 작업" className="modal-input" autoFocus/>
+                        <input type="number" value={newExtraItemPrice} onChange={e=>setNewExtraItemPrice(e.target.value)} placeholder="기본 가격 (선택)" className="modal-input"/>
+                        <div className="modal-btn-row">
+                            <button onClick={()=>{setShowAddExtraItemModal(false);setNewExtraItemName('');setNewExtraItemPrice('');}} className="modal-btn-cancel">취소</button>
+                            <button onClick={async ()=>{
+                                if(!newExtraItemName.trim()) return;
+                                await saveExtraItems([...savedExtraItems, {name:newExtraItemName.trim(), price:newExtraItemPrice}]);
+                                setShowAddExtraItemModal(false); setNewExtraItemName(''); setNewExtraItemPrice('');
+                            }} className="modal-btn-ok">저장</button>
                         </div>
                     </div>
                 </div>
@@ -938,16 +1408,14 @@ const StringingApp = ({ sport, uid }) => {
 
             {/* ── 스트링 추가 모달 ── */}
             {showAddModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{backgroundColor:'rgba(0,0,0,0.5)'}}>
-                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">➕ 새 스트링 추가</h3>
-                        <div className="space-y-3">
-                            <input type="text" value={modalStringName} onChange={e=>setModalStringName(e.target.value)} placeholder="예) 요넥스 폴리투어스핀" className="w-full px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-yellow-400" autoFocus/>
-                            <input type="number" value={modalStringPrice} onChange={e=>setModalStringPrice(e.target.value)} placeholder="예) 13000" className="w-full px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-yellow-400"/>
-                            <div className="flex gap-2">
-                                <button onClick={()=>{setShowAddModal(false);setModalStringName('');setModalStringPrice('');}} className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium">취소</button>
-                                <button onClick={handleAddModal} className="flex-1 py-3 bg-yellow-500 text-white rounded-xl font-medium">추가</button>
-                            </div>
+                <div className="modal-overlay">
+                    <div className="modal-card">
+                        <div className="modal-title">➕ 새 스트링 추가</div>
+                        <input type="text" value={modalStringName} onChange={e=>setModalStringName(e.target.value)} placeholder="예) 요넥스 폴리투어스핀" className="modal-input" autoFocus/>
+                        <input type="number" value={modalStringPrice} onChange={e=>setModalStringPrice(e.target.value)} placeholder="예) 13000" className="modal-input"/>
+                        <div className="modal-btn-row">
+                            <button onClick={()=>{setShowAddModal(false);setModalStringName('');setModalStringPrice('');}} className="modal-btn-cancel">취소</button>
+                            <button onClick={handleAddModal} className="modal-btn-ok">추가</button>
                         </div>
                     </div>
                 </div>
@@ -955,34 +1423,65 @@ const StringingApp = ({ sport, uid }) => {
 
             {/* ── 저장 상태 토스트 ── */}
             {saveStatus && (
-                <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-xl shadow-lg text-sm font-medium transition-all ${saveStatus==='saving'?'bg-yellow-100 text-yellow-700':saveStatus==='saved'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>
+                <div className={`toast ${saveStatus==='saving'?'toast-saving':saveStatus==='saved'?'toast-saved':'toast-error'}`}>
                     {saveStatus==='saving'?'⏳ 저장 중...':saveStatus==='saved'?'✅ 저장 완료':'❌ 저장 실패'}
                 </div>
             )}
 
-            {/* ── 상단 탭 바 ── */}
-            <div className="grid grid-cols-5 gap-1 mb-3">
-                {[['customers','👥 고객',activeBtnClass],['coupons','🎫 쿠폰','bg-pink-500 text-white'],['strings','🎯 스트링','bg-yellow-500 text-white'],['monthly','📅 월별','bg-orange-500 text-white'],['yearly','📈 연도별','bg-purple-500 text-white']].map(([mode, label, cls])=>(
-                    <button key={mode} onClick={()=>setViewMode(mode)} className={`py-2 rounded-lg font-medium text-xs transition-colors ${viewMode===mode?cls:'bg-gray-200 text-gray-700'}`}>{label}</button>
+            {/* ── 오늘 요약 배너 ── */}
+            {viewMode==='customers' && (
+                <div className="today-banner">
+                    <div className="today-banner-inner">
+                        <div>
+                            <div className="today-greeting">안녕하세요 👋</div>
+                            <div className="today-stats">
+                                <div className="today-stat-item">
+                                    <div className="today-stat-label">오늘 작업</div>
+                                    <div className="today-stat-val">{records.filter(r=>r.date===getTodayKST()).length}<span style={{fontSize:'13px',color:'#9E9E9E',fontWeight:600}}>건</span></div>
+                                </div>
+                                <div className="today-stat-item">
+                                    <div className="today-stat-label">오늘 매출</div>
+                                    <div className="today-stat-val green">{records.filter(r=>r.date===getTodayKST()).reduce((s,r)=>s+(r.total||0),0).toLocaleString()}<span style={{fontSize:'13px',fontWeight:600}}>원</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <button className="new-work-btn" onClick={()=>{if(!showForm){setShowForm(true);setEditingId(null);setFormData(makeEmptyForm());setExtraWorks([]);setShowExtraSection(false);setAppliedCoupon(null);setCouponInput('');setCouponMsg('');}}}>
+                            ➕ 새 작업
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── 메인 탭 바 ── */}
+            <div className="main-tabs">
+                {[
+                    ['customers','👥 고객','active'],
+                    ['coupons','🎫 쿠폰','active-pink'],
+                    ['strings','🎯 스트링','active-yellow'],
+                    ['monthly','📅 월별','active-orange'],
+                    ['yearly','📈 연도별','active-purple'],
+                ].map(([mode, label, activeCls])=>(
+                    <button key={mode} onClick={()=>setViewMode(mode)}
+                        className={`main-tab ${viewMode===mode?activeCls:''}`}>{label}</button>
                 ))}
             </div>
 
-            {/* ── 검색 + 등록 ── */}
+            {/* ── 검색 + 버튼 ── */}
             {viewMode==='customers' && (
-                <div className="space-y-2">
-                    <div className="flex gap-2">
-                        <input type="text" placeholder="고객 검색..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
-                            className={`flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`}/>
+                <div style={{padding:'0 12px 4px'}}>
+                    <div className="search-row" style={{padding:0,marginBottom:'8px'}}>
+                        <input type="text" placeholder="🔍  고객 검색..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
+                            className="search-input"/>
                         <button onClick={()=>{if(showForm&&editingId){resetForm();}else{setShowForm(!showForm);}if(!showForm){setEditingId(null);setFormData(makeEmptyForm());setExtraWorks([]);setShowExtraSection(false);setAppliedCoupon(null);setCouponInput('');setCouponMsg('');} }}
-                            className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap ${showForm?'bg-gray-400 text-white':(color==='green'?'bg-green-500 text-white':'bg-blue-500 text-white')}`}>
+                            className={`add-btn ${showForm?'add-btn-cancel':(color==='green'?'add-btn-green':'add-btn-blue')}`}>
                             {showForm?'✕ 취소':'➕ 등록'}
                         </button>
                     </div>
-                    <div className="flex gap-2">
-                        <button onClick={handleExportExcel} className="flex-1 py-2 bg-emerald-600 text-white rounded-lg font-medium text-xs flex items-center justify-center gap-1">📤 엑셀 내보내기</button>
-                        <label className="flex-1 py-2 bg-teal-600 text-white rounded-lg font-medium text-xs flex items-center justify-center gap-1 cursor-pointer">
+                    <div className="excel-row" style={{padding:0}}>
+                        <button onClick={handleExportExcel} className="excel-btn excel-btn-export">📤 엑셀 내보내기</button>
+                        <label className="excel-btn excel-btn-import" style={{cursor:'pointer'}}>
                             📥 엑셀 불러오기
-                            <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} className="hidden"/>
+                            <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} style={{display:'none'}}/>
                         </label>
                     </div>
                 </div>
@@ -990,220 +1489,225 @@ const StringingApp = ({ sport, uid }) => {
 
             {/* ── 등록/수정 폼 ── */}
             {showForm && viewMode==='customers' && (
-                <div className="bg-white rounded-xl shadow-lg p-4 mt-3">
-                    <h2 className="text-base font-bold text-gray-800 mb-3">{editingId?'✏️ 작업 수정':'➕ 새 작업 등록'}</h2>
-                    <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="form-card" style={{margin:'0 12px 10px'}}>
+                    <div className="form-title">{editingId?'✏️ 작업 수정':'➕ 새 작업 등록'}</div>
+                    <form onSubmit={handleSubmit}>
                         {/* 날짜 / 고객명 */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="form-grid-2">
                             <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">날짜</label>
+                                <label className="form-label">날짜</label>
                                 <input type="date" value={formData.date} onChange={e=>setFormData(prev=>({...prev,date:e.target.value}))}
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required/>
+                                    className="form-input" required/>
                             </div>
-                            <div className="relative">
-                                <label className="block text-xs font-medium text-gray-600 mb-1">고객명</label>
+                            <div className="form-group" style={{marginBottom:0}}>
+                                <label className="form-label">고객명</label>
                                 <input type="text" value={formData.name} onChange={e=>handleNameChange(e.target.value)}
                                     onFocus={()=>{ if(formData.name.length>0) setShowNameDropdown(getUniqueNames(formData.name).length>0); }}
                                     onBlur={()=>setTimeout(()=>setShowNameDropdown(false),200)}
                                     placeholder="홍길동"
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required/>
+                                    className="form-input" required/>
                                 {showNameDropdown && getUniqueNames(formData.name).length>0 && (
-                                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                                    <div className="dropdown-list">
                                         {getUniqueNames(formData.name).map(n=>(
-                                            <button key={n} type="button" onClick={()=>handleNameSelect(n)}
-                                                className={`w-full text-left px-4 py-3 text-sm ${hoverBgClass} border-b border-gray-100 last:border-0`}>{n}</button>
+                                            <button key={n} type="button" onClick={()=>handleNameSelect(n)} className="dropdown-item">{n}</button>
                                         ))}
                                     </div>
                                 )}
                                 {formData.name && records.filter(r=>r.name===formData.name).length>0 && !editingId && (
-                                    <p className="text-xs text-green-600 mt-1">✓ 이전 기록 자동 입력</p>
+                                    <p style={{fontSize:'11px',color:'#16A34A',marginTop:'3px',fontWeight:600}}>✓ 이전 기록 자동 입력</p>
                                 )}
                             </div>
                         </div>
 
                         {/* 라켓명 / 패턴 */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="relative">
-                                <label className="block text-xs font-medium text-gray-600 mb-1">{config.racketLabel}</label>
+                        <div className="form-grid-2">
+                            <div className="form-group" style={{marginBottom:0}}>
+                                <label className="form-label">{config.racketLabel}</label>
                                 <input type="text" value={formData.racket}
                                     onChange={e=>{setFormData(prev=>({...prev,racket:e.target.value}));setShowRacketDropdown(e.target.value.length>0);}}
                                     onFocus={()=>setShowRacketDropdown(formData.racket.length>0)}
                                     onBlur={()=>setTimeout(()=>setShowRacketDropdown(false),200)}
                                     placeholder={config.racketPlaceholder}
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required/>
+                                    className="form-input" required/>
                                 {showRacketDropdown && getUniqueRackets().length>0 && (
-                                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                                    <div className="dropdown-list">
                                         {getUniqueRackets().map(r=>(
                                             <button key={r} type="button" onClick={()=>{setFormData(prev=>({...prev,racket:r}));setShowRacketDropdown(false);}}
-                                                className={`w-full text-left px-4 py-3 text-sm ${hoverBgClass} border-b border-gray-100 last:border-0`}>{r}</button>
+                                                className="dropdown-item">{r}</button>
                                         ))}
                                     </div>
                                 )}
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">패턴</label>
+                                <label className="form-label">패턴</label>
                                 <select value={formData.pattern} onChange={e=>setFormData(prev=>({...prev,pattern:e.target.value}))}
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`}>
+                                    className="form-input" style={{appearance:'auto'}}>
                                     {config.patterns.map(p=><option key={p}>{p}</option>)}
                                 </select>
                             </div>
                         </div>
 
                         {/* 스트링 / 가격 */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="relative">
-                                <label className="block text-xs font-medium text-gray-600 mb-1">스트링 종류</label>
+                        <div className="form-grid-2">
+                            <div className="form-group" style={{marginBottom:0}}>
+                                <label className="form-label">스트링 종류</label>
                                 <input type="text" value={formData.stringType}
                                     onChange={e=>handleStringChange(e.target.value)}
                                     onFocus={()=>setShowStringDropdown(true)}
                                     onBlur={()=>setTimeout(()=>setShowStringDropdown(false),300)}
                                     placeholder="스트링 선택"
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required/>
+                                    className="form-input" required/>
                                 {showStringDropdown && <StringDropdown strings={getFilteredStrings(formData.stringType)} onSelect={handleStringSelect}/>}
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">스트링 가격 (원)</label>
+                                <label className="form-label">스트링 가격 (원)</label>
                                 <input type="number" value={formData.stringPrice} onChange={e=>setFormData(prev=>({...prev,stringPrice:e.target.value}))}
-                                    placeholder="0" className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required/>
+                                    placeholder="0" className="form-input" required/>
                             </div>
                         </div>
 
                         {/* 하이브리드 */}
-                        <div className="border-2 border-dashed border-gray-200 rounded-lg p-3">
-                            <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                        <div className="hybrid-box">
+                            <label style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'6px',cursor:'pointer'}}>
                                 <input type="checkbox" checked={formData.isHybrid}
                                     onChange={e=>setFormData(prev=>({...prev,isHybrid:e.target.checked,hybridString2:e.target.checked?prev.hybridString2:'',hybridPrice2:e.target.checked?prev.hybridPrice2:''}))}
-                                    className="w-4 h-4 rounded"/>
-                                <span className="text-sm font-medium text-gray-700">하이브리드 (+2,000원)</span>
+                                    style={{width:'16px',height:'16px',accentColor:'#22C55E'}}/>
+                                <span style={{fontSize:'13px',fontWeight:700,color:'#616161'}}>하이브리드 (+2,000원)</span>
                             </label>
                             {formData.isHybrid && (
-                                <div className="grid grid-cols-2 gap-3 mt-2">
-                                    <div className="relative">
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">두번째 스트링</label>
+                                <div className="form-grid-2" style={{marginBottom:0}}>
+                                    <div className="form-group" style={{marginBottom:0}}>
+                                        <label className="form-label">두번째 스트링</label>
                                         <input type="text" value={formData.hybridString2}
                                             onChange={e=>handleStringChange(e.target.value,true)}
                                             onFocus={()=>setShowHybridDropdown(true)}
                                             onBlur={()=>setTimeout(()=>setShowHybridDropdown(false),300)}
                                             placeholder="스트링 선택"
-                                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required={formData.isHybrid}/>
+                                            className="form-input" required={formData.isHybrid}/>
                                         {showHybridDropdown && <StringDropdown strings={getFilteredStrings(formData.hybridString2)} onSelect={s=>handleStringSelect(s,true)}/>}
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">두번째 가격 (원)</label>
+                                        <label className="form-label">두번째 가격 (원)</label>
                                         <input type="number" value={formData.hybridPrice2} onChange={e=>setFormData(prev=>({...prev,hybridPrice2:e.target.value}))}
-                                            placeholder="0" className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required={formData.isHybrid}/>
+                                            placeholder="0" className="form-input" required={formData.isHybrid}/>
                                     </div>
                                 </div>
                             )}
                         </div>
 
                         {/* 텐션 */}
-                        <div className="border-2 border-dashed border-yellow-200 rounded-lg p-3">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-xs font-medium text-yellow-700">⚡ 텐션 (lbs)</p>
-                                <p className="text-xs text-gray-400">예) 50 또는 50/48</p>
+                        <div className="form-group" style={{background:'#FEFCE8',border:'1.5px dashed #FDE047',borderRadius:'12px',padding:'10px 12px'}}>
+                            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}>
+                                <span style={{fontSize:'12px',fontWeight:700,color:'#854D0E'}}>⚡ 텐션 (lbs)</span>
+                                <span style={{fontSize:'11px',color:'#9E9E9E'}}>예) 50 또는 50/48</span>
                             </div>
                             <input type="text" value={formData.tension} onChange={e=>setFormData(prev=>({...prev,tension:e.target.value}))}
                                 placeholder="예) 50 또는 50/48"
-                                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`}/>
+                                className="form-input"/>
                         </div>
 
                         {/* 공임 / 수량 */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="form-grid-2">
                             <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">공임 (원)</label>
+                                <label className="form-label">공임 (원)</label>
                                 <select value={formData.labor} onChange={e=>setFormData(prev=>({...prev,labor:e.target.value}))}
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`}>
+                                    className="form-input" style={{appearance:'auto'}}>
                                     {config.defaultLabors.map(l=><option key={l} value={l}>{parseInt(l).toLocaleString()}원</option>)}
                                     <option value="0">0원</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">수량</label>
+                                <label className="form-label">수량</label>
                                 <input type="number" value={formData.quantity} min="1" onChange={e=>setFormData(prev=>({...prev,quantity:e.target.value}))}
-                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 ${ringClass} focus:outline-none`} required/>
+                                    className="form-input" required/>
                             </div>
                         </div>
 
-                        {/* 쿠폰 (신규 등록 시에만) */}
+                        {/* 쿠폰 */}
                         {!editingId && (
-                            <div className="border border-pink-200 bg-pink-50 rounded-lg p-3 space-y-2">
-                                <p className="text-xs font-medium text-pink-700">🎫 쿠폰 적용</p>
+                            <div className="coupon-box">
+                                <p style={{fontSize:'12px',fontWeight:700,color:'#BE185D',marginBottom:'8px'}}>🎫 쿠폰 적용</p>
                                 {coupons.filter(c=>!c.used).length===0 ? (
-                                    <p className="text-xs text-gray-400">등록된 미사용 쿠폰이 없습니다.</p>
+                                    <p style={{fontSize:'12px',color:'#9E9E9E'}}>등록된 미사용 쿠폰이 없습니다.</p>
                                 ) : (
-                                    <div className="flex gap-2">
+                                    <div style={{display:'flex',gap:'8px'}}>
                                         <input type="text" value={couponInput}
                                             onChange={e=>{setCouponInput(e.target.value.toUpperCase());setCouponMsg('');setAppliedCoupon(null);}}
                                             placeholder="쿠폰번호 입력"
-                                            className="flex-1 px-3 py-2 border border-pink-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 uppercase"/>
-                                        <button type="button" onClick={handleApplyCoupon} className="px-4 py-2 bg-pink-500 text-white rounded-lg text-sm font-medium">적용</button>
+                                            className="form-input" style={{flex:1,marginBottom:0,textTransform:'uppercase'}}/>
+                                        <button type="button" onClick={handleApplyCoupon}
+                                            style={{padding:'11px 16px',background:'#EC4899',color:'#fff',borderRadius:'11px',border:'none',fontWeight:700,fontSize:'13px',cursor:'pointer',whiteSpace:'nowrap'}}>적용</button>
                                     </div>
                                 )}
-                                {couponMsg && <p className="text-xs font-medium text-pink-700">{couponMsg}</p>}
+                                {couponMsg && <p style={{fontSize:'12px',fontWeight:600,color:'#BE185D',marginTop:'6px'}}>{couponMsg}</p>}
                             </div>
                         )}
 
                         {/* 추가 작업/용품 */}
-                        <div className="border-2 border-dashed border-indigo-200 rounded-lg p-3">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-indigo-700">🛠️ 추가 작업/용품</span>
+                        <div className="extra-section">
+                            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
+                                <span style={{fontSize:'13px',fontWeight:700,color:'#4F46E5'}}>🛠️ 추가 작업/용품</span>
                                 {!showExtraSection ? (
-                                    <button type="button" onClick={()=>{setShowExtraSection(true);if(extraWorks.length===0)setExtraWorks([{name:'',price:''}]);}} className="text-xs px-3 py-1 bg-indigo-500 text-white rounded-full">+ 추가</button>
+                                    <button type="button" onClick={()=>{setShowExtraSection(true);if(extraWorks.length===0)setExtraWorks([{name:'',price:''}]);}}
+                                        style={{fontSize:'11px',padding:'4px 12px',background:'#4F46E5',color:'#fff',border:'none',borderRadius:'20px',cursor:'pointer',fontWeight:700}}>+ 추가</button>
                                 ) : (
-                                    <button type="button" onClick={()=>{setShowExtraSection(false);setExtraWorks([]);}} className="text-xs px-3 py-1 bg-gray-300 text-gray-600 rounded-full">✕ 취소</button>
+                                    <button type="button" onClick={()=>{setShowExtraSection(false);setExtraWorks([]);}}
+                                        style={{fontSize:'11px',padding:'4px 12px',background:'#E0E0E0',color:'#616161',border:'none',borderRadius:'20px',cursor:'pointer',fontWeight:700}}>✕ 취소</button>
                                 )}
                             </div>
                             {showExtraSection && (
-                                <div className="space-y-2">
+                                <div>
                                     {extraWorks.map((w,idx)=>(
-                                        <div key={idx} className="flex gap-2 items-start">
-                                            <div className="relative flex-1">
+                                        <div key={idx} style={{display:'flex',gap:'6px',alignItems:'flex-start',marginBottom:'6px'}}>
+                                            <div className="form-group" style={{flex:1,marginBottom:0}}>
                                                 <input type="text" value={w.name}
                                                     onChange={e=>{const u=[...extraWorks];u[idx]={...u[idx],name:e.target.value};setExtraWorks(u);setShowExtraDropdown(idx);}}
                                                     onFocus={()=>setShowExtraDropdown(idx)}
                                                     onBlur={()=>setTimeout(()=>setShowExtraDropdown(null),300)}
                                                     placeholder="항목 선택 또는 입력"
-                                                    className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+                                                    className="form-input" style={{marginBottom:0}}/>
                                                 {showExtraDropdown===idx && (
-                                                    <div className="absolute z-30 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-48 overflow-y-auto" onMouseDown={e=>e.preventDefault()}>
+                                                    <div className="dropdown-list" onMouseDown={e=>e.preventDefault()}>
                                                         {savedExtraItems.filter(it=>it && it.name && it.name.toLowerCase().includes(w.name.toLowerCase())).map((it,i)=>(
                                                             <button key={i} type="button" onClick={()=>{const u=[...extraWorks];u[idx]={name:it.name,price:it.price||''};setExtraWorks(u);setShowExtraDropdown(null);}}
-                                                                className="w-full text-left px-3 py-2.5 hover:bg-indigo-50 flex justify-between items-center border-b border-gray-100 last:border-0 text-sm">
+                                                                className="dropdown-item" style={{display:'flex',justifyContent:'space-between'}}>
                                                                 <span>{it.name}</span>
-                                                                {it.price?<span className="text-xs text-gray-400">{parseInt(it.price).toLocaleString()}원</span>:null}
+                                                                {it.price&&<span style={{fontSize:'11px',color:'#9E9E9E'}}>{parseInt(it.price).toLocaleString()}원</span>}
                                                             </button>
                                                         ))}
-                                                        <div className="p-2 border-t border-gray-200">
+                                                        <div style={{padding:'6px'}}>
                                                             <button type="button" onMouseDown={e=>e.preventDefault()} onClick={()=>{setShowExtraDropdown(null);setShowAddExtraItemModal(true);}}
-                                                                className="w-full px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium">➕ 새 항목 저장</button>
+                                                                style={{width:'100%',padding:'9px',background:'#EEF2FF',color:'#4F46E5',borderRadius:'8px',border:'none',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>➕ 새 항목 저장</button>
                                                         </div>
                                                     </div>
                                                 )}
                                             </div>
-                                            <input type="number" value={w.price} onChange={e=>{const u=[...extraWorks];u[idx]={...u[idx],price:e.target.value};setExtraWorks(u);}} placeholder="가격" className="w-24 px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
-                                            <button type="button" onClick={()=>setExtraWorks(extraWorks.filter((_,i)=>i!==idx))} className="px-2 py-2 text-red-400 hover:bg-red-50 rounded-lg text-sm">✕</button>
+                                            <input type="number" value={w.price} onChange={e=>{const u=[...extraWorks];u[idx]={...u[idx],price:e.target.value};setExtraWorks(u);}} placeholder="가격"
+                                                className="form-input" style={{width:'88px',marginBottom:0}}/>
+                                            <button type="button" onClick={()=>setExtraWorks(extraWorks.filter((_,i)=>i!==idx))}
+                                                style={{padding:'11px 8px',color:'#EF4444',background:'none',border:'none',cursor:'pointer',fontSize:'14px',fontWeight:700}}>✕</button>
                                         </div>
                                     ))}
-                                    <button type="button" onClick={()=>setExtraWorks([...extraWorks,{name:'',price:''}])} className="text-xs px-3 py-1.5 border border-indigo-300 text-indigo-600 rounded-full hover:bg-indigo-50">+ 항목 추가</button>
+                                    <button type="button" onClick={()=>setExtraWorks([...extraWorks,{name:'',price:''}])}
+                                        style={{fontSize:'12px',padding:'6px 14px',border:'1.5px solid #C7D2FE',color:'#4F46E5',background:'none',borderRadius:'20px',cursor:'pointer',fontWeight:700}}>+ 항목 추가</button>
                                 </div>
                             )}
                         </div>
 
                         {/* 합계 */}
-                        <div className={`border border-gray-200 rounded-lg p-3 ${color==='green'?'bg-green-50':'bg-blue-50'}`}>
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-600">예상 금액</span>
-                                <span className={`text-xl font-bold ${statColor}`}>{calcTotalWithCoupon().toLocaleString()}원</span>
+                        <div className={`total-box ${color==='blue'?'blue':''}`}>
+                            <span className="total-box-label">💰 예상 금액</span>
+                            <div style={{textAlign:'right'}}>
+                                <div className="total-box-val">{calcTotalWithCoupon().toLocaleString()}원</div>
+                                {appliedCoupon && <div style={{fontSize:'11px',color:'#DB2777',fontWeight:600,marginTop:'2px'}}>🎫 -{parseInt(appliedCoupon.discount).toLocaleString()}원 쿠폰 적용</div>}
                             </div>
-                            {appliedCoupon && (
-                                <p className="text-xs text-pink-600 mt-1 text-right">🎫 쿠폰 -{parseInt(appliedCoupon.discount).toLocaleString()}원 적용</p>
-                            )}
                         </div>
 
-                        <div className="flex gap-2">
-                            <button type="button" onClick={resetForm} className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium">취소</button>
-                            <button type="submit" className={`flex-1 py-3 rounded-xl font-medium text-white ${color==='green'?'bg-green-500':'bg-blue-500'}`}>{editingId?'수정 완료':'등록 완료'}</button>
+                        <div style={{display:'flex',gap:'8px'}}>
+                            <button type="button" onClick={resetForm}
+                                style={{flex:1,padding:'13px',background:'#F0F0F0',color:'#616161',borderRadius:'13px',border:'none',fontWeight:700,fontSize:'14px',cursor:'pointer'}}>취소</button>
+                            <button type="submit"
+                                className={`submit-btn ${color==='green'?'submit-btn-green':'submit-btn-blue'}`} style={{flex:1}}>{editingId?'✅ 수정 완료':'✅ 등록 완료'}</button>
                         </div>
                     </form>
                 </div>
@@ -1211,153 +1715,127 @@ const StringingApp = ({ sport, uid }) => {
 
             {/* ── 고객 목록 ── */}
             {viewMode==='customers' && (
-                <div className="space-y-2 mt-3">
+                <div style={{padding:'0 12px 80px'}}>
                     {searchTerm && displayRecords.length>0 && (
-                        <div className="bg-white rounded-xl shadow-lg px-4 py-3">
-                            <p className="text-sm font-bold text-gray-800">'{searchTerm}' 검색결과 <span className="ml-2 text-xs font-normal text-gray-400">{displayRecords.length}건</span></p>
-                            {(()=>{
-                                const cs = getCustomerStats().find(c=>matchChosung(c.name,searchTerm));
-                                if (!cs) return null;
-                                return (<div className="flex gap-2 mt-1 flex-wrap">
-                                    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">연간 {cs.yearlyVisits}회</span>
-                                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">총 {cs.visitCount}회</span>
-                                    <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs">누적 {cs.totalAmount.toLocaleString()}원</span>
-                                </div>);
-                            })()}
+                        <div className="customer-card" style={{marginBottom:'10px'}}>
+                            <div style={{padding:'12px 14px'}}>
+                                <p style={{fontSize:'13px',fontWeight:800,color:'#111'}}>"<span style={{color:color==='green'?'#22C55E':'#3B82F6'}}>{searchTerm}</span>" 검색결과 <span style={{fontSize:'12px',fontWeight:600,color:'#9E9E9E',marginLeft:'4px'}}>{displayRecords.length}건</span></p>
+                                {(()=>{
+                                    const cs = getCustomerStats().find(c=>matchChosung(c.name,searchTerm));
+                                    if (!cs) return null;
+                                    return (<div style={{display:'flex',gap:'6px',marginTop:'6px',flexWrap:'wrap'}}>
+                                        <span style={{background:'#DCFCE7',color:'#15803D',padding:'3px 10px',borderRadius:'20px',fontSize:'11px',fontWeight:700}}>연간 {cs.yearlyVisits}회</span>
+                                        <span style={{background:'#DBEAFE',color:'#1D4ED8',padding:'3px 10px',borderRadius:'20px',fontSize:'11px',fontWeight:700}}>총 {cs.visitCount}회</span>
+                                        <span style={{background:'#F3E8FF',color:'#7E22CE',padding:'3px 10px',borderRadius:'20px',fontSize:'11px',fontWeight:700}}>누적 {cs.totalAmount.toLocaleString()}원</span>
+                                    </div>);
+                                })()}
+                            </div>
                         </div>
                     )}
                     {displayRecords.length===0 && (
-                        <div className="bg-white rounded-xl shadow-lg p-10 text-center">
-                            <p className="text-gray-400 text-4xl mb-3">{sport==='tennis'?'🎾':'🏸'}</p>
-                            {searchTerm ? <p className="text-gray-500">'{searchTerm}' 검색 결과가 없습니다.</p>
-                                : <><p className="text-gray-500">등록된 작업이 없습니다.</p><p className="text-gray-400 text-sm mt-1">➕ 등록 버튼을 눌러 시작하세요.</p></>}
+                        <div className="customer-card">
+                            <div className="empty-state">
+                                <div style={{fontSize:'48px',marginBottom:'8px'}}>{sport==='tennis'?'🎾':'🏸'}</div>
+                                {searchTerm ? <p>"{searchTerm}" 검색 결과가 없습니다.</p>
+                                    : <><p>등록된 작업이 없습니다.</p><p style={{fontSize:'12px',marginTop:'4px',color:'#9E9E9E'}}>위에서 ➕ 새 작업 버튼을 눌러 시작하세요.</p></>}
+                            </div>
                         </div>
                     )}
                     {(()=>{
-                        // 고객별로 그룹핑 (검색 중일 때는 그냥 개별 표시)
                         if (searchTerm) {
                             return displayRecords.map(r=>{
                                 const visitCount = records.filter(x=>x.name===r.name).length;
                                 return <RecordCard key={r.fbKey||r.id} r={r} visitCount={visitCount} records={records} color={color} statColor={statColor} handleEdit={handleEdit} handleDelete={handleDelete}/>;
                             });
                         }
-                        // 고객별 그룹핑
                         const grouped = {};
                         const nameOrder = [];
                         [...displayRecords].sort((a,b)=>b.date.localeCompare(a.date)).forEach(r=>{
                             if (!grouped[r.name]) { grouped[r.name]=[]; nameOrder.push(r.name); }
                             grouped[r.name].push(r);
                         });
-                        // 중복 이름 제거
                         const uniqueNames = [...new Set(nameOrder)];
                         return uniqueNames.map(name=>{
-                            const recs = grouped[name]; // 날짜 내림차순
+                            const recs = grouped[name];
                             const latest = recs[0];
                             const history = recs.slice(1);
                             const visitCount = recs.length;
                             const isOpen = expandedCustomers[name];
                             return (
-                                <div key={name} className="bg-white rounded-xl shadow-lg overflow-hidden">
-                                    {/* 최신 작업 헤더 */}
-                                    <div className={`px-3 py-2 flex justify-between items-center ${color==='green'?'bg-green-500':'bg-blue-500'}`}>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="text-white font-bold text-sm">{latest.name}</span>
-                                            <span className="text-xs bg-white bg-opacity-20 text-white px-1.5 py-0.5 rounded-full">👤 {visitCount}회</span>
-                                            {latest.couponCode && <span className="text-xs bg-white bg-opacity-30 text-white px-1.5 py-0.5 rounded-full">🎫 쿠폰</span>}
-                                            {latest.isHybrid && <span className="text-xs bg-white bg-opacity-30 text-white px-1.5 py-0.5 rounded-full">하이브리드</span>}
+                                <div key={name} className="customer-card">
+                                    <div className={`customer-card-header ${color}`}>
+                                        <div>
+                                            <div className="customer-name">{latest.name}</div>
+                                            <div className="customer-badges">
+                                                <span className="badge">👤 {visitCount}회</span>
+                                                {latest.couponCode && <span className="badge">🎫 쿠폰</span>}
+                                                {latest.isHybrid && <span className="badge">하이브리드</span>}
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-white text-opacity-80 text-xs mr-1">{latest.date}</span>
-                                            <button onClick={()=>handleEdit(latest)} className="p-1.5 text-white hover:bg-white hover:bg-opacity-20 rounded-lg">✏️</button>
-                                            <button onClick={()=>handleDelete(latest)} className="p-1.5 text-white hover:bg-white hover:bg-opacity-20 rounded-lg">🗑️</button>
+                                        <div className="card-actions">
+                                            <span className="card-date">{latest.date}</span>
+                                            <button onClick={()=>handleEdit(latest)} className="card-action-btn">✏️</button>
+                                            <button onClick={()=>handleDelete(latest)} className="card-action-btn">🗑️</button>
                                         </div>
                                     </div>
-                                    {/* 최신 작업 상세 */}
-                                    <div className="p-3 space-y-2">
-                                        <div className="flex items-start gap-2">
-                                            <span className="text-xs text-gray-400 w-12 flex-shrink-0 mt-0.5">라켓</span>
-                                            <span className="text-xs font-medium text-gray-800">{latest.racket}</span>
-                                            <span className="text-xs text-gray-400 ml-auto flex-shrink-0">{latest.pattern}</span>
+                                    <div className="customer-card-body">
+                                        <div className="card-row">
+                                            <span className="card-label">라켓</span>
+                                            <span className="card-val">{latest.racket}</span>
+                                            <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600,flexShrink:0}}>{latest.pattern}</span>
                                         </div>
-                                        <div className="flex items-start gap-2">
-                                            <span className="text-xs text-gray-400 w-12 flex-shrink-0 mt-0.5">스트링</span>
-                                            <div className="flex-1">
-                                                <span className="text-xs font-medium text-gray-800">{latest.stringType}</span>
-                                                {latest.isHybrid&&latest.hybridString2&&<span className="text-xs text-purple-600"> + {latest.hybridString2}</span>}
-                                                <span className="text-xs text-gray-400 ml-1">{parseInt(latest.stringPrice||0).toLocaleString()}원{latest.isHybrid&&latest.hybridPrice2&&` +${parseInt(latest.hybridPrice2).toLocaleString()}원`}</span>
+                                        <div className="card-row">
+                                            <span className="card-label">스트링</span>
+                                            <div style={{flex:1}}>
+                                                <span className="card-val">{latest.stringType}</span>
+                                                {latest.isHybrid&&latest.hybridString2&&<span style={{fontSize:'11px',color:'#7C3AED',fontWeight:600}}> + {latest.hybridString2}</span>}
+                                                <span style={{fontSize:'11px',color:'#9E9E9E',marginLeft:'4px'}}>{parseInt(latest.stringPrice||0).toLocaleString()}원{latest.isHybrid&&latest.hybridPrice2&&` +${parseInt(latest.hybridPrice2).toLocaleString()}원`}</span>
                                             </div>
                                         </div>
-                                        {latest.tension && (
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs text-gray-400 w-12 flex-shrink-0">텐션</span>
-                                                <span className="text-xs font-medium text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">⚡ {latest.tension} lbs</span>
-                                            </div>
-                                        )}
-                                        <div className="flex gap-4">
-                                            <div className="flex items-center gap-1"><span className="text-xs text-gray-400">공임</span><span className="text-xs font-medium text-gray-700">{parseInt(latest.labor||0).toLocaleString()}원</span></div>
-                                            <div className="flex items-center gap-1"><span className="text-xs text-gray-400">수량</span><span className="text-xs font-medium text-gray-700">{latest.quantity}개</span></div>
+                                        {latest.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {latest.tension} lbs</span></div>}
+                                        <div className="card-row" style={{marginBottom:0}}>
+                                            <span className="card-label">공임</span>
+                                            <span className="card-val" style={{color:'#616161'}}>{parseInt(latest.labor||0).toLocaleString()}원</span>
+                                            <span style={{fontSize:'11px',color:'#9E9E9E',marginLeft:'12px'}}>수량</span>
+                                            <span className="card-val" style={{color:'#616161',marginLeft:'4px'}}>{latest.quantity}개</span>
                                         </div>
                                         {latest.extraWorks&&latest.extraWorks.length>0 && (
-                                            <div className="bg-indigo-50 rounded-lg px-2 py-1.5">
-                                                <p className="text-xs text-indigo-400 mb-1">🛠️ 추가작업</p>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {latest.extraWorks.map((w,i)=>(<span key={i} className="text-xs bg-white text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">{w.name} {parseInt(w.price||0).toLocaleString()}원</span>))}
-                                                </div>
+                                            <div className="extra-works-box" style={{marginTop:'8px'}}>
+                                                <div className="extra-works-label">🛠️ 추가작업</div>
+                                                <div>{latest.extraWorks.map((w,i)=>(<span key={i} className="extra-chip">{w.name} {parseInt(w.price||0).toLocaleString()}원</span>))}</div>
                                             </div>
                                         )}
-                                        {latest.couponCode && (
-                                            <div className="flex items-center gap-1">
-                                                <span className="text-xs text-gray-400">쿠폰할인</span>
-                                                <span className="text-xs text-pink-600 font-medium">-{parseInt(latest.couponDiscount||0).toLocaleString()}원</span>
-                                            </div>
-                                        )}
-                                        <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
-                                            <span className="text-xs text-gray-400">최종 금액</span>
-                                            <span className={`text-lg font-bold ${statColor}`}>{(latest.total||0).toLocaleString()}원</span>
+                                        {latest.couponCode && <div style={{marginTop:'6px'}}><span className="coupon-discount">🎫 쿠폰 -{parseInt(latest.couponDiscount||0).toLocaleString()}원</span></div>}
+                                        <div className="card-total-row">
+                                            <span className="card-total-label">최종 금액</span>
+                                            <span className={`card-total-val ${color==='green'?'green':'blue'}`}>{(latest.total||0).toLocaleString()}원</span>
                                         </div>
-                                        {/* 이전 방문 기록 드롭다운 버튼 */}
                                         {history.length>0 && (
-                                            <button onClick={()=>toggleCustomerHistory(name)}
-                                                className="w-full mt-1 py-2 rounded-lg border border-gray-200 text-xs text-gray-500 font-medium flex items-center justify-center gap-1 hover:bg-gray-50 active:bg-gray-100">
+                                            <button onClick={()=>toggleCustomerHistory(name)} className="history-toggle-btn">
                                                 {isOpen ? '▲ 이전 방문 접기' : `▼ 이전 방문 ${history.length}건 더 보기`}
                                             </button>
                                         )}
                                     </div>
-                                    {/* 이전 방문 기록 (드롭다운) */}
                                     {isOpen && history.map((r,idx)=>(
-                                        <div key={r.fbKey||r.id} className="border-t border-gray-100">
-                                            <div className="px-3 py-1.5 bg-gray-50 flex justify-between items-center">
-                                                <span className="text-xs text-gray-400 font-medium">📅 {r.date}</span>
-                                                <div className="flex items-center gap-1">
-                                                    {r.couponCode && <span className="text-xs bg-pink-100 text-pink-500 px-1.5 py-0.5 rounded-full">🎫쿠폰</span>}
-                                                    {r.isHybrid && <span className="text-xs bg-purple-100 text-purple-500 px-1.5 py-0.5 rounded-full">하이브리드</span>}
-                                                    <button onClick={()=>handleEdit(r)} className="p-1 text-gray-400 hover:text-blue-500 rounded">✏️</button>
-                                                    <button onClick={()=>handleDelete(r)} className="p-1 text-gray-400 hover:text-red-500 rounded">🗑️</button>
+                                        <div key={r.fbKey||r.id} style={{borderTop:'1px solid #F0F0F0'}}>
+                                            <div style={{padding:'8px 14px',background:'#FAFAFA',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                                                <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:700}}>📅 {r.date}</span>
+                                                <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
+                                                    {r.couponCode && <span style={{fontSize:'10px',background:'#FCE7F3',color:'#DB2777',padding:'2px 7px',borderRadius:'10px',fontWeight:700}}>🎫쿠폰</span>}
+                                                    {r.isHybrid && <span style={{fontSize:'10px',background:'#F3E8FF',color:'#7C3AED',padding:'2px 7px',borderRadius:'10px',fontWeight:700}}>하이브리드</span>}
+                                                    <button onClick={()=>handleEdit(r)} style={{width:'28px',height:'28px',background:'none',border:'none',cursor:'pointer',fontSize:'13px'}}>✏️</button>
+                                                    <button onClick={()=>handleDelete(r)} style={{width:'28px',height:'28px',background:'none',border:'none',cursor:'pointer',fontSize:'13px'}}>🗑️</button>
                                                 </div>
                                             </div>
-                                            <div className="px-3 pb-3 pt-1 space-y-1.5">
-                                                <div className="flex items-start gap-2">
-                                                    <span className="text-xs text-gray-400 w-12 flex-shrink-0">라켓</span>
-                                                    <span className="text-xs text-gray-700">{r.racket}</span>
-                                                    <span className="text-xs text-gray-400 ml-auto">{r.pattern}</span>
-                                                </div>
-                                                <div className="flex items-start gap-2">
-                                                    <span className="text-xs text-gray-400 w-12 flex-shrink-0">스트링</span>
-                                                    <div className="flex-1 text-xs text-gray-700">
-                                                        {r.stringType}
-                                                        {r.isHybrid&&r.hybridString2&&<span className="text-purple-600"> + {r.hybridString2}</span>}
-                                                        <span className="text-gray-400 ml-1">{parseInt(r.stringPrice||0).toLocaleString()}원</span>
-                                                    </div>
-                                                </div>
-                                                {r.tension && <div className="flex items-center gap-2"><span className="text-xs text-gray-400 w-12">텐션</span><span className="text-xs text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">⚡ {r.tension} lbs</span></div>}
-                                                <div className="flex gap-4">
-                                                    <span className="text-xs text-gray-400">공임 <span className="text-gray-600 font-medium">{parseInt(r.labor||0).toLocaleString()}원</span></span>
-                                                    <span className="text-xs text-gray-400">수량 <span className="text-gray-600 font-medium">{r.quantity}개</span></span>
-                                                </div>
-                                                {r.couponCode && <div className="text-xs text-pink-500">🎫 쿠폰할인 -{parseInt(r.couponDiscount||0).toLocaleString()}원</div>}
-                                                <div className="flex justify-between items-center pt-1 border-t border-gray-100">
-                                                    <span className="text-xs text-gray-400">금액</span>
-                                                    <span className={`text-sm font-bold ${statColor}`}>{(r.total||0).toLocaleString()}원</span>
+                                            <div style={{padding:'8px 14px 12px'}}>
+                                                <div className="card-row"><span className="card-label">라켓</span><span className="card-val" style={{fontSize:'11px'}}>{r.racket}</span><span style={{fontSize:'11px',color:'#9E9E9E'}}>{r.pattern}</span></div>
+                                                <div className="card-row"><span className="card-label">스트링</span><span style={{fontSize:'11px',color:'#111',fontWeight:600,flex:1}}>{r.stringType}{r.isHybrid&&r.hybridString2&&<span style={{color:'#7C3AED'}}> + {r.hybridString2}</span>}<span style={{color:'#9E9E9E',marginLeft:'4px'}}>{parseInt(r.stringPrice||0).toLocaleString()}원</span></span></div>
+                                                {r.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {r.tension} lbs</span></div>}
+                                                <div className="card-row" style={{marginBottom:0}}><span className="card-label">공임</span><span style={{fontSize:'11px',color:'#616161',fontWeight:600}}>{parseInt(r.labor||0).toLocaleString()}원</span><span style={{fontSize:'11px',color:'#9E9E9E',marginLeft:'10px'}}>수량 {r.quantity}개</span></div>
+                                                {r.couponCode && <div style={{fontSize:'11px',color:'#DB2777',fontWeight:600,marginTop:'4px'}}>🎫 -{parseInt(r.couponDiscount||0).toLocaleString()}원</div>}
+                                                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:'8px',marginTop:'4px',borderTop:'1px solid #F0F0F0'}}>
+                                                    <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>금액</span>
+                                                    <span style={{fontSize:'14px',fontWeight:800,color:color==='green'?'#16A34A':'#1D4ED8'}}>{(r.total||0).toLocaleString()}원</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1371,88 +1849,93 @@ const StringingApp = ({ sport, uid }) => {
 
             {/* ── 월별 매출 ── */}
             {viewMode==='monthly' && (
-                <div className="bg-white rounded-xl shadow-lg p-4 mt-3">
-                    <h2 className="text-base font-bold text-gray-800 mb-3">📅 월별 매출 현황</h2>
-                    <div className="space-y-3">
-                        {getMonthlyStats().length===0 && <p className="text-center text-gray-400 py-8">데이터가 없습니다.</p>}
-                        {getMonthlyStats().map(stat=>(
-                            <div key={stat.month} className="border border-gray-200 rounded-xl overflow-hidden">
-                                <div className="flex justify-between items-center px-4 py-2.5 bg-gray-50 border-b border-gray-200">
-                                    <p className="font-bold text-gray-800">{stat.month}</p>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-gray-500">{stat.count}건</span>
-                                        <span className={`text-base font-bold ${statColor}`}>{stat.total.toLocaleString()}원</span>
-                                    </div>
+                <div style={{padding:'0 12px 80px'}}>
+                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'4px 0 12px'}}>📅 월별 매출 현황</div>
+                    {getMonthlyStats().length===0 && <div className="empty-state">데이터가 없습니다.</div>}
+                    {getMonthlyStats().map(stat=>(
+                        <div key={stat.month} className="stat-card">
+                            <div className="stat-card-header">
+                                <div>
+                                    <div className="stat-month">{stat.month}</div>
+                                    <div className="stat-count">{stat.count}건</div>
                                 </div>
-                                <div className="divide-y divide-gray-100">
-                                    <div className="flex justify-between items-center px-4 py-2"><span className="text-xs text-gray-500">🎯 스트링비</span><span className="text-sm font-medium text-orange-600">{stat.stringTotal.toLocaleString()}원</span></div>
-                                    <div className="flex justify-between items-center px-4 py-2"><span className="text-xs text-gray-500">🔧 공임비</span><span className="text-sm font-medium text-blue-600">{stat.laborTotal.toLocaleString()}원</span></div>
-                                    <div className="flex justify-between items-center px-4 py-2"><span className="text-xs text-gray-500">🛠️ 추가작업비</span><span className="text-sm font-medium text-indigo-600">{(stat.extraTotal||0).toLocaleString()}원</span></div>
-                                </div>
+                                <div className={`stat-total ${color==='green'?'green':'blue'}`}>{stat.total.toLocaleString()}원</div>
                             </div>
-                        ))}
-                    </div>
+                            <div className="stat-rows">
+                                <div className="stat-row"><span className="stat-row-label">🎯 스트링비</span><span className="stat-row-val" style={{color:'#EA580C'}}>{stat.stringTotal.toLocaleString()}원</span></div>
+                                <div className="stat-row"><span className="stat-row-label">🔧 공임비</span><span className="stat-row-val" style={{color:'#2563EB'}}>{stat.laborTotal.toLocaleString()}원</span></div>
+                                <div className="stat-row"><span className="stat-row-label">🛠️ 추가작업비</span><span className="stat-row-val" style={{color:'#4F46E5'}}>{(stat.extraTotal||0).toLocaleString()}원</span></div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
 
             {/* ── 연도별 매출 ── */}
             {viewMode==='yearly' && (
-                <div className="bg-white rounded-xl shadow-lg p-4 mt-3">
-                    <h2 className="text-base font-bold text-gray-800 mb-3">📈 연도별 매출 현황</h2>
-                    <div className="space-y-3">
-                        {getYearlyStats().length===0 && <p className="text-center text-gray-400 py-8">데이터가 없습니다.</p>}
-                        {getYearlyStats().map(stat=>(
-                            <div key={stat.year} className="border border-gray-200 rounded-xl overflow-hidden">
-                                <div className="flex justify-between items-center px-4 py-3 bg-gray-50 border-b border-gray-200">
-                                    <div>
-                                        <p className="text-lg font-bold text-gray-800">{stat.year}년</p>
-                                        <p className="text-xs text-gray-400">총 {stat.count}건 · 월평균 {Math.round(stat.total/12).toLocaleString()}원</p>
-                                    </div>
-                                    <p className="text-xl font-bold text-purple-600">{stat.total.toLocaleString()}원</p>
+                <div style={{padding:'0 12px 80px'}}>
+                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'4px 0 12px'}}>📈 연도별 매출 현황</div>
+                    {getYearlyStats().length===0 && <div className="empty-state">데이터가 없습니다.</div>}
+                    {getYearlyStats().map(stat=>(
+                        <div key={stat.year} className="stat-card">
+                            <div className="stat-card-header">
+                                <div>
+                                    <div className="stat-month">{stat.year}년</div>
+                                    <div className="stat-count">총 {stat.count}건 · 월평균 {Math.round(stat.total/12).toLocaleString()}원</div>
                                 </div>
-                                <div className="divide-y divide-gray-100">
-                                    <div className="flex justify-between items-center px-4 py-2.5"><span className="text-xs text-gray-500">🎯 스트링비 합계</span><span className="text-base font-bold text-orange-600">{stat.stringTotal.toLocaleString()}원</span></div>
-                                    <div className="flex justify-between items-center px-4 py-2.5"><span className="text-xs text-gray-500">🔧 공임비 합계</span><span className="text-base font-bold text-blue-600">{stat.laborTotal.toLocaleString()}원</span></div>
-                                    <div className="flex justify-between items-center px-4 py-2.5"><span className="text-xs text-gray-500">🛠️ 추가작업비 합계</span><span className="text-base font-bold text-indigo-600">{(stat.extraTotal||0).toLocaleString()}원</span></div>
-                                </div>
+                                <div className="stat-total purple">{stat.total.toLocaleString()}원</div>
                             </div>
-                        ))}
-                    </div>
+                            <div className="stat-rows">
+                                <div className="stat-row"><span className="stat-row-label">🎯 스트링비 합계</span><span className="stat-row-val" style={{color:'#EA580C'}}>{stat.stringTotal.toLocaleString()}원</span></div>
+                                <div className="stat-row"><span className="stat-row-label">🔧 공임비 합계</span><span className="stat-row-val" style={{color:'#2563EB'}}>{stat.laborTotal.toLocaleString()}원</span></div>
+                                <div className="stat-row"><span className="stat-row-label">🛠️ 추가작업비 합계</span><span className="stat-row-val" style={{color:'#4F46E5'}}>{(stat.extraTotal||0).toLocaleString()}원</span></div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
 
             {/* ── 쿠폰 관리 ── */}
             {viewMode==='coupons' && (
-                <div className="mt-3 space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                        <button onClick={()=>{setShowBulkForm(!showBulkForm);setShowCouponForm(false);setBulkResult(null);}} className="py-3 bg-purple-500 text-white rounded-xl font-medium text-sm shadow">{showBulkForm?'✕ 취소':'🎟️ 일괄 발행'}</button>
-                        <button onClick={()=>{setShowCouponForm(!showCouponForm);setShowBulkForm(false);setBulkResult(null);}} className="py-3 bg-pink-500 text-white rounded-xl font-medium text-sm shadow">{showCouponForm?'✕ 취소':'➕ 1장 등록'}</button>
+                <div style={{padding:'0 12px 80px'}}>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
+                        <button onClick={()=>{setShowBulkForm(!showBulkForm);setShowCouponForm(false);setBulkResult(null);}}
+                            style={{padding:'12px',background:showBulkForm?'#9E9E9E':'#A855F7',color:'#fff',borderRadius:'13px',border:'none',fontWeight:700,fontSize:'13px',cursor:'pointer'}}>
+                            {showBulkForm?'✕ 취소':'🎟️ 일괄 발행'}
+                        </button>
+                        <button onClick={()=>{setShowCouponForm(!showCouponForm);setShowBulkForm(false);setBulkResult(null);}}
+                            style={{padding:'12px',background:showCouponForm?'#9E9E9E':'#EC4899',color:'#fff',borderRadius:'13px',border:'none',fontWeight:700,fontSize:'13px',cursor:'pointer'}}>
+                            {showCouponForm?'✕ 취소':'➕ 1장 등록'}
+                        </button>
                     </div>
 
                     {showBulkForm && (
-                        <div className="bg-white rounded-xl shadow-lg p-4 space-y-3">
-                            <h3 className="text-sm font-bold text-gray-800">🎟️ 대회 찬조 쿠폰 일괄 발행</h3>
-                            <p className="text-xs text-gray-400">번호는 자동 생성돼요 예) NIJI-0406-001</p>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div><label className="block text-xs font-medium text-gray-500 mb-1">앞자리 (영문)</label>
-                                    <input type="text" value={bulkForm.prefix} maxLength={8} onChange={e=>setBulkForm(prev=>({...prev,prefix:e.target.value.toUpperCase()}))} placeholder="NIJI" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 uppercase"/></div>
-                                <div><label className="block text-xs font-medium text-gray-500 mb-1">발행 장수 *</label>
-                                    <input type="number" value={bulkForm.count} min="1" max="50" onChange={e=>setBulkForm(prev=>({...prev,count:e.target.value}))} placeholder="5" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/></div>
+                        <div className="form-card" style={{margin:'0 0 10px'}}>
+                            <div className="form-title" style={{color:'#7E22CE'}}>🎟️ 대회 찬조 쿠폰 일괄 발행</div>
+                            <p style={{fontSize:'12px',color:'#9E9E9E',marginBottom:'12px'}}>번호는 자동 생성돼요 예) NIJI-0406-001</p>
+                            <div className="form-grid-2">
+                                <div><label className="form-label">앞자리 (영문)</label>
+                                    <input type="text" value={bulkForm.prefix} maxLength={8} onChange={e=>setBulkForm(prev=>({...prev,prefix:e.target.value.toUpperCase()}))} placeholder="NIJI" className="form-input" style={{textTransform:'uppercase'}}/></div>
+                                <div><label className="form-label">발행 장수 *</label>
+                                    <input type="number" value={bulkForm.count} min="1" max="50" onChange={e=>setBulkForm(prev=>({...prev,count:e.target.value}))} placeholder="5" className="form-input"/></div>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div><label className="block text-xs font-medium text-gray-500 mb-1">할인금액 (원) *</label>
-                                    <input type="number" value={bulkForm.discount} onChange={e=>setBulkForm(prev=>({...prev,discount:e.target.value}))} placeholder="예) 12000" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/></div>
-                                <div><label className="block text-xs font-medium text-gray-500 mb-1">만료일</label>
-                                    <input type="date" value={bulkForm.expiry} onChange={e=>setBulkForm(prev=>({...prev,expiry:e.target.value}))} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/></div>
+                            <div className="form-grid-2">
+                                <div><label className="form-label">할인금액 (원) *</label>
+                                    <input type="number" value={bulkForm.discount} onChange={e=>setBulkForm(prev=>({...prev,discount:e.target.value}))} placeholder="예) 12000" className="form-input"/></div>
+                                <div><label className="form-label">만료일</label>
+                                    <input type="date" value={bulkForm.expiry} onChange={e=>setBulkForm(prev=>({...prev,expiry:e.target.value}))} className="form-input"/></div>
                             </div>
-                            <div><label className="block text-xs font-medium text-gray-500 mb-1">메모 (대회명 등)</label>
-                                <input type="text" value={bulkForm.note} onChange={e=>setBulkForm(prev=>({...prev,note:e.target.value}))} placeholder="예) 4월 월례대회 찬조" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"/></div>
-                            <button onClick={handleBulkIssue} disabled={!bulkForm.discount||!bulkForm.count} className="w-full py-3 bg-purple-500 text-white rounded-xl font-medium text-sm disabled:opacity-40">🎟️ {bulkForm.count||0}장 발행하기</button>
+                            <div className="form-group"><label className="form-label">메모 (대회명 등)</label>
+                                <input type="text" value={bulkForm.note} onChange={e=>setBulkForm(prev=>({...prev,note:e.target.value}))} placeholder="예) 4월 월례대회 찬조" className="form-input"/></div>
+                            <button onClick={handleBulkIssue} disabled={!bulkForm.discount||!bulkForm.count}
+                                style={{width:'100%',padding:'13px',background:'#A855F7',color:'#fff',borderRadius:'13px',border:'none',fontWeight:800,fontSize:'14px',cursor:'pointer',opacity:(!bulkForm.discount||!bulkForm.count)?0.4:1}}>
+                                🎟️ {bulkForm.count||0}장 발행하기
+                            </button>
                             {bulkResult && (
-                                <div className="bg-purple-50 rounded-xl p-3">
-                                    <p className="text-xs font-bold text-purple-700 mb-2">✅ {bulkResult.length}장 발행 완료!</p>
-                                    <div className="space-y-1 max-h-40 overflow-y-auto mb-3">
-                                        {bulkResult.map((code,i)=><p key={i} className="text-xs font-mono text-purple-600 bg-white px-2 py-1 rounded border border-purple-200">{code}</p>)}
+                                <div style={{background:'#FAF5FF',borderRadius:'12px',padding:'12px',marginTop:'10px'}}>
+                                    <p style={{fontSize:'12px',fontWeight:800,color:'#7E22CE',marginBottom:'8px'}}>✅ {bulkResult.length}장 발행 완료!</p>
+                                    <div style={{maxHeight:'160px',overflowY:'auto',marginBottom:'10px'}}>
+                                        {bulkResult.map((code,i)=><p key={i} style={{fontSize:'12px',fontFamily:'monospace',color:'#7E22CE',background:'#fff',padding:'6px 10px',borderRadius:'8px',border:'1px solid #E9D5FF',marginBottom:'4px'}}>{code}</p>)}
                                     </div>
                                     <button onClick={()=>{
                                         const lines = bulkResult.map((code,i)=>`  ${i+1}. ${code}`).join('\n');
@@ -1461,7 +1944,7 @@ const StringingApp = ({ sport, uid }) => {
                                         const note = bulkForm.note ? `\n📌 ${bulkForm.note}` : '';
                                         const msg = `🎫 니지스트링 스트링 할인 쿠폰\n\n할인금액: ${discount}${expiry}${note}\n\n쿠폰번호:\n${lines}\n\n✅ 사용방법\n스트링 작업 시 쿠폰번호를 알려주세요!\n감사합니다 😊`;
                                         navigator.clipboard.writeText(msg).then(()=>showAlert('✅ 카카오톡 메시지가 복사됐어요!\n카카오톡 열고 붙여넣기 하세요 😊')).catch(()=>showAlert('복사 실패. 직접 쿠폰번호를 전달해 주세요.'));
-                                    }} className="w-full py-2.5 bg-yellow-400 text-gray-900 rounded-xl font-bold text-sm shadow flex items-center justify-center gap-2">
+                                    }} style={{width:'100%',padding:'11px',background:'#FEE500',color:'#111',borderRadius:'12px',border:'none',fontWeight:800,fontSize:'13px',cursor:'pointer'}}>
                                         💬 카카오톡 메시지 복사하기
                                     </button>
                                 </div>
@@ -1470,81 +1953,82 @@ const StringingApp = ({ sport, uid }) => {
                     )}
 
                     {showCouponForm && (
-                        <div className="bg-white rounded-xl shadow-lg p-4 space-y-3">
-                            <h3 className="text-sm font-bold text-gray-800">➕ 쿠폰 직접 등록</h3>
-                            <div><label className="block text-xs font-medium text-gray-500 mb-1">쿠폰번호 *</label>
-                                <input type="text" value={couponForm.code} onChange={e=>setCouponForm(prev=>({...prev,code:e.target.value.toUpperCase()}))} placeholder="예) KAKAO-2024-ABCD" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 uppercase"/></div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div><label className="block text-xs font-medium text-gray-500 mb-1">할인금액 (원) *</label>
-                                    <input type="number" value={couponForm.discount} onChange={e=>setCouponForm(prev=>({...prev,discount:e.target.value}))} placeholder="예) 5000" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/></div>
-                                <div><label className="block text-xs font-medium text-gray-500 mb-1">만료일</label>
-                                    <input type="date" value={couponForm.expiry} onChange={e=>setCouponForm(prev=>({...prev,expiry:e.target.value}))} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/></div>
+                        <div className="form-card" style={{margin:'0 0 10px'}}>
+                            <div className="form-title" style={{color:'#BE185D'}}>➕ 쿠폰 직접 등록</div>
+                            <div className="form-group"><label className="form-label">쿠폰번호 *</label>
+                                <input type="text" value={couponForm.code} onChange={e=>setCouponForm(prev=>({...prev,code:e.target.value.toUpperCase()}))} placeholder="예) KAKAO-2024-ABCD" className="form-input" style={{textTransform:'uppercase'}}/></div>
+                            <div className="form-grid-2">
+                                <div><label className="form-label">할인금액 (원) *</label>
+                                    <input type="number" value={couponForm.discount} onChange={e=>setCouponForm(prev=>({...prev,discount:e.target.value}))} placeholder="예) 5000" className="form-input"/></div>
+                                <div><label className="form-label">만료일</label>
+                                    <input type="date" value={couponForm.expiry} onChange={e=>setCouponForm(prev=>({...prev,expiry:e.target.value}))} className="form-input"/></div>
                             </div>
-                            <div><label className="block text-xs font-medium text-gray-500 mb-1">메모</label>
-                                <input type="text" value={couponForm.note} onChange={e=>setCouponForm(prev=>({...prev,note:e.target.value}))} placeholder="예) 카카오 이벤트 쿠폰" className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"/></div>
+                            <div className="form-group"><label className="form-label">메모</label>
+                                <input type="text" value={couponForm.note} onChange={e=>setCouponForm(prev=>({...prev,note:e.target.value}))} placeholder="예) 카카오 이벤트 쿠폰" className="form-input"/></div>
                             <button onClick={async ()=>{
                                 if(!couponForm.code.trim()||!couponForm.discount) return;
                                 await saveCoupon({code:couponForm.code.trim().toUpperCase(), discount:parseFloat(couponForm.discount), expiry:couponForm.expiry, note:couponForm.note, used:false, usedDate:'', usedFor:'', createdAt:getTodayKST()});
                                 setCouponForm({code:'',discount:'',expiry:'',note:''});
                                 setShowCouponForm(false);
-                            }} className="w-full py-3 bg-pink-500 text-white rounded-xl font-medium text-sm">등록하기</button>
+                            }} style={{width:'100%',padding:'13px',background:'#EC4899',color:'#fff',borderRadius:'13px',border:'none',fontWeight:800,fontSize:'14px',cursor:'pointer'}}>등록하기</button>
                         </div>
                     )}
 
-                    {/* 미사용 쿠폰 */}
-                    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                        <div className="px-4 py-3 border-b border-gray-100 flex justify-between">
-                            <span className="text-sm font-bold text-gray-800">미사용 쿠폰</span>
-                            <span className="text-xs text-pink-600 font-medium">{coupons.filter(c=>!c.used).length}개</span>
+                    {/* ── 미사용 쿠폰 목록 ── */}
+                    <div className="stat-card">
+                        <div className="section-header">
+                            <span className="section-title">🎫 미사용 쿠폰</span>
+                            <span style={{fontSize:'12px',color:'#EC4899',fontWeight:700}}>{coupons.filter(c=>!c.used).length}개</span>
                         </div>
-                        {coupons.filter(c=>!c.used).length===0 && <p className="text-center text-gray-400 py-8 text-sm">미사용 쿠폰이 없습니다.</p>}
+                        {coupons.filter(c=>!c.used).length===0 && <div className="empty-state">미사용 쿠폰이 없습니다.</div>}
                         {coupons.filter(c=>!c.used).map(c=>{
                             const expired = c.expiry && c.expiry < getTodayKST();
                             return (
-                                <div key={c.fbKey||c.code} className={`border-b border-gray-100 last:border-0 px-4 py-3 flex items-center gap-3 ${expired?'opacity-50':''}`}>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-sm font-bold text-gray-800 font-mono">{c.code}</p>
-                                            {expired && <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">만료</span>}
+                                <div key={c.fbKey||c.code} className="coupon-item" style={expired?{opacity:0.5}:{}}>
+                                    <div style={{flex:1}}>
+                                        <div style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:'2px'}}>
+                                            <span className="coupon-code">{c.code}</span>
+                                            {expired && <span style={{fontSize:'10px',background:'#FEE2E2',color:'#B91C1C',padding:'2px 7px',borderRadius:'8px',fontWeight:700}}>만료</span>}
                                         </div>
-                                        <p className="text-base font-bold text-pink-600">{parseInt(c.discount).toLocaleString()}원 할인</p>
-                                        <div className="flex gap-3 mt-0.5">
-                                            {c.expiry && <p className="text-xs text-gray-400">~{c.expiry}</p>}
-                                            {c.note && <p className="text-xs text-gray-400">{c.note}</p>}
+                                        <div className="coupon-amount">{parseInt(c.discount).toLocaleString()}원 할인</div>
+                                        <div className="coupon-meta">
+                                            {c.expiry && <span>~{c.expiry} </span>}
+                                            {c.note && <span>{c.note}</span>}
                                         </div>
                                     </div>
-                                    <div className="flex flex-col gap-1">
-                                        <button onClick={()=>{
+                                    <div style={{display:'flex',flexDirection:'column',gap:'6px',alignItems:'flex-end'}}>
+                                        <button className="kakao-copy-btn" onClick={()=>{
                                             const expiry = c.expiry ? `\n📅 유효기간: ${c.expiry}까지` : '';
                                             const note = c.note ? `\n📌 ${c.note}` : '';
                                             const msg = `🎫 니지스트링 스트링 할인 쿠폰\n\n쿠폰번호: ${c.code}\n할인금액: ${parseInt(c.discount).toLocaleString()}원${expiry}${note}\n\n✅ 사용방법\n스트링 작업 시 쿠폰번호를 알려주세요!\n감사합니다 😊`;
                                             navigator.clipboard.writeText(msg).then(()=>showAlert('✅ 카카오톡 메시지가 복사됐어요!\n카카오톡 열고 붙여넣기 하세요 😊')).catch(()=>showAlert('복사 실패'));
-                                        }} className="px-2 py-1.5 bg-yellow-400 text-gray-900 rounded-lg text-xs font-bold">💬 복사</button>
-                                        <button onClick={()=>setConfirmModal({msg:'쿠폰을 삭제할까요?', onOk:async()=>{await deleteCoupon(c.fbKey);setConfirmModal(null);}, okLabel:'삭제', cancelLabel:'취소'})} className="p-2 text-red-400 hover:bg-red-50 rounded-lg">🗑️</button>
+                                        }}>💬 복사</button>
+                                        <button onClick={()=>setConfirmModal({msg:'쿠폰을 삭제할까요?', onOk:async()=>{await deleteCoupon(c.fbKey);setConfirmModal(null);}, okLabel:'삭제', cancelLabel:'취소'})}
+                                            style={{background:'none',border:'none',color:'#EF4444',cursor:'pointer',fontSize:'18px',padding:'0 2px'}}>🗑️</button>
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
 
-                    {/* 사용완료 쿠폰 */}
+                    {/* ── 사용완료 쿠폰 ── */}
                     {coupons.filter(c=>c.used).length>0 && (
-                        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                            <div className="px-4 py-3 border-b border-gray-100 flex justify-between">
-                                <span className="text-sm font-bold text-gray-800">사용완료 쿠폰</span>
-                                <span className="text-xs text-gray-400">{coupons.filter(c=>c.used).length}개</span>
+                        <div className="stat-card">
+                            <div className="section-header">
+                                <span className="section-title">✅ 사용완료 쿠폰</span>
+                                <span style={{fontSize:'12px',color:'#9E9E9E',fontWeight:600}}>{coupons.filter(c=>c.used).length}개</span>
                             </div>
                             {coupons.filter(c=>c.used).map(c=>(
-                                <div key={c.fbKey||c.code} className="border-b border-gray-100 last:border-0 px-4 py-3 opacity-60">
-                                    <div className="flex justify-between items-start">
+                                <div key={c.fbKey||c.code} style={{padding:'12px 16px',borderBottom:'1px solid #F5F5F5',opacity:0.55}}>
+                                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
                                         <div>
-                                            <p className="text-sm font-medium text-gray-600 font-mono line-through">{c.code}</p>
-                                            <p className="text-sm text-gray-500">{parseInt(c.discount).toLocaleString()}원 할인</p>
-                                            {c.note && <p className="text-xs text-gray-400">{c.note}</p>}
+                                            <div style={{fontSize:'12px',fontWeight:700,color:'#9E9E9E',fontFamily:'monospace',textDecoration:'line-through'}}>{c.code}</div>
+                                            <div style={{fontSize:'13px',fontWeight:700,color:'#9E9E9E'}}>{parseInt(c.discount).toLocaleString()}원 할인</div>
+                                            {c.note && <div style={{fontSize:'11px',color:'#9E9E9E'}}>{c.note}</div>}
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-xs text-gray-400">{c.usedDate} 사용</p>
-                                            {c.usedFor && <p className="text-xs text-gray-500">{c.usedFor} 고객</p>}
+                                        <div style={{textAlign:'right'}}>
+                                            <div style={{fontSize:'11px',color:'#9E9E9E'}}>{c.usedDate} 사용</div>
+                                            {c.usedFor && <div style={{fontSize:'11px',color:'#9E9E9E'}}>{c.usedFor}</div>}
                                         </div>
                                     </div>
                                 </div>
@@ -1556,34 +2040,43 @@ const StringingApp = ({ sport, uid }) => {
 
             {/* ── 스트링 관리 ── */}
             {viewMode==='strings' && (
-                <div className="mt-3 space-y-3">
-                    <button onClick={()=>{setShowAddModal(true);setModalStringName('');setModalStringPrice('');}} className="w-full py-3 bg-yellow-500 text-white rounded-xl font-medium text-sm shadow">➕ 새 스트링 추가</button>
-                    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                        <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
-                            <h2 className="text-base font-bold text-gray-800">🎯 스트링 목록</h2>
-                            <span className="text-xs text-gray-400">{Object.keys(customStrings).length}개</span>
+                <div style={{padding:'0 12px 80px'}}>
+                    <button onClick={()=>{setShowAddModal(true);setModalStringName('');setModalStringPrice('');}}
+                        style={{width:'100%',padding:'13px',background:'#EAB308',color:'#fff',borderRadius:'13px',border:'none',fontWeight:800,fontSize:'14px',cursor:'pointer',marginBottom:'10px',boxShadow:'0 4px 12px rgba(234,179,8,0.3)'}}>
+                        ➕ 새 스트링 추가
+                    </button>
+                    <div className="stat-card">
+                        <div className="section-header">
+                            <span className="section-title">🎯 스트링 목록</span>
+                            <span className="section-count">{Object.keys(customStrings).length}개</span>
                         </div>
-                        {Object.keys(customStrings).length===0 && <p className="text-center text-gray-400 py-10 text-sm">등록된 스트링이 없습니다.<br/>위 버튼으로 추가해주세요.</p>}
+                        {Object.keys(customStrings).length===0 && <div className="empty-state">등록된 스트링이 없습니다.<br/>위 버튼으로 추가해주세요.</div>}
                         {Object.entries(customStrings).sort((a,b)=>a[0].localeCompare(b[0],'ko')).map(([name,price])=>(
-                            <div key={name} className="border-b border-gray-100 last:border-0">
+                            <div key={name} style={{borderBottom:'1px solid #F5F5F5'}}>
                                 {editingStringKey===name ? (
-                                    <div className="p-3 bg-blue-50 space-y-2">
-                                        <input type="text" value={editStringName} onChange={e=>setEditStringName(e.target.value)} className="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="스트링 이름"/>
-                                        <div className="flex gap-2">
-                                            <input type="number" value={editStringPrice} onChange={e=>setEditStringPrice(e.target.value)} className="flex-1 px-3 py-2 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="가격 (원)"/>
-                                            <button onClick={handleSaveEditString} className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium">저장</button>
-                                            <button onClick={()=>setEditingStringKey(null)} className="px-3 py-2 bg-gray-300 text-gray-600 rounded-lg text-sm">취소</button>
+                                    <div style={{padding:'10px 14px',background:'#F0F9FF'}}>
+                                        <input type="text" value={editStringName} onChange={e=>setEditStringName(e.target.value)}
+                                            className="form-input" style={{marginBottom:'8px'}} placeholder="스트링 이름"/>
+                                        <div style={{display:'flex',gap:'8px'}}>
+                                            <input type="number" value={editStringPrice} onChange={e=>setEditStringPrice(e.target.value)}
+                                                className="form-input" style={{flex:1,marginBottom:0}} placeholder="가격 (원)"/>
+                                            <button onClick={handleSaveEditString}
+                                                style={{padding:'11px 16px',background:'#3B82F6',color:'#fff',borderRadius:'11px',border:'none',fontWeight:700,fontSize:'13px',cursor:'pointer'}}>저장</button>
+                                            <button onClick={()=>setEditingStringKey(null)}
+                                                style={{padding:'11px 12px',background:'#E0E0E0',color:'#616161',borderRadius:'11px',border:'none',fontWeight:700,fontSize:'13px',cursor:'pointer'}}>취소</button>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center px-4 py-3">
-                                        <div className="flex-1">
-                                            <p className="text-sm font-medium text-gray-800">{name}</p>
-                                            <p className="text-xs text-gray-500">{price.toLocaleString()}원</p>
+                                    <div style={{display:'flex',alignItems:'center',padding:'13px 16px'}}>
+                                        <div style={{flex:1}}>
+                                            <div style={{fontSize:'14px',fontWeight:700,color:'#111'}}>{name}</div>
+                                            <div style={{fontSize:'12px',color:'#9E9E9E',marginTop:'2px',fontWeight:600}}>{price.toLocaleString()}원</div>
                                         </div>
-                                        <div className="flex gap-1">
-                                            <button onClick={()=>{setEditingStringKey(name);setEditStringName(name);setEditStringPrice(price.toString());}} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg">✏️</button>
-                                            <button onClick={()=>handleDeleteString(name)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg">🗑️</button>
+                                        <div style={{display:'flex',gap:'4px'}}>
+                                            <button onClick={()=>{setEditingStringKey(name);setEditStringName(name);setEditStringPrice(price.toString());}}
+                                                style={{width:'36px',height:'36px',background:'#EFF6FF',border:'none',borderRadius:'9px',cursor:'pointer',fontSize:'15px'}}>✏️</button>
+                                            <button onClick={()=>handleDeleteString(name)}
+                                                style={{width:'36px',height:'36px',background:'#FFF1F2',border:'none',borderRadius:'9px',cursor:'pointer',fontSize:'15px'}}>🗑️</button>
                                         </div>
                                     </div>
                                 )}
@@ -1617,10 +2110,10 @@ const App = () => {
     };
 
     if (authLoading) return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-            <div className="text-center">
-                <div className="spinner mx-auto mb-4"></div>
-                <p className="text-gray-400 text-sm">로딩 중...</p>
+        <div style={{minHeight:'100vh',background:'#111',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <div style={{textAlign:'center'}}>
+                <div className="spinner" style={{margin:'0 auto 16px'}}></div>
+                <p style={{color:'#616161',fontSize:'13px',fontWeight:600}}>로딩 중...</p>
             </div>
         </div>
     );
@@ -1628,23 +2121,24 @@ const App = () => {
     if (!user) return <LoginScreen />;
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <div className={`${sport==='tennis'?'bg-green-600':'bg-blue-600'} text-white px-4 pt-4 pb-0 shadow-md`}>
-                <div className="flex justify-between items-center mb-2">
-                    <h1 className="text-lg font-bold">🏆 니지스트링 관리</h1>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs text-white opacity-70 hidden sm:block">{user.email}</span>
-                        <button onClick={handleLogout} className="text-xs bg-white bg-opacity-20 hover:bg-opacity-30 px-3 py-1.5 rounded-full transition-colors">로그아웃</button>
+        <div style={{minHeight:'100vh',background:'#F5F5F5'}}>
+            <div className="app-header">
+                <div className="header-top">
+                    <div className="header-brand">
+                        <div className="header-logo">N</div>
+                        <div>
+                            <div className="header-title">NIJI STRING PRO</div>
+                            <div className="header-subtitle">{user.email}</div>
+                        </div>
                     </div>
+                    <button onClick={handleLogout} className="logout-btn">로그아웃</button>
                 </div>
-                <div className="flex">
-                    <button onClick={()=>setSport('tennis')} className={`flex-1 py-2 text-sm font-bold rounded-t-xl transition-colors ${sport==='tennis'?'bg-white text-green-600':'bg-green-700 text-green-100'}`}>🎾 테니스</button>
-                    <button onClick={()=>setSport('badminton')} className={`flex-1 py-2 text-sm font-bold rounded-t-xl transition-colors ${sport==='badminton'?'bg-white text-blue-600':'bg-blue-700 text-blue-100'}`}>🏸 배드민턴</button>
+                <div className="sport-tabs">
+                    <button onClick={()=>setSport('tennis')} className={`sport-tab ${sport==='tennis'?'active-green':''}`}>🎾 테니스</button>
+                    <button onClick={()=>setSport('badminton')} className={`sport-tab ${sport==='badminton'?'active-blue':''}`}>🏸 배드민턴</button>
                 </div>
             </div>
-            <div className="p-3 max-w-2xl mx-auto">
-                <StringingApp key={`${user.uid}-${sport}`} sport={sport} uid={user.uid} />
-            </div>
+            <StringingApp key={`${user.uid}-${sport}`} sport={sport} uid={user.uid} />
         </div>
     );
 };
