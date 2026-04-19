@@ -144,39 +144,20 @@
         .today-stat-val.green { color: #4ade80; }
         .today-stat-unit { font-size:12px; color:#555; font-weight:700; margin-left:2px; }
         .today-stat-recent { font-size:12px; color:#4ade80; font-weight:800; }
-        .new-work-btn {
-            background: linear-gradient(135deg, #16A34A, #22C55E);
-            color: #fff; font-size: 14px; font-weight: 800;
-            padding: 12px 18px; border-radius: 14px;
-            border: none; cursor: pointer; white-space: nowrap;
-            box-shadow: 0 4px 16px var(--green-glow);
-            transition: all 0.2s; letter-spacing: 0.3px;
-            animation: pulse-green 2.5s infinite;
+        /* ══ 통계 서브탭 ══ */
+        .stat-subtab-row {
+            display: flex; gap: 8px;
+            padding: 12px 12px 0;
         }
-        .new-work-btn:active { transform: scale(0.96); }
-
-        /* ══ 메인 탭 바 ══ */
-        .main-tabs {
-            display: flex; gap: 6px;
-            padding: 14px 12px 10px;
-            overflow-x: auto; background: var(--gray-bg);
-        }
-        .main-tabs::-webkit-scrollbar { display: none; }
-        .main-tab {
-            flex-shrink: 0;
-            padding: 8px 16px; border-radius: 22px;
-            font-size: 12px; font-weight: 700;
-            border: 1.5px solid transparent; cursor: pointer;
+        .stat-subtab {
+            flex: 1; padding: 9px 0; border-radius: 12px;
+            font-size: 13px; font-weight: 700;
+            border: 1.5px solid #E8E8E8; cursor: pointer;
             background: #fff; color: #888;
-            transition: all 0.18s;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            transition: all 0.18s; text-align:center;
         }
-        .main-tab.active { background: var(--black2); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        .main-tab.active-green { background: linear-gradient(135deg,#16A34A,#22C55E); color: #fff; border-color:transparent; box-shadow: 0 4px 12px var(--green-glow); }
-        .main-tab.active-pink { background: #EC4899; color: #fff; border-color:transparent; }
-        .main-tab.active-yellow { background: #D97706; color: #fff; border-color:transparent; }
-        .main-tab.active-orange { background: #EA580C; color: #fff; border-color:transparent; }
-        .main-tab.active-purple { background: #7C3AED; color: #fff; border-color:transparent; }
+        .stat-subtab.active-orange { background: linear-gradient(135deg,#C2410C,#EA580C); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(234,88,12,0.3); }
+        .stat-subtab.active-purple { background: linear-gradient(135deg,#5B21B6,#7C3AED); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(124,58,237,0.3); }
 
         /* ══ 검색 바 ══ */
         .search-row {
@@ -450,6 +431,7 @@
             width: 40px; height: 40px; border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
             font-size: 19px; transition: all 0.2s;
+            background: #F5F5F5;
         }
         .nav-item.active .nav-icon {
             background: linear-gradient(135deg,#15803D,#22C55E);
@@ -464,6 +446,10 @@
         }
         .nav-item.active .nav-label { color: var(--green-dark); }
         .nav-item.active-blue .nav-label { color: var(--blue-dark); }
+        .nav-item.active-pink .nav-icon { background: linear-gradient(135deg,#be185d,#EC4899); box-shadow: 0 4px 12px rgba(236,72,153,0.4); }
+        .nav-item.active-pink .nav-label { color: #be185d; }
+        .nav-item.active-yellow .nav-icon { background: linear-gradient(135deg,#B45309,#D97706); box-shadow: 0 4px 12px rgba(217,119,6,0.4); }
+        .nav-item.active-yellow .nav-label { color: #B45309; }
 
         /* ══ 등록 중앙 버튼 ══ */
         .nav-center-btn {
@@ -1614,9 +1600,6 @@ const StringingApp = ({ sport, uid }) => {
                                 <div className="today-greeting">✦ NIJI STRING PRO</div>
                                 <div className="today-date-label">{(()=>{const d=new Date();const days=['일','월','화','수','목','금','토'];return `${d.getMonth()+1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;})()}</div>
                             </div>
-                            <button className="new-work-btn" onClick={()=>{if(!showForm){setShowForm(true);setEditingId(null);setFormData(makeEmptyForm());setExtraWorks([]);setShowExtraSection(false);setAppliedCoupon(null);setCouponInput('');setCouponMsg('');}}}>
-                                ＋ 새 작업
-                            </button>
                         </div>
                         <div className="today-stats">
                             <div className="today-stat-item">
@@ -1636,19 +1619,13 @@ const StringingApp = ({ sport, uid }) => {
                 </div>
             )}
 
-            {/* ── 메인 탭 바 ── */}
-            <div className="main-tabs">
-                {[
-                    ['customers','👥 고객','active'],
-                    ['coupons','🎫 쿠폰','active-pink'],
-                    ['strings','🎯 스트링','active-yellow'],
-                    ['monthly','📅 월별','active-orange'],
-                    ['yearly','📈 연도별','active-purple'],
-                ].map(([mode, label, activeCls])=>(
-                    <button key={mode} onClick={()=>setViewMode(mode)}
-                        className={`main-tab ${viewMode===mode?activeCls:''}`}>{label}</button>
-                ))}
-            </div>
+            {/* ── 통계 서브탭 (월별/연도별) ── */}
+            {(viewMode==='monthly'||viewMode==='yearly') && (
+                <div className="stat-subtab-row">
+                    <button onClick={()=>setViewMode('monthly')} className={`stat-subtab ${viewMode==='monthly'?'active-orange':''}`}>📅 월별 매출</button>
+                    <button onClick={()=>setViewMode('yearly')} className={`stat-subtab ${viewMode==='yearly'?'active-purple':''}`}>📈 연도별 매출</button>
+                </div>
+            )}
 
             {/* ── 검색 + 버튼 ── */}
             {viewMode==='customers' && (
@@ -1921,7 +1898,7 @@ const StringingApp = ({ sport, uid }) => {
                             <div className="empty-state">
                                 <div style={{fontSize:'48px',marginBottom:'8px'}}>{sport==='tennis'?'🎾':'🏸'}</div>
                                 {searchTerm ? <p>"{searchTerm}" 검색 결과가 없습니다.</p>
-                                    : <><p>등록된 작업이 없습니다.</p><p style={{fontSize:'12px',marginTop:'4px',color:'#9E9E9E'}}>위에서 ➕ 새 작업 버튼을 눌러 시작하세요.</p></>}
+                                    : <><p>등록된 작업이 없습니다.</p><p style={{fontSize:'12px',marginTop:'4px',color:'#9E9E9E'}}>아래 ＋ 버튼을 눌러 등록하세요.</p></>}
                             </div>
                         </div>
                     )}
@@ -2053,7 +2030,7 @@ const StringingApp = ({ sport, uid }) => {
             {/* ── 월별 매출 ── */}
             {viewMode==='monthly' && (
                 <div style={{padding:'0 12px 80px'}}>
-                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'4px 0 12px'}}>📅 월별 매출 현황</div>
+                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'14px 0 10px'}}>📅 월별 매출 현황</div>
                     {getMonthlyStats().length===0 && <div className="empty-state">데이터가 없습니다.</div>}
                     {getMonthlyStats().map(stat=>(
                         <div key={stat.month} className="stat-card">
@@ -2077,7 +2054,7 @@ const StringingApp = ({ sport, uid }) => {
             {/* ── 연도별 매출 ── */}
             {viewMode==='yearly' && (
                 <div style={{padding:'0 12px 80px'}}>
-                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'4px 0 12px'}}>📈 연도별 매출 현황</div>
+                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'14px 0 10px'}}>📈 연도별 매출 현황</div>
                     {getYearlyStats().length===0 && <div className="empty-state">데이터가 없습니다.</div>}
                     {getYearlyStats().map(stat=>(
                         <div key={stat.year} className="stat-card">
@@ -2101,6 +2078,7 @@ const StringingApp = ({ sport, uid }) => {
             {/* ── 쿠폰 관리 ── */}
             {viewMode==='coupons' && (
                 <div style={{padding:'0 12px 80px'}}>
+                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'12px 0 8px'}}>🎫 쿠폰 관리</div>
                     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
                         <button onClick={()=>{setShowBulkForm(!showBulkForm);setShowCouponForm(false);setBulkResult(null);}}
                             style={{padding:'12px',background:showBulkForm?'#9E9E9E':'#A855F7',color:'#fff',borderRadius:'13px',border:'none',fontWeight:700,fontSize:'13px',cursor:'pointer'}}>
@@ -2244,6 +2222,7 @@ const StringingApp = ({ sport, uid }) => {
             {/* ── 스트링 관리 ── */}
             {viewMode==='strings' && (
                 <div style={{padding:'0 12px 80px'}}>
+                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'12px 0 8px'}}>⚙️ 스트링 설정</div>
                     <button onClick={()=>{setShowAddModal(true);setModalStringName('');setModalStringPrice('');}}
                         style={{width:'100%',padding:'13px',background:'#EAB308',color:'#fff',borderRadius:'13px',border:'none',fontWeight:800,fontSize:'14px',cursor:'pointer',marginBottom:'10px',boxShadow:'0 4px 12px rgba(234,179,8,0.3)'}}>
                         ➕ 새 스트링 추가
@@ -2290,26 +2269,35 @@ const StringingApp = ({ sport, uid }) => {
             )}
             {/* ══ 하단 고정 메뉴바 ══ */}
             <div className="bottom-nav">
-                <button className="nav-item" onClick={()=>{setViewMode('customers');setShowForm(false);}}>
-                    <div className="nav-icon" style={(viewMode==='customers'&&!showForm)?{background:'linear-gradient(135deg,#15803D,#22C55E)',boxShadow:'0 4px 12px rgba(34,197,94,0.4)'}:{background:'#F5F5F5'}}>🏠</div>
-                    <span className="nav-label" style={(viewMode==='customers'&&!showForm)?{color:'#16A34A'}:{}}>홈</span>
+                {/* 홈 */}
+                <button className={`nav-item ${viewMode==='customers'&&!showForm?'active':''}`}
+                    onClick={()=>{setViewMode('customers');setShowForm(false);setSearchTerm('');}}>
+                    <div className="nav-icon">🏠</div>
+                    <span className="nav-label">홈</span>
                 </button>
-                <button className="nav-item" onClick={()=>{setViewMode('customers');setShowForm(false);}}>
-                    <div className="nav-icon" style={{background:'#F5F5F5'}}>👥</div>
-                    <span className="nav-label">고객</span>
+                {/* 통계 */}
+                <button className="nav-item"
+                    onClick={()=>{setViewMode('monthly');setShowForm(false);}}>
+                    <div className="nav-icon" style={(viewMode==='monthly'||viewMode==='yearly')?{background:'linear-gradient(135deg,#C2410C,#EA580C)',boxShadow:'0 4px 12px rgba(234,88,12,0.4)'}:{}}>📊</div>
+                    <span className="nav-label" style={(viewMode==='monthly'||viewMode==='yearly')?{color:'#EA580C'}:{}}>통계</span>
                 </button>
+                {/* 등록 중앙 버튼 */}
                 <button className="nav-center-btn" style={{background:'none',border:'none'}}
                     onClick={()=>{if(showForm&&editingId){resetForm();}else{setShowForm(!showForm);}if(!showForm){setEditingId(null);setFormData(makeEmptyForm());setExtraWorks([]);setShowExtraSection(false);setAppliedCoupon(null);setCouponInput('');setCouponMsg('');setViewMode('customers');}}}>
                     <div className={`nav-center-inner ${showForm?'cancel':''}`}>{showForm?'✕':'＋'}</div>
                     <span className="nav-center-label">{showForm?'취소':'등록'}</span>
                 </button>
-                <button className="nav-item" onClick={()=>{setViewMode('monthly');setShowForm(false);}}>
-                    <div className="nav-icon" style={(viewMode==='monthly'||viewMode==='yearly')?{background:'linear-gradient(135deg,#EA580C,#F97316)',boxShadow:'0 4px 12px rgba(249,115,22,0.4)'}:{background:'#F5F5F5'}}>📊</div>
-                    <span className="nav-label" style={(viewMode==='monthly'||viewMode==='yearly')?{color:'#EA580C'}:{}}>통계</span>
+                {/* 쿠폰 */}
+                <button className={`nav-item ${viewMode==='coupons'?'active-pink':''}`}
+                    onClick={()=>{setViewMode('coupons');setShowForm(false);}}>
+                    <div className="nav-icon" style={viewMode==='coupons'?{background:'linear-gradient(135deg,#be185d,#EC4899)',boxShadow:'0 4px 12px rgba(236,72,153,0.4)'}:{}}>🎫</div>
+                    <span className="nav-label" style={viewMode==='coupons'?{color:'#be185d'}:{}}>쿠폰</span>
                 </button>
-                <button className="nav-item" onClick={()=>{setViewMode('coupons');setShowForm(false);}}>
-                    <div className="nav-icon" style={(viewMode==='coupons'||viewMode==='strings')?{background:'linear-gradient(135deg,#be185d,#EC4899)',boxShadow:'0 4px 12px rgba(236,72,153,0.4)'}:{background:'#F5F5F5'}}>⚙️</div>
-                    <span className="nav-label" style={(viewMode==='coupons'||viewMode==='strings')?{color:'#be185d'}:{}}>설정</span>
+                {/* 설정 (스트링 관리) */}
+                <button className={`nav-item ${viewMode==='strings'?'active-yellow':''}`}
+                    onClick={()=>{setViewMode('strings');setShowForm(false);}}>
+                    <div className="nav-icon" style={viewMode==='strings'?{background:'linear-gradient(135deg,#B45309,#D97706)',boxShadow:'0 4px 12px rgba(217,119,6,0.4)'}:{}}>⚙️</div>
+                    <span className="nav-label" style={viewMode==='strings'?{color:'#B45309'}:{}}>설정</span>
                 </button>
             </div>
         </div>
