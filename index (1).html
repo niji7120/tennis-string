@@ -17,18 +17,22 @@
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
     <style>
         :root {
-            --black: #111111;
+            --black: #0A0A0A;
+            --black2: #111111;
             --green: #22C55E;
             --green-dark: #16A34A;
+            --green-glow: rgba(34,197,94,0.4);
             --green-light: #DCFCE7;
             --white: #FFFFFF;
-            --gray-bg: #F5F5F5;
+            --gray-bg: #F2F3F7;
             --gray-100: #F0F0F0;
-            --gray-200: #E0E0E0;
+            --gray-200: #E2E2E2;
             --gray-400: #9E9E9E;
             --gray-600: #616161;
             --blue: #3B82F6;
             --blue-dark: #2563EB;
+            --card-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --card-shadow-hover: 0 8px 32px rgba(0,0,0,0.12);
         }
         * { box-sizing: border-box; -webkit-overflow-scrolling: touch; }
         body {
@@ -41,445 +45,614 @@
         input, select, textarea { font-size: 16px !important; font-family: 'Pretendard', sans-serif; }
         button { min-height: 40px; touch-action: manipulation; font-family: 'Pretendard', sans-serif; }
 
-        /* ── 스피너 ── */
-        .spinner { width:40px; height:40px; border:3px solid #E0E0E0; border-top-color: var(--green); border-radius:50%; animation:spin 0.8s linear infinite; }
+        /* ══ 애니메이션 ══ */
         @keyframes spin { to { transform:rotate(360deg); } }
+        @keyframes fadeSlideUp {
+            from { opacity:0; transform:translateY(16px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        @keyframes cardPop {
+            from { opacity:0; transform:scale(0.97) translateY(8px); }
+            to   { opacity:1; transform:scale(1) translateY(0); }
+        }
+        @keyframes shimmer {
+            0%   { background-position: -200% 0; }
+            100% { background-position:  200% 0; }
+        }
+        @keyframes pulse-green {
+            0%,100% { box-shadow: 0 0 0 0 var(--green-glow); }
+            50%      { box-shadow: 0 0 0 8px transparent; }
+        }
 
-        /* ── 헤더 ── */
+        .spinner { width:40px; height:40px; border:3px solid #E0E0E0; border-top-color: var(--green); border-radius:50%; animation:spin 0.8s linear infinite; }
+
+        /* ══ 헤더 ══ */
         .app-header {
-            background: var(--black);
-            padding: 16px 16px 0;
+            background: linear-gradient(180deg, #0A0A0A 0%, #111111 100%);
+            padding: 0;
             position: sticky; top: 0; z-index: 30;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.4);
         }
         .header-top {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 14px;
+            padding: 14px 16px 10px;
         }
-        .header-brand { display: flex; align-items: center; gap: 8px; }
+        .header-brand { display: flex; align-items: center; gap: 10px; }
         .header-logo {
-            width: 32px; height: 32px; background: var(--green);
-            border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            font-size: 16px; font-weight: 900; color: #fff; letter-spacing: -1px;
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, #16A34A, #22C55E);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 900; color: #fff;
+            box-shadow: 0 4px 12px var(--green-glow);
         }
-        .header-title { font-size: 17px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
-        .header-subtitle { font-size: 11px; color: #9E9E9E; margin-top: 1px; }
+        .header-title { font-size: 16px; font-weight: 900; color: #fff; letter-spacing: 0.5px; }
+        .header-subtitle { font-size: 10px; color: #555; margin-top: 1px; font-weight: 600; letter-spacing: 0.3px; }
         .logout-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #ccc; font-size: 12px; font-weight: 600;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #888; font-size: 11px; font-weight: 700;
             padding: 6px 12px; border-radius: 20px; cursor: pointer;
-        }
-
-        /* ── 스포츠 탭 ── */
-        .sport-tabs { display: flex; gap: 0; }
-        .sport-tab {
-            flex: 1; padding: 10px 0; text-align: center;
-            font-size: 13px; font-weight: 700; cursor: pointer;
-            border-bottom: 3px solid transparent;
-            color: #9E9E9E; background: transparent; border-top: none; border-left: none; border-right: none;
             transition: all 0.2s;
+        }
+        .logout-btn:active { background: rgba(255,255,255,0.15); }
+
+        /* ══ 스포츠 탭 ══ */
+        .sport-tabs { display: flex; gap: 0; border-top: 1px solid #1a1a1a; }
+        .sport-tab {
+            flex: 1; padding: 11px 0; text-align: center;
+            font-size: 13px; font-weight: 700; cursor: pointer;
+            border-bottom: 2.5px solid transparent;
+            color: #555; background: transparent;
+            border-top: none; border-left: none; border-right: none;
+            transition: all 0.2s; letter-spacing: 0.2px;
         }
         .sport-tab.active-green { color: var(--green); border-bottom-color: var(--green); }
         .sport-tab.active-blue { color: var(--blue); border-bottom-color: var(--blue); }
 
-        /* ── 오늘 요약 배너 ── */
+        /* ══ 히어로 배너 (오늘 요약) ══ */
         .today-banner {
-            background: var(--black);
-            padding: 14px 16px 16px;
-            margin-bottom: 12px;
+            background: linear-gradient(180deg, #111111 0%, #0d1a12 100%);
+            padding: 16px 16px 20px;
+            margin-bottom: 0;
         }
         .today-banner-inner {
-            background: linear-gradient(135deg, #1a1a1a 0%, #222 100%);
-            border: 1px solid #2a2a2a;
-            border-radius: 16px;
-            padding: 16px;
-            display: flex; align-items: center; justify-content: space-between;
+            background: linear-gradient(135deg, #0f2318 0%, #162d1e 50%, #0f1f14 100%);
+            border: 1px solid rgba(34,197,94,0.18);
+            border-radius: 20px;
+            padding: 18px 18px 16px;
+            position: relative; overflow: hidden;
         }
-        .today-greeting { font-size: 13px; color: #9E9E9E; margin-bottom: 6px; }
-        .today-stats { display: flex; gap: 20px; }
-        .today-stat-item { }
-        .today-stat-label { font-size: 11px; color: #616161; margin-bottom: 2px; }
-        .today-stat-val { font-size: 20px; font-weight: 800; color: #fff; }
-        .today-stat-val.green { color: var(--green); }
+        .today-banner-inner::before {
+            content:''; position:absolute; top:-40px; right:-20px;
+            width:120px; height:120px; border-radius:50%;
+            background: radial-gradient(circle, rgba(34,197,94,0.12) 0%, transparent 70%);
+        }
+        .today-banner-inner::after {
+            content:'🎾'; position:absolute; right:16px; bottom:12px;
+            font-size:44px; opacity:0.08;
+        }
+        .today-top-row { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+        .today-greeting { font-size:11px; color:#4ade80; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; }
+        .today-date-label { font-size:18px; font-weight:900; color:#fff; letter-spacing:-0.3px; }
+        .today-stats { display: flex; gap: 0; background: rgba(0,0,0,0.25); border-radius:14px; overflow:hidden; margin-top:14px; border: 1px solid rgba(255,255,255,0.05); }
+        .today-stat-item {
+            flex:1; padding:12px 14px; position:relative;
+        }
+        .today-stat-item:not(:last-child) { border-right:1px solid rgba(255,255,255,0.06); }
+        .today-stat-label { font-size:10px; color:#666; margin-bottom:4px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+        .today-stat-val { font-size:22px; font-weight:900; color:#fff; line-height:1; }
+        .today-stat-val.green { color: #4ade80; }
+        .today-stat-unit { font-size:12px; color:#555; font-weight:700; margin-left:2px; }
+        .today-stat-recent { font-size:12px; color:#4ade80; font-weight:800; }
         .new-work-btn {
-            background: var(--green);
-            color: #fff; font-size: 13px; font-weight: 700;
-            padding: 10px 16px; border-radius: 12px;
+            background: linear-gradient(135deg, #16A34A, #22C55E);
+            color: #fff; font-size: 14px; font-weight: 800;
+            padding: 12px 18px; border-radius: 14px;
             border: none; cursor: pointer; white-space: nowrap;
-            box-shadow: 0 4px 12px rgba(34,197,94,0.35);
+            box-shadow: 0 4px 16px var(--green-glow);
+            transition: all 0.2s; letter-spacing: 0.3px;
+            animation: pulse-green 2.5s infinite;
         }
+        .new-work-btn:active { transform: scale(0.96); }
 
-        /* ── 메인 탭 바 ── */
+        /* ══ 메인 탭 바 ══ */
         .main-tabs {
             display: flex; gap: 6px;
-            padding: 0 12px 10px;
-            overflow-x: auto;
+            padding: 14px 12px 10px;
+            overflow-x: auto; background: var(--gray-bg);
         }
         .main-tabs::-webkit-scrollbar { display: none; }
         .main-tab {
             flex-shrink: 0;
-            padding: 7px 14px; border-radius: 20px;
+            padding: 8px 16px; border-radius: 22px;
             font-size: 12px; font-weight: 700;
-            border: none; cursor: pointer;
-            background: #E8E8E8; color: #616161;
+            border: 1.5px solid transparent; cursor: pointer;
+            background: #fff; color: #888;
             transition: all 0.18s;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
         }
-        .main-tab.active { background: var(--black); color: #fff; }
-        .main-tab.active-green { background: var(--green); color: #fff; }
-        .main-tab.active-pink { background: #EC4899; color: #fff; }
-        .main-tab.active-yellow { background: #EAB308; color: #fff; }
-        .main-tab.active-orange { background: #F97316; color: #fff; }
-        .main-tab.active-purple { background: #A855F7; color: #fff; }
+        .main-tab.active { background: var(--black2); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .main-tab.active-green { background: linear-gradient(135deg,#16A34A,#22C55E); color: #fff; border-color:transparent; box-shadow: 0 4px 12px var(--green-glow); }
+        .main-tab.active-pink { background: #EC4899; color: #fff; border-color:transparent; }
+        .main-tab.active-yellow { background: #D97706; color: #fff; border-color:transparent; }
+        .main-tab.active-orange { background: #EA580C; color: #fff; border-color:transparent; }
+        .main-tab.active-purple { background: #7C3AED; color: #fff; border-color:transparent; }
 
-        /* ── 검색 바 ── */
+        /* ══ 검색 바 ══ */
         .search-row {
             display: flex; gap: 8px;
             padding: 0 12px 8px;
         }
         .search-input {
-            flex: 1; padding: 11px 14px;
-            border: 1.5px solid #E0E0E0;
-            border-radius: 12px; font-size: 14px; font-weight: 500;
+            flex: 1; padding: 12px 16px;
+            border: 1.5px solid #E8E8E8;
+            border-radius: 14px; font-size: 14px; font-weight: 500;
             background: #fff; outline: none;
-            transition: border-color 0.15s;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
-        .search-input:focus { border-color: var(--green); }
+        .search-input:focus { border-color: var(--green); box-shadow: 0 2px 12px var(--green-glow); }
         .add-btn {
-            padding: 11px 18px; border-radius: 12px;
-            font-size: 13px; font-weight: 700;
-            border: none; cursor: pointer;
-            color: #fff;
+            padding: 12px 18px; border-radius: 14px;
+            font-size: 13px; font-weight: 800;
+            border: none; cursor: pointer; color: #fff;
+            transition: all 0.18s; letter-spacing: 0.2px;
         }
-        .add-btn-green { background: var(--green); box-shadow: 0 4px 12px rgba(34,197,94,0.3); }
-        .add-btn-blue { background: var(--blue); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
-        .add-btn-cancel { background: #9E9E9E; }
+        .add-btn:active { transform: scale(0.95); }
+        .add-btn-green { background: linear-gradient(135deg,#16A34A,#22C55E); box-shadow: 0 4px 14px var(--green-glow); }
+        .add-btn-blue { background: linear-gradient(135deg,#1D4ED8,#3B82F6); box-shadow: 0 4px 14px rgba(59,130,246,0.35); }
+        .add-btn-cancel { background: #E0E0E0; color: #616161; }
 
-        /* ── 엑셀 버튼 행 ── */
+        /* ══ 엑셀 버튼 행 ══ */
         .excel-row {
             display: flex; gap: 6px;
             padding: 0 12px 10px;
         }
         .excel-btn {
-            flex: 1; padding: 9px 0;
-            border-radius: 10px; font-size: 12px; font-weight: 700;
+            flex: 1; padding: 10px 0;
+            border-radius: 12px; font-size: 12px; font-weight: 700;
             border: none; cursor: pointer; color: #fff;
-            display: flex; align-items: center; justify-content: center; gap: 4px;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+            transition: all 0.18s;
         }
-        .excel-btn-export { background: #059669; }
-        .excel-btn-import { background: #0D9488; }
+        .excel-btn:active { transform: scale(0.96); }
+        .excel-btn-export { background: linear-gradient(135deg,#047857,#059669); box-shadow: 0 3px 10px rgba(5,150,105,0.3); }
+        .excel-btn-import { background: linear-gradient(135deg,#0F766E,#0D9488); box-shadow: 0 3px 10px rgba(13,148,136,0.3); }
 
-        /* ── 고객 카드 ── */
+        /* ══ 고객 카드 (프리미엄 리디자인) ══ */
         .customer-card {
             background: #fff;
-            border-radius: 16px;
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            margin-bottom: 10px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 12px;
+            animation: cardPop 0.3s ease both;
+            transition: box-shadow 0.2s, transform 0.2s;
+            border: 1px solid rgba(0,0,0,0.04);
         }
+        .customer-card:active { transform: scale(0.99); box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+
         .customer-card-header {
-            padding: 12px 14px;
+            padding: 14px 16px;
             display: flex; align-items: center; justify-content: space-between;
+            position: relative; overflow: hidden;
         }
-        .customer-card-header.green { background: linear-gradient(90deg, #16A34A, #22C55E); }
-        .customer-card-header.blue { background: linear-gradient(90deg, #1D4ED8, #3B82F6); }
-        .customer-name { font-size: 15px; font-weight: 800; color: #fff; }
-        .customer-badges { display: flex; gap: 5px; margin-top: 3px; flex-wrap: wrap; }
+        .customer-card-header::after {
+            content:''; position:absolute; right:-10px; top:-10px;
+            width:80px; height:80px; border-radius:50%;
+            background: rgba(255,255,255,0.06);
+        }
+        .customer-card-header.green {
+            background: linear-gradient(135deg, #14532d 0%, #166534 40%, #16A34A 100%);
+        }
+        .customer-card-header.blue {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1D4ED8 60%, #3B82F6 100%);
+        }
+
+        .customer-name-row { display:flex; align-items:center; gap:6px; }
+        .customer-name { font-size: 16px; font-weight: 900; color: #fff; letter-spacing: -0.2px; }
+        .vip-star { font-size:14px; }
+        .replace-alert { font-size:10px; font-weight:800; padding:2px 8px; border-radius:20px; background:rgba(251,191,36,0.25); color:#FCD34D; border:1px solid rgba(251,191,36,0.35); }
+
+        .customer-badges { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
         .badge {
             font-size: 10px; font-weight: 700;
-            padding: 2px 7px; border-radius: 10px;
-            background: rgba(255,255,255,0.2); color: #fff;
+            padding: 3px 8px; border-radius: 20px;
+            background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9);
+            letter-spacing: 0.2px;
         }
-        .card-actions { display: flex; gap: 4px; align-items: center; }
-        .card-date { font-size: 11px; color: rgba(255,255,255,0.8); margin-right: 4px; }
+        .badge-vip { background: rgba(251,191,36,0.2); color: #FCD34D; border:1px solid rgba(251,191,36,0.3); }
+
+        .card-actions { display: flex; gap: 5px; align-items: center; z-index:1; }
+        .card-date {
+            font-size: 11px; color: rgba(255,255,255,0.65); margin-right: 2px;
+            font-weight: 600; white-space: nowrap;
+        }
         .card-action-btn {
-            width: 32px; height: 32px; border-radius: 8px;
-            background: rgba(255,255,255,0.15);
-            border: none; cursor: pointer; font-size: 14px;
+            width: 34px; height: 34px; border-radius: 10px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer; font-size: 14px;
             display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s; color: #fff;
         }
-        .customer-card-body { padding: 12px 14px; }
+        .card-action-btn:active { background: rgba(255,255,255,0.25); transform: scale(0.9); }
+
+        .customer-card-body { padding: 14px 16px; }
         .card-row {
             display: flex; align-items: flex-start; gap: 8px;
-            margin-bottom: 7px;
+            margin-bottom: 8px;
         }
-        .card-label { font-size: 11px; color: #9E9E9E; font-weight: 600; min-width: 40px; padding-top: 1px; }
-        .card-val { font-size: 12px; color: #111; font-weight: 600; flex: 1; }
+        .card-label {
+            font-size: 10px; color: #bbb; font-weight: 700;
+            min-width: 38px; padding-top: 2px;
+            text-transform: uppercase; letter-spacing: 0.4px;
+        }
+        .card-val { font-size: 13px; color: #111; font-weight: 700; flex: 1; }
         .card-total-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding-top: 10px; margin-top: 6px;
-            border-top: 1px solid #F0F0F0;
+            padding-top: 12px; margin-top: 8px;
+            border-top: 1px dashed #EFEFEF;
         }
-        .card-total-label { font-size: 12px; color: #9E9E9E; font-weight: 600; }
-        .card-total-val { font-size: 20px; font-weight: 900; }
+        .card-total-label { font-size: 11px; color: #bbb; font-weight: 700; text-transform:uppercase; letter-spacing:0.5px; }
+        .card-total-val { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
         .card-total-val.green { color: var(--green-dark); }
         .card-total-val.blue { color: var(--blue-dark); }
+
         .tension-badge {
-            font-size: 11px; font-weight: 700;
-            background: #FEF9C3; color: #854D0E;
-            padding: 2px 8px; border-radius: 10px; display: inline-block;
+            font-size: 11px; font-weight: 800;
+            background: linear-gradient(135deg,#FEFCE8,#FEF9C3); color: #92400E;
+            padding: 3px 10px; border-radius: 20px; display: inline-block;
+            border: 1px solid #FDE68A;
         }
         .extra-works-box {
-            background: #EEF2FF; border-radius: 10px; padding: 8px 10px; margin-top: 4px;
+            background: linear-gradient(135deg,#EEF2FF,#F0F4FF); border-radius: 12px; padding: 10px 12px; margin-top: 8px;
+            border: 1px solid #E0E7FF;
         }
-        .extra-works-label { font-size: 10px; color: #818CF8; font-weight: 700; margin-bottom: 4px; }
+        .extra-works-label { font-size: 10px; color: #6366F1; font-weight: 800; margin-bottom: 5px; text-transform:uppercase; letter-spacing:0.5px; }
         .extra-chip {
-            display: inline-block; font-size: 11px; font-weight: 600;
+            display: inline-block; font-size: 11px; font-weight: 700;
             background: #fff; color: #4F46E5;
             border: 1px solid #C7D2FE; border-radius: 8px;
             padding: 2px 8px; margin: 2px 2px 0 0;
         }
         .coupon-discount { font-size: 12px; color: #DB2777; font-weight: 700; }
 
-        /* ── 히스토리 토글 버튼 ── */
+        /* ══ 히스토리 토글 ══ */
         .history-toggle-btn {
-            width: 100%; padding: 9px;
-            background: #F9F9F9; border: 1px solid #EFEFEF;
-            border-radius: 10px; font-size: 12px; font-weight: 600; color: #9E9E9E;
-            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;
-            margin-top: 8px;
+            width: 100%; padding: 10px;
+            background: #F8F8F8; border: 1px solid #EFEFEF;
+            border-radius: 12px; font-size: 12px; font-weight: 700; color: #aaa;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;
+            margin-top: 10px; transition: all 0.15s;
         }
+        .history-toggle-btn:active { background: #F0F0F0; }
 
-        /* ── 등록 폼 ── */
+        /* ══ 등록 폼 ══ */
         .form-card {
-            background: #fff; border-radius: 16px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-            padding: 18px; margin-bottom: 10px;
+            background: #fff; border-radius: 20px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+            padding: 20px; margin-bottom: 12px;
+            border: 1px solid rgba(0,0,0,0.04);
+            animation: fadeSlideUp 0.3s ease both;
         }
-        .form-title { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 16px; }
-        .form-label { font-size: 12px; font-weight: 700; color: #616161; margin-bottom: 5px; display: block; }
+        .form-title { font-size: 16px; font-weight: 900; color: #111; margin-bottom: 18px; letter-spacing: -0.2px; }
+        .form-label { font-size: 11px; font-weight: 800; color: #888; margin-bottom: 6px; display: block; text-transform:uppercase; letter-spacing:0.5px; }
         .form-input {
-            width: 100%; padding: 11px 13px;
-            border: 1.5px solid #E0E0E0; border-radius: 11px;
-            font-size: 14px; font-weight: 500; background: #fff;
-            outline: none; transition: border-color 0.15s;
+            width: 100%; padding: 12px 14px;
+            border: 1.5px solid #E8E8E8; border-radius: 12px;
+            font-size: 14px; font-weight: 600; background: #FAFAFA;
+            outline: none; transition: all 0.2s; color: #111;
         }
-        .form-input:focus { border-color: var(--green); }
-        .form-input-blue:focus { border-color: var(--blue); }
+        .form-input:focus { border-color: var(--green); background: #fff; box-shadow: 0 0 0 3px rgba(34,197,94,0.1); }
+        .form-input-blue:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
         .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .form-group { margin-bottom: 10px; position: relative; }
         .form-section-title {
-            font-size: 12px; font-weight: 700; color: #9E9E9E;
-            text-transform: uppercase; letter-spacing: 0.5px;
-            margin: 14px 0 8px;
+            font-size: 11px; font-weight: 800; color: #bbb;
+            text-transform: uppercase; letter-spacing: 1px;
+            margin: 16px 0 8px;
         }
         .submit-btn {
-            width: 100%; padding: 14px;
-            border-radius: 13px; border: none; cursor: pointer;
-            font-size: 15px; font-weight: 800; color: #fff;
-            margin-top: 6px;
+            width: 100%; padding: 15px;
+            border-radius: 16px; border: none; cursor: pointer;
+            font-size: 15px; font-weight: 900; color: #fff;
+            margin-top: 8px; transition: all 0.18s; letter-spacing: 0.3px;
         }
-        .submit-btn-green { background: linear-gradient(135deg, #16A34A, #22C55E); box-shadow: 0 6px 16px rgba(34,197,94,0.35); }
-        .submit-btn-blue { background: linear-gradient(135deg, #1D4ED8, #3B82F6); box-shadow: 0 6px 16px rgba(59,130,246,0.3); }
+        .submit-btn:active { transform: scale(0.97); }
+        .submit-btn-green { background: linear-gradient(135deg, #15803D, #22C55E); box-shadow: 0 8px 20px var(--green-glow); }
+        .submit-btn-blue { background: linear-gradient(135deg, #1D4ED8, #3B82F6); box-shadow: 0 8px 20px rgba(59,130,246,0.35); }
 
-        /* ── 하이브리드 영역 ── */
+        /* ══ 하이브리드 영역 ══ */
         .hybrid-box {
-            border: 1.5px dashed #E0E0E0; border-radius: 12px; padding: 12px;
-            margin-bottom: 10px;
+            border: 1.5px dashed #D1FAE5; border-radius: 14px; padding: 14px;
+            margin-bottom: 10px; background: #F0FDF4;
         }
 
-        /* ── 추가작업 영역 ── */
+        /* ══ 추가작업 영역 ══ */
         .extra-section {
-            border: 1.5px solid #EEF2FF; border-radius: 12px;
-            padding: 12px; background: #FAFBFF; margin-bottom: 10px;
+            border: 1.5px solid #E0E7FF; border-radius: 14px;
+            padding: 14px; background: #F8F7FF; margin-bottom: 10px;
         }
 
-        /* ── 쿠폰 적용 영역 ── */
+        /* ══ 쿠폰 적용 영역 ══ */
         .coupon-box {
-            border: 1.5px dashed #FBB6CE; border-radius: 12px; padding: 12px;
-            background: #FFF0F6; margin-bottom: 10px;
+            border: 1.5px dashed #FBCFE8; border-radius: 14px; padding: 14px;
+            background: #FFF1F8; margin-bottom: 10px;
         }
 
-        /* ── 총액 박스 ── */
+        /* ══ 총액 박스 ══ */
         .total-box {
-            background: #F0FDF4; border: 1.5px solid #DCFCE7;
-            border-radius: 13px; padding: 14px;
+            background: linear-gradient(135deg,#F0FDF4,#DCFCE7); border: 1.5px solid #A7F3D0;
+            border-radius: 16px; padding: 16px;
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 10px;
         }
-        .total-box-label { font-size: 13px; font-weight: 700; color: #15803D; }
-        .total-box-val { font-size: 24px; font-weight: 900; color: #15803D; }
-        .total-box.blue { background: #EFF6FF; border-color: #DBEAFE; }
+        .total-box-label { font-size: 12px; font-weight: 800; color: #15803D; text-transform:uppercase; letter-spacing:0.5px; }
+        .total-box-val { font-size: 26px; font-weight: 900; color: #15803D; letter-spacing:-0.5px; }
+        .total-box.blue { background: linear-gradient(135deg,#EFF6FF,#DBEAFE); border-color: #BFDBFE; }
         .total-box.blue .total-box-label { color: #1D4ED8; }
         .total-box.blue .total-box-val { color: #1D4ED8; }
 
-        /* ── 통계 카드 ── */
+        /* ══ 통계 카드 ══ */
         .stat-card {
-            background: #fff; border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            overflow: hidden; margin-bottom: 10px;
+            background: #fff; border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden; margin-bottom: 12px;
+            border: 1px solid rgba(0,0,0,0.04);
+            animation: cardPop 0.3s ease both;
         }
         .stat-card-header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 14px 16px; background: #FAFAFA;
-            border-bottom: 1px solid #F0F0F0;
+            padding: 14px 18px; background: #FAFAFA;
+            border-bottom: 1px solid #F5F5F5;
         }
-        .stat-month { font-size: 15px; font-weight: 800; color: #111; }
-        .stat-count { font-size: 12px; color: #9E9E9E; font-weight: 600; }
+        .stat-month { font-size: 15px; font-weight: 900; color: #111; }
+        .stat-count { font-size: 11px; color: #bbb; font-weight: 700; }
         .stat-total { font-size: 18px; font-weight: 900; }
         .stat-total.green { color: var(--green-dark); }
         .stat-total.blue { color: var(--blue-dark); }
-        .stat-total.purple { color: #9333EA; }
+        .stat-total.purple { color: #7C3AED; }
         .stat-rows { padding: 4px 0; }
         .stat-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 16px; border-bottom: 1px solid #F5F5F5;
+            padding: 11px 18px; border-bottom: 1px solid #F8F8F8;
         }
         .stat-row:last-child { border-bottom: none; }
-        .stat-row-label { font-size: 12px; color: #616161; font-weight: 600; }
-        .stat-row-val { font-size: 13px; font-weight: 800; }
+        .stat-row-label { font-size: 12px; color: #888; font-weight: 700; }
+        .stat-row-val { font-size: 14px; font-weight: 800; }
 
-        /* ── 내용 패딩 ── */
-        .content-pad { padding: 0 12px 80px; }
+        /* ══ 내용 패딩 ══ */
+        .content-pad { padding: 0 12px 100px; }
 
-        /* ── 로그인 화면 ── */
+        /* ══ 하단 고정 메뉴바 ══ */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(12px) saturate(180%);
+            -webkit-backdrop-filter: blur(12px) saturate(180%);
+            border-top: 1px solid rgba(0,0,0,0.08);
+            display: flex; padding: 6px 0 env(safe-area-inset-bottom,8px);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+        }
+        .nav-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 3px; padding: 6px 0;
+            background: none; border: none; cursor: pointer;
+            transition: all 0.18s; position: relative;
+        }
+        .nav-item:active { transform: scale(0.9); }
+        .nav-icon {
+            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 19px; transition: all 0.2s;
+        }
+        .nav-item.active .nav-icon {
+            background: linear-gradient(135deg,#15803D,#22C55E);
+            box-shadow: 0 4px 12px var(--green-glow);
+        }
+        .nav-item.active-blue .nav-icon {
+            background: linear-gradient(135deg,#1D4ED8,#3B82F6);
+            box-shadow: 0 4px 12px rgba(59,130,246,0.35);
+        }
+        .nav-label {
+            font-size: 10px; font-weight: 800; color: #bbb; letter-spacing: 0.3px;
+        }
+        .nav-item.active .nav-label { color: var(--green-dark); }
+        .nav-item.active-blue .nav-label { color: var(--blue-dark); }
+
+        /* ══ 등록 중앙 버튼 ══ */
+        .nav-center-btn {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: none; border: none; cursor: pointer; padding: 0; position: relative;
+        }
+        .nav-center-inner {
+            width: 52px; height: 52px; border-radius: 16px;
+            background: linear-gradient(135deg,#15803D,#22C55E);
+            box-shadow: 0 6px 20px var(--green-glow);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px; color: #fff; font-weight: 900;
+            transition: all 0.18s; margin-top: -8px;
+        }
+        .nav-center-inner.cancel { background: linear-gradient(135deg,#666,#999); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .nav-center-btn:active .nav-center-inner { transform: scale(0.9); }
+        .nav-center-label { font-size: 10px; font-weight: 800; color: #bbb; margin-top: 3px; letter-spacing:0.3px; }
+        .nav-center-btn.is-cancel .nav-center-label { color: #888; }
+
+        /* ══ 로그인 화면 ══ */
         .login-screen {
             min-height: 100vh;
-            background: var(--black);
+            background: linear-gradient(180deg,#050505 0%, #0a1a0f 100%);
             display: flex; align-items: center; justify-content: center; padding: 20px;
         }
         .login-card {
-            background: #1A1A1A; border: 1px solid #2A2A2A;
-            border-radius: 24px; padding: 32px 24px;
+            background: #111; border: 1px solid #1e1e1e;
+            border-radius: 28px; padding: 36px 24px;
             width: 100%; max-width: 360px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
-        .login-logo-area { text-align: center; margin-bottom: 28px; }
+        .login-logo-area { text-align: center; margin-bottom: 32px; }
         .login-logo {
-            width: 60px; height: 60px; background: var(--green);
-            border-radius: 16px; display: flex; align-items: center; justify-content: center;
-            font-size: 28px; margin: 0 auto 12px;
-            box-shadow: 0 8px 24px rgba(34,197,94,0.3);
+            width: 64px; height: 64px;
+            background: linear-gradient(135deg, #14532d, #22C55E);
+            border-radius: 18px; display: flex; align-items: center; justify-content: center;
+            font-size: 30px; margin: 0 auto 14px;
+            box-shadow: 0 8px 28px rgba(34,197,94,0.35);
         }
-        .login-title { font-size: 22px; font-weight: 900; color: #fff; }
-        .login-subtitle { font-size: 13px; color: #616161; margin-top: 4px; }
+        .login-title { font-size: 24px; font-weight: 900; color: #fff; letter-spacing: 1px; }
+        .login-subtitle { font-size: 12px; color: #444; margin-top: 5px; font-weight: 600; letter-spacing: 0.5px; }
         .login-tab-row {
-            display: flex; background: #111; border-radius: 12px; padding: 4px;
-            margin-bottom: 20px;
+            display: flex; background: #0a0a0a; border-radius: 14px; padding: 4px;
+            margin-bottom: 22px; border: 1px solid #1a1a1a;
         }
         .login-tab {
-            flex: 1; padding: 9px; text-align: center;
-            border-radius: 9px; border: none; font-size: 13px; font-weight: 700;
-            cursor: pointer; background: transparent; color: #616161;
+            flex: 1; padding: 10px; text-align: center;
+            border-radius: 11px; border: none; font-size: 13px; font-weight: 700;
+            cursor: pointer; background: transparent; color: #555; transition: all 0.2s;
         }
-        .login-tab.active { background: var(--green); color: #fff; }
+        .login-tab.active { background: linear-gradient(135deg,#15803D,#22C55E); color: #fff; box-shadow: 0 4px 12px var(--green-glow); }
         .login-input {
-            width: 100%; padding: 13px 14px;
-            background: #111; border: 1.5px solid #2A2A2A; border-radius: 12px;
+            width: 100%; padding: 14px 16px;
+            background: #0a0a0a; border: 1.5px solid #1e1e1e; border-radius: 14px;
             font-size: 15px; color: #fff; outline: none;
-            transition: border-color 0.15s; margin-bottom: 10px;
+            transition: all 0.2s; margin-bottom: 10px;
         }
-        .login-input:focus { border-color: var(--green); }
-        .login-input::placeholder { color: #444; }
-        .login-label { font-size: 12px; font-weight: 700; color: #616161; margin-bottom: 5px; display: block; }
+        .login-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(34,197,94,0.15); }
+        .login-input::placeholder { color: #333; }
+        .login-label { font-size: 11px; font-weight: 800; color: #555; margin-bottom: 6px; display: block; text-transform:uppercase; letter-spacing:0.5px; }
         .login-btn {
-            width: 100%; padding: 14px;
-            background: var(--green); color: #fff;
-            border: none; border-radius: 13px;
-            font-size: 15px; font-weight: 800; cursor: pointer;
-            box-shadow: 0 6px 18px rgba(34,197,94,0.35);
-            margin-top: 4px;
+            width: 100%; padding: 15px;
+            background: linear-gradient(135deg,#15803D,#22C55E); color: #fff;
+            border: none; border-radius: 16px;
+            font-size: 15px; font-weight: 900; cursor: pointer;
+            box-shadow: 0 8px 24px var(--green-glow);
+            margin-top: 6px; transition: all 0.2s; letter-spacing:0.3px;
         }
+        .login-btn:active { transform: scale(0.97); }
         .login-error {
-            background: #1F0A0A; border: 1px solid #5A1A1A;
-            border-radius: 10px; padding: 10px 14px;
-            font-size: 12px; color: #F87171; margin-bottom: 10px;
+            background: #1a0808; border: 1px solid #3a1010;
+            border-radius: 12px; padding: 12px 14px;
+            font-size: 12px; color: #F87171; margin-bottom: 10px; font-weight:600;
         }
-        .login-link { background: none; border: none; color: #616161; font-size: 12px; cursor: pointer; width: 100%; margin-top: 8px; padding: 6px; }
+        .login-link { background: none; border: none; color: #444; font-size: 12px; cursor: pointer; width: 100%; margin-top: 8px; padding: 6px; font-weight:600; }
 
-        /* ── 섹션 헤더 ── */
+        /* ══ 섹션 헤더 ══ */
         .section-header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 14px 16px; border-bottom: 1px solid #F0F0F0;
+            padding: 14px 18px; border-bottom: 1px solid #F5F5F5;
         }
-        .section-title { font-size: 14px; font-weight: 800; color: #111; }
-        .section-count { font-size: 12px; color: #9E9E9E; font-weight: 600; }
+        .section-title { font-size: 14px; font-weight: 900; color: #111; }
+        .section-count {
+            font-size: 11px; font-weight: 800;
+            background: #F0FDF4; color: var(--green-dark);
+            padding: 2px 10px; border-radius: 20px; border: 1px solid #D1FAE5;
+        }
 
-        /* ── 설정 화면 ── */
-        .settings-section { background: #fff; border-radius: 16px; overflow: hidden; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        /* ══ 설정 화면 ══ */
+        .settings-section { background: #fff; border-radius: 20px; overflow: hidden; margin-bottom: 12px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.04); }
 
-        /* ── 모달 오버레이 ── */
+        /* ══ 모달 오버레이 ══ */
         .modal-overlay {
             position: fixed; inset: 0; z-index: 50;
-            display: flex; align-items: center; justify-content: center; padding: 16px;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+            background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
         }
         .modal-card {
-            background: #fff; border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-            padding: 24px; width: 100%; max-width: 320px;
+            background: #fff; border-radius: 24px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+            padding: 26px; width: 100%; max-width: 320px;
+            animation: fadeSlideUp 0.25s ease both;
         }
-        .modal-title { font-size: 16px; font-weight: 800; color: #111; margin-bottom: 16px; }
+        .modal-title { font-size: 16px; font-weight: 900; color: #111; margin-bottom: 16px; }
         .modal-input {
-            width: 100%; padding: 11px 13px;
-            border: 1.5px solid #E0E0E0; border-radius: 11px;
-            font-size: 14px; margin-bottom: 10px; outline: none;
+            width: 100%; padding: 12px 14px;
+            border: 1.5px solid #E8E8E8; border-radius: 12px;
+            font-size: 14px; margin-bottom: 10px; outline: none; background: #FAFAFA;
         }
-        .modal-input:focus { border-color: var(--green); }
-        .modal-btn-row { display: flex; gap: 8px; margin-top: 4px; }
+        .modal-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(34,197,94,0.1); background:#fff; }
+        .modal-btn-row { display: flex; gap: 8px; margin-top: 6px; }
         .modal-btn-cancel {
-            flex: 1; padding: 12px; border-radius: 11px;
-            background: #F0F0F0; color: #616161; font-size: 14px; font-weight: 700;
-            border: none; cursor: pointer;
+            flex: 1; padding: 13px; border-radius: 13px;
+            background: #F5F5F5; color: #888; font-size: 14px; font-weight: 700;
+            border: none; cursor: pointer; transition: all 0.15s;
         }
         .modal-btn-ok {
-            flex: 1; padding: 12px; border-radius: 11px;
-            background: var(--green); color: #fff; font-size: 14px; font-weight: 700;
-            border: none; cursor: pointer;
+            flex: 1; padding: 13px; border-radius: 13px;
+            background: linear-gradient(135deg,#15803D,#22C55E); color: #fff; font-size: 14px; font-weight: 800;
+            border: none; cursor: pointer; box-shadow: 0 4px 12px var(--green-glow); transition: all 0.15s;
         }
-        .modal-btn-ok-red { background: #EF4444; }
-        .modal-btn-ok-purple { background: #A855F7; }
-        .modal-btn-ok-pink { background: #EC4899; }
+        .modal-btn-ok:active { transform: scale(0.97); }
+        .modal-btn-ok-red { background: linear-gradient(135deg,#b91c1c,#EF4444); box-shadow: 0 4px 12px rgba(239,68,68,0.35); }
+        .modal-btn-ok-purple { background: linear-gradient(135deg,#6d28d9,#A855F7); }
+        .modal-btn-ok-pink { background: linear-gradient(135deg,#be185d,#EC4899); }
         .modal-btn-ok-only {
-            width: 100%; padding: 13px; border-radius: 11px;
-            background: var(--green); color: #fff; font-size: 14px; font-weight: 700;
+            width: 100%; padding: 14px; border-radius: 13px;
+            background: linear-gradient(135deg,#15803D,#22C55E); color: #fff; font-size: 14px; font-weight: 800;
             border: none; cursor: pointer; margin-top: 8px;
+            box-shadow: 0 4px 12px var(--green-glow);
         }
 
-        /* ── 빈 상태 ── */
-        .empty-state { text-align: center; padding: 40px 20px; color: #9E9E9E; font-size: 13px; font-weight: 600; }
+        /* ══ 빈 상태 ══ */
+        .empty-state {
+            text-align: center; padding: 48px 20px;
+            color: #bbb; font-size: 13px; font-weight: 700;
+        }
+        .empty-state-icon { font-size: 52px; margin-bottom: 12px; opacity:0.6; }
 
-        /* ── 쿠폰 아이템 ── */
+        /* ══ 쿠폰 아이템 ══ */
         .coupon-item {
             display: flex; align-items: center; gap: 12px;
-            padding: 14px 16px; border-bottom: 1px solid #F5F5F5;
+            padding: 14px 18px; border-bottom: 1px solid #F8F8F8;
         }
         .coupon-item:last-child { border-bottom: none; }
         .coupon-code { font-size: 13px; font-weight: 800; color: #111; font-family: monospace; }
-        .coupon-amount { font-size: 17px; font-weight: 900; color: #DB2777; }
-        .coupon-meta { font-size: 11px; color: #9E9E9E; margin-top: 2px; }
+        .coupon-amount { font-size: 18px; font-weight: 900; color: #DB2777; }
+        .coupon-meta { font-size: 11px; color: #bbb; margin-top: 2px; font-weight:600; }
         .kakao-copy-btn {
             background: #FEE500; color: #111;
-            border: none; border-radius: 8px; padding: 7px 10px;
-            font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap;
+            border: none; border-radius: 10px; padding: 8px 12px;
+            font-size: 11px; font-weight: 900; cursor: pointer; white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(254,229,0,0.4); transition: all 0.15s;
         }
+        .kakao-copy-btn:active { transform:scale(0.95); }
 
-        /* ── 토스트 ── */
+        /* ══ 토스트 ══ */
         .toast {
             position: fixed; top: 16px; right: 16px; z-index: 999;
-            padding: 10px 16px; border-radius: 12px;
-            font-size: 13px; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            padding: 11px 18px; border-radius: 14px;
+            font-size: 13px; font-weight: 800;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+            animation: fadeSlideUp 0.25s ease both;
         }
         .toast-saving { background: #FEF9C3; color: #854D0E; }
-        .toast-saved { background: #DCFCE7; color: #15803D; }
+        .toast-saved { background: linear-gradient(135deg,#D1FAE5,#DCFCE7); color: #15803D; border:1px solid #A7F3D0; }
         .toast-error { background: #FEE2E2; color: #B91C1C; }
 
-        /* ── 드롭다운 ── */
+        /* ══ 드롭다운 ══ */
         .dropdown-list {
             position: absolute; z-index: 20; width: 100%; margin-top: 4px;
-            background: #fff; border: 1.5px solid #E0E0E0;
-            border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            background: #fff; border: 1.5px solid #E8E8E8;
+            border-radius: 14px; box-shadow: 0 12px 36px rgba(0,0,0,0.14);
             max-height: 220px; overflow-y: auto;
         }
         .dropdown-item {
-            width: 100%; text-align: left; padding: 12px 14px;
-            font-size: 13px; font-weight: 600; color: #111;
-            background: none; border: none; border-bottom: 1px solid #F5F5F5;
-            cursor: pointer;
+            width: 100%; text-align: left; padding: 13px 16px;
+            font-size: 13px; font-weight: 700; color: #111;
+            background: none; border: none; border-bottom: 1px solid #F8F8F8;
+            cursor: pointer; transition: background 0.1s;
         }
         .dropdown-item:last-child { border-bottom: none; }
-        .dropdown-item:active { background: #F5F5F5; }
+        .dropdown-item:active { background: #F5FDF8; }
 
-        /* ── 스크롤바 숨기기 ── */
+        /* ══ 스크롤바 숨기기 ══ */
         ::-webkit-scrollbar { display: none; }
+
+        /* ══ 최근방문 하이라이트 ══ */
+        .recent-badge {
+            font-size:10px; font-weight:800; padding:2px 7px; border-radius:20px;
+            background: rgba(251,191,36,0.15); color:#F59E0B;
+            border:1px solid rgba(251,191,36,0.25); white-space:nowrap;
+        }
     </style>
 </head>
 <body>
@@ -1428,26 +1601,33 @@ const StringingApp = ({ sport, uid }) => {
                 </div>
             )}
 
-            {/* ── 오늘 요약 배너 ── */}
+            {/* ── 오늘 요약 배너 (프리미엄) ── */}
             {viewMode==='customers' && (
                 <div className="today-banner">
                     <div className="today-banner-inner">
-                        <div>
-                            <div className="today-greeting">안녕하세요 👋</div>
-                            <div className="today-stats">
-                                <div className="today-stat-item">
-                                    <div className="today-stat-label">오늘 작업</div>
-                                    <div className="today-stat-val">{records.filter(r=>r.date===getTodayKST()).length}<span style={{fontSize:'13px',color:'#9E9E9E',fontWeight:600}}>건</span></div>
-                                </div>
-                                <div className="today-stat-item">
-                                    <div className="today-stat-label">오늘 매출</div>
-                                    <div className="today-stat-val green">{records.filter(r=>r.date===getTodayKST()).reduce((s,r)=>s+(r.total||0),0).toLocaleString()}<span style={{fontSize:'13px',fontWeight:600}}>원</span></div>
-                                </div>
+                        <div className="today-top-row">
+                            <div>
+                                <div className="today-greeting">✦ NIJI STRING PRO</div>
+                                <div className="today-date-label">{(()=>{const d=new Date();const days=['일','월','화','수','목','금','토'];return `${d.getMonth()+1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;})()}</div>
+                            </div>
+                            <button className="new-work-btn" onClick={()=>{if(!showForm){setShowForm(true);setEditingId(null);setFormData(makeEmptyForm());setExtraWorks([]);setShowExtraSection(false);setAppliedCoupon(null);setCouponInput('');setCouponMsg('');}}}>
+                                ＋ 새 작업
+                            </button>
+                        </div>
+                        <div className="today-stats">
+                            <div className="today-stat-item">
+                                <div className="today-stat-label">오늘 작업</div>
+                                <div className="today-stat-val">{records.filter(r=>r.date===getTodayKST()).length}<span className="today-stat-unit">건</span></div>
+                            </div>
+                            <div className="today-stat-item">
+                                <div className="today-stat-label">오늘 매출</div>
+                                <div className="today-stat-val green">{records.filter(r=>r.date===getTodayKST()).reduce((s,r)=>s+(r.total||0),0).toLocaleString()}<span className="today-stat-unit">원</span></div>
+                            </div>
+                            <div className="today-stat-item">
+                                <div className="today-stat-label">최근 방문</div>
+                                <div className="today-stat-recent">{(()=>{ const s=[...records].sort((a,b)=>b.date.localeCompare(a.date)); return s.length>0?s[0].name:'—'; })()}</div>
                             </div>
                         </div>
-                        <button className="new-work-btn" onClick={()=>{if(!showForm){setShowForm(true);setEditingId(null);setFormData(makeEmptyForm());setExtraWorks([]);setShowExtraSection(false);setAppliedCoupon(null);setCouponInput('');setCouponMsg('');}}}>
-                            ➕ 새 작업
-                        </button>
                     </div>
                 </div>
             )}
@@ -1715,7 +1895,7 @@ const StringingApp = ({ sport, uid }) => {
 
             {/* ── 고객 목록 ── */}
             {viewMode==='customers' && (
-                <div style={{padding:'0 12px 80px'}}>
+                <div style={{padding:'0 12px 120px'}}>
                     {searchTerm && displayRecords.length>0 && (
                         <div className="customer-card" style={{marginBottom:'10px'}}>
                             <div style={{padding:'12px 14px'}}>
@@ -1761,15 +1941,23 @@ const StringingApp = ({ sport, uid }) => {
                             const history = recs.slice(1);
                             const visitCount = recs.length;
                             const isOpen = expandedCustomers[name];
-                            return (
+                            // VIP: 5회 이상, 교체알림: 마지막 방문 60일 이상
+                        const daysSince = latest.date ? Math.floor((new Date()-new Date(latest.date))/(1000*60*60*24)) : 0;
+                        const isVIP = visitCount >= 5;
+                        const needsReplace = daysSince >= 60;
+                        return (
                                 <div key={name} className="customer-card">
                                     <div className={`customer-card-header ${color}`}>
                                         <div>
-                                            <div className="customer-name">{latest.name}</div>
+                                            <div className="customer-name-row">
+                                                <div className="customer-name">{latest.name}</div>
+                                                {isVIP && <span className="vip-star">⭐</span>}
+                                            </div>
                                             <div className="customer-badges">
-                                                <span className="badge">👤 {visitCount}회</span>
+                                                <span className="badge">👤 {visitCount}회 방문</span>
                                                 {latest.couponCode && <span className="badge">🎫 쿠폰</span>}
                                                 {latest.isHybrid && <span className="badge">하이브리드</span>}
+                                                {needsReplace && <span className="replace-alert">🔔 교체 알림</span>}
                                             </div>
                                         </div>
                                         <div className="card-actions">
@@ -2085,6 +2273,30 @@ const StringingApp = ({ sport, uid }) => {
                     </div>
                 </div>
             )}
+            {/* ══ 하단 고정 메뉴바 ══ */}
+            <div className="bottom-nav">
+                <button className="nav-item" onClick={()=>{setViewMode('customers');setShowForm(false);}}>
+                    <div className="nav-icon" style={(viewMode==='customers'&&!showForm)?{background:'linear-gradient(135deg,#15803D,#22C55E)',boxShadow:'0 4px 12px rgba(34,197,94,0.4)'}:{background:'#F5F5F5'}}>🏠</div>
+                    <span className="nav-label" style={(viewMode==='customers'&&!showForm)?{color:'#16A34A'}:{}}>홈</span>
+                </button>
+                <button className="nav-item" onClick={()=>{setViewMode('customers');setShowForm(false);}}>
+                    <div className="nav-icon" style={{background:'#F5F5F5'}}>👥</div>
+                    <span className="nav-label">고객</span>
+                </button>
+                <button className="nav-center-btn" style={{background:'none',border:'none'}}
+                    onClick={()=>{if(showForm&&editingId){resetForm();}else{setShowForm(!showForm);}if(!showForm){setEditingId(null);setFormData(makeEmptyForm());setExtraWorks([]);setShowExtraSection(false);setAppliedCoupon(null);setCouponInput('');setCouponMsg('');setViewMode('customers');}}}>
+                    <div className={`nav-center-inner ${showForm?'cancel':''}`}>{showForm?'✕':'＋'}</div>
+                    <span className="nav-center-label">{showForm?'취소':'등록'}</span>
+                </button>
+                <button className="nav-item" onClick={()=>{setViewMode('monthly');setShowForm(false);}}>
+                    <div className="nav-icon" style={(viewMode==='monthly'||viewMode==='yearly')?{background:'linear-gradient(135deg,#EA580C,#F97316)',boxShadow:'0 4px 12px rgba(249,115,22,0.4)'}:{background:'#F5F5F5'}}>📊</div>
+                    <span className="nav-label" style={(viewMode==='monthly'||viewMode==='yearly')?{color:'#EA580C'}:{}}>통계</span>
+                </button>
+                <button className="nav-item" onClick={()=>{setViewMode('coupons');setShowForm(false);}}>
+                    <div className="nav-icon" style={(viewMode==='coupons'||viewMode==='strings')?{background:'linear-gradient(135deg,#be185d,#EC4899)',boxShadow:'0 4px 12px rgba(236,72,153,0.4)'}:{background:'#F5F5F5'}}>⚙️</div>
+                    <span className="nav-label" style={(viewMode==='coupons'||viewMode==='strings')?{color:'#be185d'}:{}}>설정</span>
+                </button>
+            </div>
         </div>
     );
 };
