@@ -180,23 +180,27 @@
 
         /* ══ 검색 바 ══ */
         .search-row {
-            display: flex; gap: 8px;
+            display: flex; gap: 6px; align-items: center;
             padding: 0 12px 8px;
+            overflow: hidden;
         }
         .search-input {
-            flex: 1; padding: 12px 16px;
+            flex: 1; min-width: 0;
+            padding: 9px 12px;
             border: 1.5px solid #E8E8E8;
-            border-radius: 14px; font-size: 14px; font-weight: 500;
+            border-radius: 12px; font-size: 14px; font-weight: 500;
             background: #fff; outline: none;
             transition: all 0.2s;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
         .search-input:focus { border-color: var(--green); box-shadow: 0 2px 12px var(--green-glow); }
         .add-btn {
-            padding: 12px 18px; border-radius: 14px;
-            font-size: 13px; font-weight: 800;
+            flex-shrink: 0;
+            padding: 9px 14px; border-radius: 12px;
+            font-size: 12px; font-weight: 800;
             border: none; cursor: pointer; color: #fff;
-            transition: all 0.18s; letter-spacing: 0.2px;
+            transition: all 0.18s; white-space: nowrap;
+            min-height: 0;
         }
         .add-btn:active { transform: scale(0.95); }
         .add-btn-green { background: linear-gradient(135deg,#16A34A,#22C55E); box-shadow: 0 4px 14px var(--green-glow); }
@@ -1937,16 +1941,18 @@ const StringingApp = ({ sport, uid }) => {
                         const uniqueNames = [...new Set(nameOrder)];
                         return uniqueNames.map(name=>{
                             const recs = grouped[name];
-                            const latest = recs[0];
-                            const history = recs.slice(1);
+                            // 날짜 내림차순 정렬 → 가장 최근이 [0]
+                            const sorted = [...recs].sort((a,b)=>b.date.localeCompare(a.date));
+                            const latest = sorted[0];
+                            const history = sorted.slice(1);
                             const visitCount = recs.length;
                             const isOpen = expandedCustomers[name];
-                            // VIP: 5회 이상, 교체알림: 마지막 방문 60일 이상
-                        const daysSince = latest.date ? Math.floor((new Date()-new Date(latest.date))/(1000*60*60*24)) : 0;
-                        const isVIP = visitCount >= 5;
-                        const needsReplace = daysSince >= 60;
-                        return (
+                            const daysSince = latest.date ? Math.floor((new Date()-new Date(latest.date))/(1000*60*60*24)) : 0;
+                            const isVIP = visitCount >= 5;
+                            const needsReplace = daysSince >= 60;
+                            return (
                                 <div key={name} className="customer-card">
+                                    {/* ── 카드 헤더 ── */}
                                     <div className={`customer-card-header ${color}`}>
                                         <div>
                                             <div className="customer-name-row">
@@ -1966,25 +1972,27 @@ const StringingApp = ({ sport, uid }) => {
                                             <button onClick={()=>handleDelete(latest)} className="card-action-btn">🗑️</button>
                                         </div>
                                     </div>
+
+                                    {/* ── 최근 작업 내용 (항상 표시) ── */}
                                     <div className="customer-card-body">
                                         <div className="card-row">
                                             <span className="card-label">라켓</span>
                                             <span className="card-val">{latest.racket}</span>
-                                            <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600,flexShrink:0}}>{latest.pattern}</span>
+                                            <span style={{fontSize:'11px',color:'#bbb',fontWeight:600,flexShrink:0}}>{latest.pattern}</span>
                                         </div>
                                         <div className="card-row">
                                             <span className="card-label">스트링</span>
                                             <div style={{flex:1}}>
                                                 <span className="card-val">{latest.stringType}</span>
                                                 {latest.isHybrid&&latest.hybridString2&&<span style={{fontSize:'11px',color:'#7C3AED',fontWeight:600}}> + {latest.hybridString2}</span>}
-                                                <span style={{fontSize:'11px',color:'#9E9E9E',marginLeft:'4px'}}>{parseInt(latest.stringPrice||0).toLocaleString()}원{latest.isHybrid&&latest.hybridPrice2&&` +${parseInt(latest.hybridPrice2).toLocaleString()}원`}</span>
+                                                <span style={{fontSize:'11px',color:'#bbb',marginLeft:'4px'}}>{parseInt(latest.stringPrice||0).toLocaleString()}원</span>
                                             </div>
                                         </div>
                                         {latest.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {latest.tension} lbs</span></div>}
                                         <div className="card-row" style={{marginBottom:0}}>
                                             <span className="card-label">공임</span>
                                             <span className="card-val" style={{color:'#616161'}}>{parseInt(latest.labor||0).toLocaleString()}원</span>
-                                            <span style={{fontSize:'11px',color:'#9E9E9E',marginLeft:'12px'}}>수량</span>
+                                            <span style={{fontSize:'11px',color:'#bbb',marginLeft:'12px'}}>수량</span>
                                             <span className="card-val" style={{color:'#616161',marginLeft:'4px'}}>{latest.quantity}개</span>
                                         </div>
                                         {latest.extraWorks&&latest.extraWorks.length>0 && (
@@ -1998,12 +2006,19 @@ const StringingApp = ({ sport, uid }) => {
                                             <span className="card-total-label">최종 금액</span>
                                             <span className={`card-total-val ${color==='green'?'green':'blue'}`}>{(latest.total||0).toLocaleString()}원</span>
                                         </div>
-                                        {history.length>0 && (
+
+                                        {/* ── 이전 방문 드롭다운 버튼 ── */}
+                                        {history.length > 0 && (
                                             <button onClick={()=>toggleCustomerHistory(name)} className="history-toggle-btn">
-                                                {isOpen ? '▲ 이전 방문 접기' : `▼ 이전 방문 ${history.length}건 더 보기`}
+                                                <span>{isOpen ? '▲' : '▼'}</span>
+                                                <span style={{color: isOpen?'#888':'#16A34A', fontWeight:800}}>
+                                                    {isOpen ? '이전 방문 닫기' : `이전 방문 ${history.length}건 보기`}
+                                                </span>
                                             </button>
                                         )}
                                     </div>
+
+                                    {/* ── 이전 방문 기록 (드롭다운) ── */}
                                     {isOpen && history.map((r,idx)=>(
                                         <div key={r.fbKey||r.id} style={{borderTop:'1px solid #F0F0F0'}}>
                                             <div style={{padding:'8px 14px',background:'#FAFAFA',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
@@ -2011,18 +2026,18 @@ const StringingApp = ({ sport, uid }) => {
                                                 <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
                                                     {r.couponCode && <span style={{fontSize:'10px',background:'#FCE7F3',color:'#DB2777',padding:'2px 7px',borderRadius:'10px',fontWeight:700}}>🎫쿠폰</span>}
                                                     {r.isHybrid && <span style={{fontSize:'10px',background:'#F3E8FF',color:'#7C3AED',padding:'2px 7px',borderRadius:'10px',fontWeight:700}}>하이브리드</span>}
-                                                    <button onClick={()=>handleEdit(r)} style={{width:'28px',height:'28px',background:'none',border:'none',cursor:'pointer',fontSize:'13px'}}>✏️</button>
-                                                    <button onClick={()=>handleDelete(r)} style={{width:'28px',height:'28px',background:'none',border:'none',cursor:'pointer',fontSize:'13px'}}>🗑️</button>
+                                                    <button onClick={()=>handleEdit(r)} style={{width:'28px',height:'28px',background:'none',border:'none',cursor:'pointer',fontSize:'13px',minHeight:0}}>✏️</button>
+                                                    <button onClick={()=>handleDelete(r)} style={{width:'28px',height:'28px',background:'none',border:'none',cursor:'pointer',fontSize:'13px',minHeight:0}}>🗑️</button>
                                                 </div>
                                             </div>
                                             <div style={{padding:'8px 14px 12px'}}>
-                                                <div className="card-row"><span className="card-label">라켓</span><span className="card-val" style={{fontSize:'11px'}}>{r.racket}</span><span style={{fontSize:'11px',color:'#9E9E9E'}}>{r.pattern}</span></div>
-                                                <div className="card-row"><span className="card-label">스트링</span><span style={{fontSize:'11px',color:'#111',fontWeight:600,flex:1}}>{r.stringType}{r.isHybrid&&r.hybridString2&&<span style={{color:'#7C3AED'}}> + {r.hybridString2}</span>}<span style={{color:'#9E9E9E',marginLeft:'4px'}}>{parseInt(r.stringPrice||0).toLocaleString()}원</span></span></div>
+                                                <div className="card-row"><span className="card-label">라켓</span><span className="card-val" style={{fontSize:'11px'}}>{r.racket}</span><span style={{fontSize:'11px',color:'#bbb'}}>{r.pattern}</span></div>
+                                                <div className="card-row"><span className="card-label">스트링</span><span style={{fontSize:'11px',color:'#111',fontWeight:600,flex:1}}>{r.stringType}{r.isHybrid&&r.hybridString2&&<span style={{color:'#7C3AED'}}> + {r.hybridString2}</span>}<span style={{color:'#bbb',marginLeft:'4px'}}>{parseInt(r.stringPrice||0).toLocaleString()}원</span></span></div>
                                                 {r.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {r.tension} lbs</span></div>}
-                                                <div className="card-row" style={{marginBottom:0}}><span className="card-label">공임</span><span style={{fontSize:'11px',color:'#616161',fontWeight:600}}>{parseInt(r.labor||0).toLocaleString()}원</span><span style={{fontSize:'11px',color:'#9E9E9E',marginLeft:'10px'}}>수량 {r.quantity}개</span></div>
+                                                <div className="card-row" style={{marginBottom:0}}><span className="card-label">공임</span><span style={{fontSize:'11px',color:'#616161',fontWeight:600}}>{parseInt(r.labor||0).toLocaleString()}원</span><span style={{fontSize:'11px',color:'#bbb',marginLeft:'10px'}}>수량 {r.quantity}개</span></div>
                                                 {r.couponCode && <div style={{fontSize:'11px',color:'#DB2777',fontWeight:600,marginTop:'4px'}}>🎫 -{parseInt(r.couponDiscount||0).toLocaleString()}원</div>}
                                                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:'8px',marginTop:'4px',borderTop:'1px solid #F0F0F0'}}>
-                                                    <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>금액</span>
+                                                    <span style={{fontSize:'11px',color:'#bbb',fontWeight:600}}>금액</span>
                                                     <span style={{fontSize:'14px',fontWeight:800,color:color==='green'?'#16A34A':'#1D4ED8'}}>{(r.total||0).toLocaleString()}원</span>
                                                 </div>
                                             </div>
