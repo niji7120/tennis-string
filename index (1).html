@@ -2275,6 +2275,86 @@ const StringingApp = ({ sport, uid }) => {
                             </label>
                         </div>
                     </div>
+
+                    {/* 사용 설명서 */}
+                    {(()=>{
+                        const [openSection, setOpenSection] = React.useState(null);
+                        const toggle = (k) => setOpenSection(prev => prev===k ? null : k);
+                        const sections = [
+                            {
+                                key:'customer', icon:'🏠', title:'고객관리 탭',
+                                items:[
+                                    {q:'고객을 어떻게 등록하나요?', a:'고객관리 화면 오른쪽 위의 ➕ 등록 버튼을 누르면 등록 폼이 펼쳐져요. 날짜, 고객명, 라켓, 스트링, 텐션, 공임을 입력하고 ✅ 등록 완료를 누르세요.'},
+                                    {q:'고객 카드를 어떻게 열어보나요?', a:'카드를 손가락으로 탭(터치)하면 상세 내용이 펼쳐지고, 다시 탭하면 닫혀요. 이름과 날짜만 보이는 게 기본 상태예요.'},
+                                    {q:'고객 정보를 수정하거나 삭제하려면?', a:'카드 오른쪽에 있는 ✏️ 버튼을 누르면 수정, 🗑️ 버튼을 누르면 삭제할 수 있어요.'},
+                                    {q:'고객 검색은 어떻게 하나요?', a:'화면 위 검색창에 고객 이름을 입력하면 바로 찾아줘요. 초성 검색도 돼요! (예: "ㄱㄷ" → 김도영)'},
+                                    {q:'⭐ VIP 표시는 어떻게 붙나요?', a:'같은 고객이 5회 이상 방문하면 자동으로 ⭐ VIP 표시가 붙어요.'},
+                                    {q:'🔔 교체 알림은 뭔가요?', a:'마지막 방문일로부터 60일이 지난 고객에게 자동으로 🔔 교체 알림 배지가 표시돼요. 스트링 교체 시기를 놓치지 않게 도와줘요.'},
+                                ]
+                            },
+                            {
+                                key:'stats', icon:'📊', title:'매출통계 탭',
+                                items:[
+                                    {q:'월별/연도별 매출을 볼 수 있나요?', a:'매출통계 탭을 누르면 월별 매출이 기본으로 보여요. 위쪽 버튼으로 📅 월별 / 📈 연도별 전환이 가능해요.'},
+                                    {q:'통계에서 뭘 볼 수 있나요?', a:'스트링비 합계, 공임비 합계, 추가작업비 합계를 따로 확인할 수 있어요. 월별 작업 건수도 표시돼요.'},
+                                ]
+                            },
+                            {
+                                key:'strings', icon:'🎯', title:'스트링 탭',
+                                items:[
+                                    {q:'스트링 목록은 어디서 관리하나요?', a:'아래 탭 메뉴에서 🎯 스트링을 누르면 스트링 목록 화면이 나와요. 여기서 스트링 이름과 가격을 등록·수정·삭제할 수 있어요.'},
+                                    {q:'스트링을 추가하려면?', a:'➕ 새 스트링 추가 버튼을 누르면 이름과 가격 입력창이 떠요. 입력 후 저장하면 등록 폼에서 선택 가능해져요.'},
+                                ]
+                            },
+                            {
+                                key:'coupon', icon:'🎫', title:'쿠폰 탭',
+                                items:[
+                                    {q:'쿠폰은 어떻게 만드나요?', a:'쿠폰 탭에서 ➕ 1장 등록(직접 입력) 또는 🎟️ 일괄 발행(여러 장 한번에)을 선택할 수 있어요.'},
+                                    {q:'쿠폰을 고객한테 어떻게 보내나요?', a:'쿠폰 목록에서 💬 복사 버튼을 누르면 카카오톡에 붙여넣기 할 수 있는 메시지가 복사돼요.'},
+                                    {q:'작업 등록 시 쿠폰을 적용하려면?', a:'등록 폼 아래쪽에 쿠폰번호 입력창이 있어요. 번호를 입력하고 적용 버튼을 누르면 할인 금액이 자동으로 반영돼요.'},
+                                ]
+                            },
+                            {
+                                key:'excel', icon:'📊', title:'엑셀 내보내기/불러오기',
+                                items:[
+                                    {q:'엑셀 내보내기는 무엇인가요?', a:'설정 탭의 📤 엑셀 내보내기를 누르면 지금까지 등록한 모든 고객 작업 데이터를 엑셀 파일(.xlsx)로 다운로드할 수 있어요. 백업용으로 쓰기 좋아요.'},
+                                    {q:'엑셀 불러오기는 어떻게 하나요?', a:'📥 엑셀 불러오기를 누르고 엑셀 파일을 선택하면 데이터가 앱으로 들어와요. 이전에 내보낸 파일을 다시 가져올 때 사용해요.'},
+                                ]
+                            },
+                        ];
+                        return (
+                            <div className="stat-card" style={{marginTop:'12px'}}>
+                                <div className="section-header">
+                                    <span className="section-title">📖 사용 설명서</span>
+                                    <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>탭을 눌러 펼쳐보세요</span>
+                                </div>
+                                {sections.map(sec=>(
+                                    <div key={sec.key} style={{borderBottom:'1px solid #F5F5F5'}}>
+                                        {/* 섹션 헤더 */}
+                                        <button onClick={()=>toggle(sec.key)}
+                                            style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',background:'none',border:'none',cursor:'pointer',textAlign:'left'}}>
+                                            <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                                                <span style={{fontSize:'18px'}}>{sec.icon}</span>
+                                                <span style={{fontSize:'14px',fontWeight:800,color:'#111'}}>{sec.title}</span>
+                                            </div>
+                                            <span style={{fontSize:'16px',color:'#bbb',fontWeight:700}}>{openSection===sec.key?'▲':'▼'}</span>
+                                        </button>
+                                        {/* 질문 목록 */}
+                                        {openSection===sec.key && (
+                                            <div style={{background:'#FAFAFA',borderTop:'1px solid #F0F0F0'}}>
+                                                {sec.items.map((item,i)=>(
+                                                    <div key={i} style={{padding:'14px 16px',borderBottom:i<sec.items.length-1?'1px solid #F0F0F0':'none'}}>
+                                                        <div style={{fontSize:'13px',fontWeight:800,color:'#16A34A',marginBottom:'6px'}}>Q. {item.q}</div>
+                                                        <div style={{fontSize:'13px',color:'#444',fontWeight:600,lineHeight:'1.6'}}>{item.a}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    })()}
                 </div>
             )}
             {/* ══ 하단 고정 메뉴바 ══ */}
