@@ -1638,13 +1638,7 @@ const StringingApp = ({ sport, uid }) => {
                             {showForm?'✕ 취소':'➕ 등록'}
                         </button>
                     </div>
-                    <div className="excel-row" style={{padding:0}}>
-                        <button onClick={handleExportExcel} className="excel-btn excel-btn-export">📤 엑셀 내보내기</button>
-                        <label className="excel-btn excel-btn-import" style={{cursor:'pointer'}}>
-                            📥 엑셀 불러오기
-                            <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} style={{display:'none'}}/>
-                        </label>
-                    </div>
+
                 </div>
             )}
 
@@ -1929,97 +1923,91 @@ const StringingApp = ({ sport, uid }) => {
                             const needsReplace = daysSince >= 60;
                             return (
                                 <div key={name} className="customer-card">
-                                    {/* ── 카드 헤더 ── */}
-                                    <div className={`customer-card-header ${color}`}>
+                                    {/* ── 카드 헤더 (이름 + 날짜만, 클릭으로 펼치기) ── */}
+                                    <div className={`customer-card-header ${color}`}
+                                        onClick={()=>toggleCustomerHistory(name)}
+                                        style={{cursor:'pointer'}}>
                                         <div>
                                             <div className="customer-name-row">
                                                 <div className="customer-name">{latest.name}</div>
                                                 {isVIP && <span className="vip-star">⭐</span>}
+                                                {needsReplace && <span className="replace-alert">🔔 교체알림</span>}
                                             </div>
-                                            <div className="customer-badges">
-                                                <span className="badge">👤 {visitCount}회 방문</span>
-                                                {latest.couponCode && <span className="badge">🎫 쿠폰</span>}
-                                                {latest.isHybrid && <span className="badge">하이브리드</span>}
-                                                {needsReplace && <span className="replace-alert">🔔 교체 알림</span>}
+                                            <div style={{fontSize:'11px',color:'rgba(255,255,255,0.55)',marginTop:'3px',fontWeight:600}}>
+                                                방문 {visitCount}회 · 최근 {latest.date}
                                             </div>
                                         </div>
                                         <div className="card-actions">
-                                            <span className="card-date">{latest.date}</span>
-                                            <button onClick={()=>handleEdit(latest)} className="card-action-btn">✏️</button>
-                                            <button onClick={()=>handleDelete(latest)} className="card-action-btn">🗑️</button>
+                                            <span style={{fontSize:'18px',color:'rgba(255,255,255,0.5)',marginRight:'4px'}}>{isOpen?'▲':'▼'}</span>
+                                            <button onClick={e=>{e.stopPropagation();handleEdit(latest);}} className="card-action-btn">✏️</button>
+                                            <button onClick={e=>{e.stopPropagation();handleDelete(latest);}} className="card-action-btn">🗑️</button>
                                         </div>
                                     </div>
 
-                                    {/* ── 최근 작업 내용 (항상 표시) ── */}
-                                    <div className="customer-card-body">
-                                        <div className="card-row">
-                                            <span className="card-label">라켓</span>
-                                            <span className="card-val">{latest.racket}</span>
-                                            <span style={{fontSize:'11px',color:'#bbb',fontWeight:600,flexShrink:0}}>{latest.pattern}</span>
-                                        </div>
-                                        <div className="card-row">
-                                            <span className="card-label">스트링</span>
-                                            <div style={{flex:1}}>
-                                                <span className="card-val">{latest.stringType}</span>
-                                                {latest.isHybrid&&latest.hybridString2&&<span style={{fontSize:'11px',color:'#7C3AED',fontWeight:600}}> + {latest.hybridString2}</span>}
-                                                <span style={{fontSize:'11px',color:'#bbb',marginLeft:'4px'}}>{parseInt(latest.stringPrice||0).toLocaleString()}원</span>
-                                            </div>
-                                        </div>
-                                        {latest.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {latest.tension} lbs</span></div>}
-                                        <div className="card-row" style={{marginBottom:0}}>
-                                            <span className="card-label">공임</span>
-                                            <span className="card-val" style={{color:'#616161'}}>{parseInt(latest.labor||0).toLocaleString()}원</span>
-                                            <span style={{fontSize:'11px',color:'#bbb',marginLeft:'12px'}}>수량</span>
-                                            <span className="card-val" style={{color:'#616161',marginLeft:'4px'}}>{latest.quantity}개</span>
-                                        </div>
-                                        {latest.extraWorks&&latest.extraWorks.length>0 && (
-                                            <div className="extra-works-box" style={{marginTop:'8px'}}>
-                                                <div className="extra-works-label">🛠️ 추가작업</div>
-                                                <div>{latest.extraWorks.map((w,i)=>(<span key={i} className="extra-chip">{w.name} {parseInt(w.price||0).toLocaleString()}원</span>))}</div>
-                                            </div>
-                                        )}
-                                        {latest.couponCode && <div style={{marginTop:'6px'}}><span className="coupon-discount">🎫 쿠폰 -{parseInt(latest.couponDiscount||0).toLocaleString()}원</span></div>}
-                                        <div className="card-total-row">
-                                            <span className="card-total-label">최종 금액</span>
-                                            <span className={`card-total-val ${color==='green'?'green':'blue'}`}>{(latest.total||0).toLocaleString()}원</span>
-                                        </div>
-
-                                        {/* ── 이전 방문 드롭다운 버튼 ── */}
-                                        {history.length > 0 && (
-                                            <button onClick={()=>toggleCustomerHistory(name)} className="history-toggle-btn">
-                                                <span>{isOpen ? '▲' : '▼'}</span>
-                                                <span style={{color: isOpen?'#888':'#16A34A', fontWeight:800}}>
-                                                    {isOpen ? '이전 방문 닫기' : `이전 방문 ${history.length}건 보기`}
-                                                </span>
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* ── 이전 방문 기록 (드롭다운) ── */}
-                                    {isOpen && history.map((r,idx)=>(
-                                        <div key={r.fbKey||r.id} style={{borderTop:'1px solid #F0F0F0'}}>
-                                            <div style={{padding:'8px 14px',background:'#FAFAFA',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                                                <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:700}}>📅 {r.date}</span>
-                                                <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
-                                                    {r.couponCode && <span style={{fontSize:'10px',background:'#FCE7F3',color:'#DB2777',padding:'2px 7px',borderRadius:'10px',fontWeight:700}}>🎫쿠폰</span>}
-                                                    {r.isHybrid && <span style={{fontSize:'10px',background:'#F3E8FF',color:'#7C3AED',padding:'2px 7px',borderRadius:'10px',fontWeight:700}}>하이브리드</span>}
-                                                    <button onClick={()=>handleEdit(r)} style={{width:'28px',height:'28px',background:'none',border:'none',cursor:'pointer',fontSize:'13px',minHeight:0}}>✏️</button>
-                                                    <button onClick={()=>handleDelete(r)} style={{width:'28px',height:'28px',background:'none',border:'none',cursor:'pointer',fontSize:'13px',minHeight:0}}>🗑️</button>
+                                    {/* ── 펼쳤을 때만 상세 내용 표시 ── */}
+                                    {isOpen && (
+                                        <div>
+                                            {/* 최근 작업 */}
+                                            <div className="customer-card-body">
+                                                <div style={{fontSize:'11px',fontWeight:800,color:'#bbb',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.5px'}}>📋 최근 작업</div>
+                                                <div className="card-row">
+                                                    <span className="card-label">라켓</span>
+                                                    <span className="card-val">{latest.racket}</span>
+                                                    <span style={{fontSize:'11px',color:'#bbb',fontWeight:600,flexShrink:0}}>{latest.pattern}</span>
+                                                </div>
+                                                <div className="card-row">
+                                                    <span className="card-label">스트링</span>
+                                                    <div style={{flex:1}}>
+                                                        <span className="card-val">{latest.stringType}</span>
+                                                        {latest.isHybrid&&latest.hybridString2&&<span style={{fontSize:'11px',color:'#7C3AED',fontWeight:600}}> + {latest.hybridString2}</span>}
+                                                        <span style={{fontSize:'11px',color:'#bbb',marginLeft:'4px'}}>{parseInt(latest.stringPrice||0).toLocaleString()}원</span>
+                                                    </div>
+                                                </div>
+                                                {latest.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {latest.tension} lbs</span></div>}
+                                                <div className="card-row" style={{marginBottom:0}}>
+                                                    <span className="card-label">공임</span>
+                                                    <span className="card-val" style={{color:'#616161'}}>{parseInt(latest.labor||0).toLocaleString()}원</span>
+                                                    <span style={{fontSize:'11px',color:'#bbb',marginLeft:'12px'}}>수량</span>
+                                                    <span className="card-val" style={{color:'#616161',marginLeft:'4px'}}>{latest.quantity}개</span>
+                                                </div>
+                                                {latest.extraWorks&&latest.extraWorks.length>0 && (
+                                                    <div className="extra-works-box" style={{marginTop:'8px'}}>
+                                                        <div className="extra-works-label">🛠️ 추가작업</div>
+                                                        <div>{latest.extraWorks.map((w,i)=>(<span key={i} className="extra-chip">{w.name} {parseInt(w.price||0).toLocaleString()}원</span>))}</div>
+                                                    </div>
+                                                )}
+                                                {latest.couponCode && <div style={{marginTop:'6px'}}><span className="coupon-discount">🎫 쿠폰 -{parseInt(latest.couponDiscount||0).toLocaleString()}원</span></div>}
+                                                <div className="card-total-row">
+                                                    <span className="card-total-label">최종 금액</span>
+                                                    <span className={`card-total-val ${color==='green'?'green':'blue'}`}>{(latest.total||0).toLocaleString()}원</span>
                                                 </div>
                                             </div>
-                                            <div style={{padding:'8px 14px 12px'}}>
-                                                <div className="card-row"><span className="card-label">라켓</span><span className="card-val" style={{fontSize:'11px'}}>{r.racket}</span><span style={{fontSize:'11px',color:'#bbb'}}>{r.pattern}</span></div>
-                                                <div className="card-row"><span className="card-label">스트링</span><span style={{fontSize:'11px',color:'#111',fontWeight:600,flex:1}}>{r.stringType}{r.isHybrid&&r.hybridString2&&<span style={{color:'#7C3AED'}}> + {r.hybridString2}</span>}<span style={{color:'#bbb',marginLeft:'4px'}}>{parseInt(r.stringPrice||0).toLocaleString()}원</span></span></div>
-                                                {r.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {r.tension} lbs</span></div>}
-                                                <div className="card-row" style={{marginBottom:0}}><span className="card-label">공임</span><span style={{fontSize:'11px',color:'#616161',fontWeight:600}}>{parseInt(r.labor||0).toLocaleString()}원</span><span style={{fontSize:'11px',color:'#bbb',marginLeft:'10px'}}>수량 {r.quantity}개</span></div>
-                                                {r.couponCode && <div style={{fontSize:'11px',color:'#DB2777',fontWeight:600,marginTop:'4px'}}>🎫 -{parseInt(r.couponDiscount||0).toLocaleString()}원</div>}
-                                                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:'8px',marginTop:'4px',borderTop:'1px solid #F0F0F0'}}>
-                                                    <span style={{fontSize:'11px',color:'#bbb',fontWeight:600}}>금액</span>
-                                                    <span style={{fontSize:'14px',fontWeight:800,color:color==='green'?'#16A34A':'#1D4ED8'}}>{(r.total||0).toLocaleString()}원</span>
+
+                                            {/* 이전 방문 기록 */}
+                                            {history.length > 0 && (
+                                                <div style={{borderTop:'1px solid #F0F0F0'}}>
+                                                    <div style={{padding:'10px 16px 4px',fontSize:'11px',fontWeight:800,color:'#bbb',textTransform:'uppercase',letterSpacing:'0.5px'}}>
+                                                        🕐 이전 방문 {history.length}건
+                                                    </div>
+                                                    {history.map((r,idx)=>(
+                                                        <div key={r.fbKey||r.id} style={{borderTop:'1px solid #F8F8F8'}}>
+                                                            <div style={{padding:'10px 16px 4px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                                                                <span style={{fontSize:'12px',fontWeight:800,color:'#555'}}>{r.date}</span>
+                                                                <span style={{fontSize:'12px',fontWeight:700,color:color==='green'?'#16A34A':'#1D4ED8'}}>{(r.total||0).toLocaleString()}원</span>
+                                                            </div>
+                                                            <div style={{padding:'0 16px 10px'}}>
+                                                                <div className="card-row"><span className="card-label">라켓</span><span className="card-val" style={{fontSize:'11px'}}>{r.racket}</span><span style={{fontSize:'11px',color:'#bbb'}}>{r.pattern}</span></div>
+                                                                <div className="card-row"><span className="card-label">스트링</span><span style={{fontSize:'11px',color:'#111',fontWeight:600,flex:1}}>{r.stringType}{r.isHybrid&&r.hybridString2&&<span style={{color:'#7C3AED'}}> + {r.hybridString2}</span>}<span style={{color:'#bbb',marginLeft:'4px'}}>{parseInt(r.stringPrice||0).toLocaleString()}원</span></span></div>
+                                                                {r.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {r.tension} lbs</span></div>}
+                                                                <div className="card-row" style={{marginBottom:0}}><span className="card-label">공임</span><span style={{fontSize:'11px',color:'#616161',fontWeight:600}}>{parseInt(r.labor||0).toLocaleString()}원</span><span style={{fontSize:'11px',color:'#bbb',marginLeft:'10px'}}>수량 {r.quantity}개</span></div>
+                                                                {r.couponCode && <div style={{fontSize:'11px',color:'#DB2777',fontWeight:600,marginTop:'4px'}}>🎫 -{parseInt(r.couponDiscount||0).toLocaleString()}원</div>}
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            </div>
+                                            )}
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             );
                         });
@@ -2222,7 +2210,7 @@ const StringingApp = ({ sport, uid }) => {
             {/* ── 스트링 관리 ── */}
             {viewMode==='strings' && (
                 <div style={{padding:'0 12px 80px'}}>
-                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'12px 0 8px'}}>⚙️ 스트링 설정</div>
+                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'12px 0 8px'}}>🎯 스트링 관리</div>
                     <button onClick={()=>{setShowAddModal(true);setModalStringName('');setModalStringPrice('');}}
                         style={{width:'100%',padding:'13px',background:'#EAB308',color:'#fff',borderRadius:'13px',border:'none',fontWeight:800,fontSize:'14px',cursor:'pointer',marginBottom:'10px',boxShadow:'0 4px 12px rgba(234,179,8,0.3)'}}>
                         ➕ 새 스트링 추가
@@ -2267,25 +2255,47 @@ const StringingApp = ({ sport, uid }) => {
                     </div>
                 </div>
             )}
+
+            {/* ── 설정 ── */}
+            {viewMode==='settings' && (
+                <div style={{padding:'0 12px 80px'}}>
+                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'12px 0 8px'}}>⚙️ 설정</div>
+                    <div className="stat-card" style={{marginBottom:'12px'}}>
+                        <div className="section-header">
+                            <span className="section-title">📊 데이터 관리</span>
+                        </div>
+                        <div style={{padding:'16px'}}>
+                            <p style={{fontSize:'12px',color:'#9E9E9E',marginBottom:'12px',fontWeight:600}}>고객 데이터를 엑셀 파일로 내보내거나 가져올 수 있어요.</p>
+                            <button onClick={handleExportExcel} className="excel-btn excel-btn-export" style={{width:'100%',marginBottom:'10px',padding:'14px',borderRadius:'13px',fontSize:'14px',fontWeight:800}}>
+                                📤 엑셀 내보내기
+                            </button>
+                            <label className="excel-btn excel-btn-import" style={{cursor:'pointer',width:'100%',padding:'14px',borderRadius:'13px',fontSize:'14px',fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
+                                📥 엑셀 불러오기
+                                <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} style={{display:'none'}}/>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* ══ 하단 고정 메뉴바 ══ */}
             <div className="bottom-nav">
-                {/* 홈 */}
+                {/* 고객관리 */}
                 <button className={`nav-item ${viewMode==='customers'&&!showForm?'active':''}`}
                     onClick={()=>{setViewMode('customers');setShowForm(false);setSearchTerm('');}}>
                     <div className="nav-icon">🏠</div>
-                    <span className="nav-label">홈</span>
+                    <span className="nav-label">고객관리</span>
                 </button>
-                {/* 통계 */}
+                {/* 매출통계 */}
                 <button className="nav-item"
                     onClick={()=>{setViewMode('monthly');setShowForm(false);}}>
                     <div className="nav-icon" style={(viewMode==='monthly'||viewMode==='yearly')?{background:'linear-gradient(135deg,#C2410C,#EA580C)',boxShadow:'0 4px 12px rgba(234,88,12,0.4)'}:{}}>📊</div>
-                    <span className="nav-label" style={(viewMode==='monthly'||viewMode==='yearly')?{color:'#EA580C'}:{}}>통계</span>
+                    <span className="nav-label" style={(viewMode==='monthly'||viewMode==='yearly')?{color:'#EA580C'}:{}}>매출통계</span>
                 </button>
-                {/* 등록 중앙 버튼 */}
-                <button className="nav-center-btn" style={{background:'none',border:'none'}}
-                    onClick={()=>{if(showForm&&editingId){resetForm();}else{setShowForm(!showForm);}if(!showForm){setEditingId(null);setFormData(makeEmptyForm());setExtraWorks([]);setShowExtraSection(false);setAppliedCoupon(null);setCouponInput('');setCouponMsg('');setViewMode('customers');}}}>
-                    <div className={`nav-center-inner ${showForm?'cancel':''}`}>{showForm?'✕':'＋'}</div>
-                    <span className="nav-center-label">{showForm?'취소':'등록'}</span>
+                {/* 스트링 관리 */}
+                <button className={`nav-item ${viewMode==='strings'?'active-yellow':''}`}
+                    onClick={()=>{setViewMode('strings');setShowForm(false);}}>
+                    <div className="nav-icon" style={viewMode==='strings'?{background:'linear-gradient(135deg,#B45309,#D97706)',boxShadow:'0 4px 12px rgba(217,119,6,0.4)'}:{}}>🎯</div>
+                    <span className="nav-label" style={viewMode==='strings'?{color:'#B45309'}:{}}>스트링</span>
                 </button>
                 {/* 쿠폰 */}
                 <button className={`nav-item ${viewMode==='coupons'?'active-pink':''}`}
@@ -2293,11 +2303,11 @@ const StringingApp = ({ sport, uid }) => {
                     <div className="nav-icon" style={viewMode==='coupons'?{background:'linear-gradient(135deg,#be185d,#EC4899)',boxShadow:'0 4px 12px rgba(236,72,153,0.4)'}:{}}>🎫</div>
                     <span className="nav-label" style={viewMode==='coupons'?{color:'#be185d'}:{}}>쿠폰</span>
                 </button>
-                {/* 설정 (스트링 관리) */}
-                <button className={`nav-item ${viewMode==='strings'?'active-yellow':''}`}
-                    onClick={()=>{setViewMode('strings');setShowForm(false);}}>
-                    <div className="nav-icon" style={viewMode==='strings'?{background:'linear-gradient(135deg,#B45309,#D97706)',boxShadow:'0 4px 12px rgba(217,119,6,0.4)'}:{}}>⚙️</div>
-                    <span className="nav-label" style={viewMode==='strings'?{color:'#B45309'}:{}}>설정</span>
+                {/* 설정 */}
+                <button className={`nav-item ${viewMode==='settings'?'active-yellow':''}`}
+                    onClick={()=>{setViewMode('settings');setShowForm(false);}}>
+                    <div className="nav-icon" style={viewMode==='settings'?{background:'linear-gradient(135deg,#0F766E,#0D9488)',boxShadow:'0 4px 12px rgba(13,148,136,0.4)'}:{}}>⚙️</div>
+                    <span className="nav-label" style={viewMode==='settings'?{color:'#0F766E'}:{}}>설정</span>
                 </button>
             </div>
         </div>
