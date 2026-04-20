@@ -846,6 +846,14 @@ const RecordCard = ({r, visitCount, records, color, statColor, handleEdit, handl
                 <span className="card-val">{r.racket}</span>
                 <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600,flexShrink:0}}>{r.pattern}</span>
             </div>
+            {r.phone && (
+                <div className="card-row" style={{alignItems:'center'}}>
+                    <span className="card-label">📱연락처</span>
+                    <span className="card-val" style={{color:'#15803D',fontSize:'13px'}}>{r.phone}</span>
+                    <a href={`sms:${r.phone}?body=${encodeURIComponent(`안녕하세요 ${r.name}님 😊\n니지스트링입니다!\n\n스트링 교체 시기가 지나셨어요 🎾\n교체 예약 편하게 연락주세요!\n감사합니다!`)}`}
+                        style={{padding:'3px 8px',background:'#16A34A',color:'#fff',borderRadius:'6px',fontSize:'10px',fontWeight:800,textDecoration:'none',flexShrink:0}}>문자</a>
+                </div>
+            )}
             <div className="card-row">
                 <span className="card-label">스트링</span>
                 <div style={{flex:1}}>
@@ -890,7 +898,9 @@ const RecordCard = ({r, visitCount, records, color, statColor, handleEdit, handl
 // ══════════════════════════════════════════════
 const HELP_SECTIONS = [
     { key:'customer', icon:'🏠', title:'고객관리 탭', items:[
-        {q:'고객을 어떻게 등록하나요?', a:'고객관리 화면 오른쪽 위의 ➕ 등록 버튼을 누르면 등록 폼이 펼쳐져요. 날짜, 고객명, 라켓, 스트링, 텐션, 공임을 입력하고 ✅ 등록 완료를 누르세요.'},
+        {q:'고객을 어떻게 등록하나요?', a:'고객관리 화면 오른쪽 위의 ➕ 등록 버튼을 누르면 등록 폼이 펼쳐져요. 날짜, 고객명, 연락처, 라켓, 스트링, 텐션, 공임을 입력하고 ✅ 등록 완료를 누르세요.'},
+        {q:'연락처를 꼭 입력해야 하나요?', a:'연락처는 선택 항목이에요. 입력하면 카드에서 💬 문자 버튼과 💛 카톡복사 버튼이 생겨서 DM을 바로 보낼 수 있어요.'},
+        {q:'🔔 교체알림 고객에게 DM을 어떻게 보내나요?', a:'화면 위쪽 노란 배너에 교체알림 대상 고객이 모여 있어요. 이름 옆 문자 버튼을 누르면 메시지앱이 바로 열려요. 📋 전체복사를 누르면 전체 고객 목록 메시지가 복사돼요.'},
         {q:'고객 카드를 어떻게 열어보나요?', a:'카드를 손가락으로 탭(터치)하면 상세 내용이 펼쳐지고, 다시 탭하면 닫혀요. 이름과 날짜만 보이는 게 기본 상태예요.'},
         {q:'고객 정보를 수정하거나 삭제하려면?', a:'카드 오른쪽에 있는 ✏️ 버튼을 누르면 수정, 🗑️ 버튼을 누르면 삭제할 수 있어요.'},
         {q:'고객 검색은 어떻게 하나요?', a:'화면 위 검색창에 고객 이름을 입력하면 바로 찾아줘요. 초성 검색도 돼요! (예: "ㄱㄷ" → 김도영)'},
@@ -1004,6 +1014,7 @@ const StringingApp = ({ sport, uid }) => {
         labor: config.defaultLabors[0],
         quantity:1, tension:'',
         isHybrid:false, hybridString2:'', hybridPrice2:'',
+        phone:'',
     });
     const [formData, setFormData] = useState(makeEmptyForm());
 
@@ -1258,6 +1269,7 @@ const StringingApp = ({ sport, uid }) => {
             isHybrid: rec.isHybrid||false,
             hybridString2: rec.hybridString2||'',
             hybridPrice2: rec.hybridPrice2||'',
+            phone: rec.phone||'',
         });
         const ew = rec.extraWorks || [];
         setExtraWorks(ew);
@@ -1299,6 +1311,7 @@ const StringingApp = ({ sport, uid }) => {
                 isHybrid: last.isHybrid||false,
                 hybridString2: last.hybridString2||'',
                 hybridPrice2: last.hybridPrice2||'',
+                phone: last.phone||'',
             });
         } else {
             setFormData(prev=>({...prev, name}));
@@ -1384,6 +1397,7 @@ const StringingApp = ({ sport, uid }) => {
             .map(r => ({
                 '날짜': r.date,
                 '고객명': r.name,
+                '연락처': r.phone||'',
                 '라켓명': r.racket,
                 '패턴': r.pattern,
                 '스트링': r.stringType,
@@ -1488,6 +1502,7 @@ const StringingApp = ({ sport, uid }) => {
                                     createdAt: Date.now()+i,
                                     date: parseExcelDate(row['날짜']),
                                     name: String(row['고객명']||'').trim(),
+                                    phone: String(row['연락처']||'').trim(),
                                     racket: String(row['라켓명']||'').trim(),
                                     pattern: String(row['패턴']||config.patterns[0]).trim(),
                                     stringType: String(row['스트링']||'').trim(),
@@ -1713,6 +1728,42 @@ const StringingApp = ({ sport, uid }) => {
             {/* ── 검색 + 버튼 ── */}
             {viewMode==='customers' && (
                 <div style={{padding:'0 12px 4px'}}>
+                    {/* 교체알림 고객 DM 배너 */}
+                    {(()=>{
+                        const alertCustomers = getCustomerStats().filter(c => {
+                            const daysSince = c.lastVisit ? Math.floor((new Date()-new Date(c.lastVisit.date))/(1000*60*60*24)) : 0;
+                            return daysSince >= 60 && c.lastVisit?.phone;
+                        });
+                        if (alertCustomers.length === 0) return null;
+                        return (
+                            <div style={{background:'linear-gradient(135deg,#FFF7ED,#FEF3C7)',border:'1.5px solid #FCD34D',borderRadius:'14px',padding:'12px 14px',marginBottom:'10px'}}>
+                                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
+                                    <div>
+                                        <span style={{fontSize:'13px',fontWeight:800,color:'#92400E'}}>🔔 교체알림 {alertCustomers.length}명</span>
+                                        <span style={{fontSize:'11px',color:'#B45309',fontWeight:600,marginLeft:'6px'}}>연락처 있는 고객</span>
+                                    </div>
+                                    <button onClick={()=>{
+                                        const lines = alertCustomers.map(c=>`  • ${c.name} (${c.lastVisit?.phone})`).join('\n');
+                                        const msg = `안녕하세요 😊 니지스트링입니다!\n\n스트링 교체 시기가 지나셨어요 🎾\n오래된 스트링은 컨트롤이 떨어지고 부상 위험이 있어요!\n\n빠른 예약 받고 있으니 편하게 연락주세요 😊\n감사합니다!\n\n[대상고객]\n${lines}`;
+                                        navigator.clipboard.writeText(msg).then(()=>showAlert(`✅ ${alertCustomers.length}명 대상 메시지 복사!\n카카오톡에 붙여넣기 하세요 😊`)).catch(()=>showAlert('복사 실패'));
+                                    }} style={{padding:'6px 12px',background:'#F59E0B',color:'#fff',border:'none',borderRadius:'10px',fontSize:'11px',fontWeight:800,cursor:'pointer',whiteSpace:'nowrap'}}>
+                                        📋 전체복사
+                                    </button>
+                                </div>
+                                <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
+                                    {alertCustomers.map(c=>(
+                                        <div key={c.name} style={{background:'#fff',borderRadius:'8px',padding:'4px 10px',border:'1px solid #FDE68A',display:'flex',alignItems:'center',gap:'5px'}}>
+                                            <span style={{fontSize:'12px',fontWeight:700,color:'#92400E'}}>{c.name}</span>
+                                            {c.lastVisit?.phone && (
+                                                <a href={`sms:${c.lastVisit.phone}?body=${encodeURIComponent(`안녕하세요 ${c.name}님 😊\n니지스트링입니다!\n\n스트링 교체 시기가 지나셨어요 🎾\n교체 예약 편하게 연락주세요!\n감사합니다!`)}`}
+                                                    style={{fontSize:'10px',background:'#16A34A',color:'#fff',padding:'2px 7px',borderRadius:'6px',textDecoration:'none',fontWeight:700}}>문자</a>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })()}
                     <div className="search-row" style={{padding:0,marginBottom:'8px'}}>
                         <input type="text" placeholder="🔍  고객 검색..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
                             className="search-input"/>
@@ -1755,6 +1806,14 @@ const StringingApp = ({ sport, uid }) => {
                                     <p style={{fontSize:'11px',color:'#16A34A',marginTop:'3px',fontWeight:600}}>✓ 이전 기록 자동 입력</p>
                                 )}
                             </div>
+                        </div>
+
+                        {/* 연락처 */}
+                        <div className="form-group">
+                            <label className="form-label">📱 연락처 (카톡/문자 DM용)</label>
+                            <input type="tel" value={formData.phone||''} onChange={e=>setFormData(prev=>({...prev,phone:e.target.value}))}
+                                placeholder="010-1234-5678"
+                                className="form-input"/>
                         </div>
 
                         {/* 라켓명 / 패턴 */}
@@ -2033,6 +2092,28 @@ const StringingApp = ({ sport, uid }) => {
                                             {/* 최근 작업 */}
                                             <div className="customer-card-body">
                                                 <div style={{fontSize:'11px',fontWeight:800,color:'#bbb',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.5px'}}>📋 최근 작업</div>
+                                                {/* 연락처 + DM 버튼 */}
+                                                {latest.phone && (
+                                                    <div className="card-row" style={{alignItems:'center',marginBottom:'10px',background:'#F0FDF4',borderRadius:'10px',padding:'8px 10px'}}>
+                                                        <span className="card-label" style={{color:'#16A34A'}}>📱연락처</span>
+                                                        <span className="card-val" style={{color:'#15803D',fontSize:'14px'}}>{latest.phone}</span>
+                                                        <div style={{display:'flex',gap:'5px',flexShrink:0}}>
+                                                            <a href={`sms:${latest.phone}?body=${encodeURIComponent(`안녕하세요 ${latest.name}님 😊\n니지스트링입니다!\n\n마지막 스트링 교체 후 시간이 지났어요 🎾\n스트링이 늘어나면 컨트롤이 떨어지고 부상 위험도 있어요!\n\n교체 예약은 아래로 연락주세요 😊\n감사합니다!`)}`}
+                                                                style={{padding:'5px 10px',background:'#16A34A',color:'#fff',borderRadius:'8px',fontSize:'11px',fontWeight:800,textDecoration:'none',display:'flex',alignItems:'center',gap:'3px'}}>
+                                                                💬 문자
+                                                            </a>
+                                                            <a href={`https://open.kakao.com/o/search?q=${encodeURIComponent(latest.phone)}`}
+                                                                onClick={(e)=>{
+                                                                    e.preventDefault();
+                                                                    const msg = `안녕하세요 ${latest.name}님 😊\n니지스트링입니다!\n\n마지막 스트링 교체 후 시간이 지났어요 🎾\n스트링이 늘어나면 컨트롤이 떨어지고 부상 위험도 있어요!\n\n교체 예약은 아래로 연락주세요 😊\n감사합니다!`;
+                                                                    navigator.clipboard.writeText(msg).then(()=>showAlert('✅ 카톡 메시지가 복사됐어요!\n카카오톡 열고 붙여넣기 하세요 😊')).catch(()=>showAlert('복사 실패. 직접 전달해 주세요.'));
+                                                                }}
+                                                                style={{padding:'5px 10px',background:'#FEE500',color:'#111',borderRadius:'8px',fontSize:'11px',fontWeight:800,textDecoration:'none',display:'flex',alignItems:'center',gap:'3px'}}>
+                                                                💛 카톡복사
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 <div className="card-row">
                                                     <span className="card-label">라켓</span>
                                                     <span className="card-val">{latest.racket}</span>
