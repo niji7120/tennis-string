@@ -898,14 +898,21 @@ const RecordCard = ({r, visitCount, records, color, statColor, handleEdit, handl
 // ══════════════════════════════════════════════
 const HELP_SECTIONS = [
     { key:'customer', icon:'🏠', title:'고객관리 탭', items:[
-        {q:'고객을 어떻게 등록하나요?', a:'고객관리 화면 오른쪽 위의 ➕ 등록 버튼을 누르면 등록 폼이 펼쳐져요. 날짜, 고객명, 연락처, 라켓, 스트링, 텐션, 공임을 입력하고 ✅ 등록 완료를 누르세요.'},
-        {q:'연락처를 꼭 입력해야 하나요?', a:'연락처는 선택 항목이에요. 입력하면 카드에서 💬 문자 버튼과 💛 카톡복사 버튼이 생겨서 DM을 바로 보낼 수 있어요.'},
-        {q:'🔔 교체알림 고객에게 DM을 어떻게 보내나요?', a:'화면 위쪽 노란 배너에 교체알림 대상 고객이 모여 있어요. 이름 옆 문자 버튼을 누르면 메시지앱이 바로 열려요. 📋 전체복사를 누르면 전체 고객 목록 메시지가 복사돼요.'},
+        {q:'고객을 어떻게 등록하나요?', a:'화면 오른쪽 위 ➕ 등록 버튼을 누르면 등록 폼이 펼쳐져요. 날짜·고객명·연락처·라켓·스트링·텐션·공임을 입력하고 ✅ 등록 완료를 누르세요.'},
         {q:'고객 카드를 어떻게 열어보나요?', a:'카드를 손가락으로 탭(터치)하면 상세 내용이 펼쳐지고, 다시 탭하면 닫혀요. 이름과 날짜만 보이는 게 기본 상태예요.'},
         {q:'고객 정보를 수정하거나 삭제하려면?', a:'카드 오른쪽에 있는 ✏️ 버튼을 누르면 수정, 🗑️ 버튼을 누르면 삭제할 수 있어요.'},
         {q:'고객 검색은 어떻게 하나요?', a:'화면 위 검색창에 고객 이름을 입력하면 바로 찾아줘요. 초성 검색도 돼요! (예: "ㄱㄷ" → 김도영)'},
         {q:'⭐ VIP 표시는 어떻게 붙나요?', a:'같은 고객이 5회 이상 방문하면 자동으로 ⭐ VIP 표시가 붙어요.'},
         {q:'🔔 교체 알림은 뭔가요?', a:'마지막 방문일로부터 60일이 지난 고객에게 자동으로 🔔 교체 알림 배지가 표시돼요.'},
+    ]},
+    { key:'dm', icon:'📱', title:'연락처 & DM 발송 (신기능)', items:[
+        {q:'연락처는 어디에 입력하나요?', a:'➕ 등록 버튼을 눌러 등록 폼을 열면 고객명 아래 📱 연락처 항목이 있어요. 010-0000-0000 형식으로 입력하면 돼요. 기존 고객은 카드의 ✏️ 수정 버튼을 눌러 추가할 수 있어요.'},
+        {q:'연락처를 꼭 입력해야 하나요?', a:'아니요, 선택 사항이에요! 입력하지 않아도 등록은 정상적으로 돼요. 하지만 연락처가 있어야 문자·카톡 DM 발송 버튼이 나타나요.'},
+        {q:'고객 카드에서 DM을 어떻게 보내나요?', a:'카드를 탭해서 열면 연락처 옆에 두 개의 버튼이 나타나요.\n\n💬 문자 → 누르면 문자 앱이 바로 열리고 메시지가 자동 입력돼요.\n\n💛 카톡복사 → 카톡 메시지가 클립보드에 복사돼요. 카카오톡을 열고 붙여넣기 하면 돼요.'},
+        {q:'DM을 보내면 어떻게 기록되나요?', a:'문자 또는 카톡복사 버튼을 누르면 발송 날짜가 자동으로 저장돼요. 카드를 열면 연락처 옆에 ✅ 2026-04-20 발송 처럼 날짜가 표시돼요.'},
+        {q:'상단 노란 배너는 뭔가요?', a:'교체 시기(60일)가 지난 고객 중 연락처가 등록된 분들이 자동으로 모여요. 배너에서 바로 문자 발송이 가능해요.\n\n🔴 빨간 숫자 = 아직 DM 안 보낸 고객 수\n🟢 초록 숫자 = 오늘 발송 완료한 고객 수'},
+        {q:'📋 전체복사는 어떻게 쓰나요?', a:'배너 오른쪽 📋 전체복사 버튼을 누르면 미발송 고객 전체에게 보낼 메시지가 한 번에 복사돼요. 카카오톡 단체 채팅방이나 공지에 붙여넣기 하면 편리해요. 전체복사 후 모든 고객이 발송 완료 처리돼요.'},
+        {q:'DM을 보낸 고객이 배너에서 사라지는 건가요?', a:'맞아요! 발송 완료된 고객은 빨간(미발송) 영역에서 사라지고 초록(발송완료) 영역으로 이동해요. 다음 날이 되면 발송 기록이 초기화되어 다시 미발송으로 나타나요.'},
     ]},
     { key:'stats', icon:'📊', title:'매출통계 탭', items:[
         {q:'월별/연도별 매출을 볼 수 있나요?', a:'매출통계 탭을 누르면 월별 매출이 기본으로 보여요. 위쪽 버튼으로 📅 월별 / 📈 연도별 전환이 가능해요.'},
@@ -920,8 +927,8 @@ const HELP_SECTIONS = [
         {q:'쿠폰을 고객한테 어떻게 보내나요?', a:'쿠폰 목록에서 💬 복사 버튼을 누르면 카카오톡에 붙여넣기 할 수 있는 메시지가 복사돼요.'},
         {q:'작업 등록 시 쿠폰을 적용하려면?', a:'등록 폼 아래쪽에 쿠폰번호 입력창이 있어요. 번호를 입력하고 적용 버튼을 누르면 할인 금액이 자동으로 반영돼요.'},
     ]},
-    { key:'excel', icon:'📊', title:'엑셀 내보내기/불러오기', items:[
-        {q:'엑셀 내보내기는 무엇인가요?', a:'설정 탭의 📤 엑셀 내보내기를 누르면 지금까지 등록한 모든 고객 작업 데이터를 엑셀 파일(.xlsx)로 다운로드할 수 있어요. 백업용으로 쓰기 좋아요.'},
+    { key:'excel', icon:'📂', title:'엑셀 내보내기/불러오기', items:[
+        {q:'엑셀 내보내기는 무엇인가요?', a:'설정 탭의 📤 엑셀 내보내기를 누르면 지금까지 등록한 모든 고객 작업 데이터를 엑셀 파일(.xlsx)로 다운로드할 수 있어요. 백업용으로 쓰기 좋아요. 연락처 컬럼도 함께 내보내져요.'},
         {q:'엑셀 불러오기는 어떻게 하나요?', a:'📥 엑셀 불러오기를 누르고 엑셀 파일을 선택하면 데이터가 앱으로 들어와요. 이전에 내보낸 파일을 다시 가져올 때 사용해요.'},
     ]},
 ];
@@ -941,6 +948,7 @@ const HelpSection = () => {
                         <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
                             <span style={{fontSize:'18px'}}>{sec.icon}</span>
                             <span style={{fontSize:'14px',fontWeight:800,color:'#111'}}>{sec.title}</span>
+                            {sec.key==='dm' && <span style={{fontSize:'10px',fontWeight:800,color:'#fff',background:'linear-gradient(135deg,#16A34A,#22C55E)',padding:'2px 7px',borderRadius:'20px',letterSpacing:'0.3px'}}>NEW</span>}
                         </div>
                         <span style={{fontSize:'16px',color:'#bbb',fontWeight:700}}>{openSection===sec.key?'▲':'▼'}</span>
                     </button>
@@ -949,7 +957,7 @@ const HelpSection = () => {
                             {sec.items.map((item,i)=>(
                                 <div key={i} style={{padding:'14px 16px',borderBottom:i<sec.items.length-1?'1px solid #F0F0F0':'none'}}>
                                     <div style={{fontSize:'13px',fontWeight:800,color:'#16A34A',marginBottom:'6px'}}>Q. {item.q}</div>
-                                    <div style={{fontSize:'13px',color:'#444',fontWeight:600,lineHeight:'1.6'}}>{item.a}</div>
+                                    <div style={{fontSize:'13px',color:'#444',fontWeight:600,lineHeight:'1.6',whiteSpace:'pre-line'}}>{item.a}</div>
                                 </div>
                             ))}
                         </div>
@@ -1004,6 +1012,7 @@ const StringingApp = ({ sport, uid }) => {
     const [newExtraItemName, setNewExtraItemName] = useState('');
     const [newExtraItemPrice, setNewExtraItemPrice] = useState('');
     const [saveStatus, setSaveStatus] = useState('');
+    const [dmSentList, setDmSentList] = useState({}); // { 고객명: 'YYYY-MM-DD' }
 
     const stringPrices = {...config.defaultStrings, ...customStrings};
 
@@ -1035,7 +1044,7 @@ const StringingApp = ({ sport, uid }) => {
         const couponsRef = db.ref(dbPath(uid, sport, 'coupons'));
         const extrasRef  = db.ref(dbPath(uid, sport, 'extraItems'));
 
-        let loaded = {records:false, strings:false, coupons:false, extras:false};
+        let loaded = {records:false, strings:false, coupons:false, extras:false, dmSent:false};
         const checkAllLoaded = () => {
             if (Object.values(loaded).every(Boolean)) setDbLoading(false);
         };
@@ -1106,6 +1115,15 @@ const StringingApp = ({ sport, uid }) => {
         };
         extrasRef.on('value', extListener);
 
+        // dmSent 리스너
+        const dmRef = db.ref(dbPath(uid, sport, 'dmSent'));
+        const dmListener = snap => {
+            setDmSentList(snap.val() || {});
+            loaded.dmSent = true;
+            checkAllLoaded();
+        };
+        dmRef.on('value', dmListener);
+
         // 폼 초기화
         setFormData(makeEmptyForm());
         setAppliedCoupon(null);
@@ -1124,6 +1142,7 @@ const StringingApp = ({ sport, uid }) => {
             stringsRef.off('value', strListener);
             couponsRef.off('value', couListener);
             extrasRef.off('value', extListener);
+            dmRef.off('value', dmListener);
         };
     }, [uid, sport]);
 
@@ -1148,6 +1167,19 @@ const StringingApp = ({ sport, uid }) => {
             await db.ref(dbPath(uid, sport, 'records')).child(fbKey).remove();
             showSaveStatus('saved');
         } catch(e) { showSaveStatus('error'); showAlert('삭제 실패: ' + e.message); }
+    };
+
+    // DM 발송 기록 저장 (고객명을 안전 키로 변환)
+    const saveDmSent = async (customerName) => {
+        const safeKey = toSafeKey(customerName);
+        try {
+            await db.ref(dbPath(uid, sport, 'dmSent')).child(safeKey).set(getTodayKST());
+        } catch(e) { console.error('DM 저장 실패', e); }
+    };
+
+    const isDmSent = (customerName) => {
+        const safeKey = toSafeKey(customerName);
+        return dmSentList[safeKey] || null; // null 또는 날짜 문자열
     };
 
     // Firebase 키로 사용할 수 없는 특수문자(. # $ / [ ]) → 안전 문자로 변환
@@ -1730,37 +1762,81 @@ const StringingApp = ({ sport, uid }) => {
                 <div style={{padding:'0 12px 4px'}}>
                     {/* 교체알림 고객 DM 배너 */}
                     {(()=>{
+                        // DM 아직 안 보낸 교체알림 고객만 필터
                         const alertCustomers = getCustomerStats().filter(c => {
                             const daysSince = c.lastVisit ? Math.floor((new Date()-new Date(c.lastVisit.date))/(1000*60*60*24)) : 0;
-                            return daysSince >= 60 && c.lastVisit?.phone;
+                            return daysSince >= 60 && c.lastVisit?.phone && !isDmSent(c.name);
                         });
-                        if (alertCustomers.length === 0) return null;
+                        // DM 발송 완료 고객 (오늘 발송)
+                        const sentToday = getCustomerStats().filter(c => {
+                            const daysSince = c.lastVisit ? Math.floor((new Date()-new Date(c.lastVisit.date))/(1000*60*60*24)) : 0;
+                            return daysSince >= 60 && c.lastVisit?.phone && isDmSent(c.name) === getTodayKST();
+                        });
+
+                        if (alertCustomers.length === 0 && sentToday.length === 0) return null;
+
+                        const dmMsgFor = (name) => `안녕하세요 ${name}님 😊\n니지스트링입니다!\n\n스트링 교체 시기가 지나셨어요 🎾\n오래된 스트링은 컨트롤이 떨어지고 부상 위험이 있어요!\n\n교체 예약 편하게 연락주세요 😊\n감사합니다!`;
+
                         return (
                             <div style={{background:'linear-gradient(135deg,#FFF7ED,#FEF3C7)',border:'1.5px solid #FCD34D',borderRadius:'14px',padding:'12px 14px',marginBottom:'10px'}}>
+                                {/* 헤더 */}
                                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
                                     <div>
-                                        <span style={{fontSize:'13px',fontWeight:800,color:'#92400E'}}>🔔 교체알림 {alertCustomers.length}명</span>
-                                        <span style={{fontSize:'11px',color:'#B45309',fontWeight:600,marginLeft:'6px'}}>연락처 있는 고객</span>
+                                        <span style={{fontSize:'13px',fontWeight:800,color:'#92400E'}}>🔔 교체알림</span>
+                                        {alertCustomers.length > 0 && <span style={{fontSize:'12px',fontWeight:800,color:'#DC2626',marginLeft:'6px',background:'#FEE2E2',padding:'1px 8px',borderRadius:'20px'}}>{alertCustomers.length}명 미발송</span>}
+                                        {sentToday.length > 0 && <span style={{fontSize:'12px',fontWeight:800,color:'#16A34A',marginLeft:'4px',background:'#DCFCE7',padding:'1px 8px',borderRadius:'20px'}}>오늘 {sentToday.length}명 발송 ✅</span>}
                                     </div>
-                                    <button onClick={()=>{
-                                        const lines = alertCustomers.map(c=>`  • ${c.name} (${c.lastVisit?.phone})`).join('\n');
-                                        const msg = `안녕하세요 😊 니지스트링입니다!\n\n스트링 교체 시기가 지나셨어요 🎾\n오래된 스트링은 컨트롤이 떨어지고 부상 위험이 있어요!\n\n빠른 예약 받고 있으니 편하게 연락주세요 😊\n감사합니다!\n\n[대상고객]\n${lines}`;
-                                        navigator.clipboard.writeText(msg).then(()=>showAlert(`✅ ${alertCustomers.length}명 대상 메시지 복사!\n카카오톡에 붙여넣기 하세요 😊`)).catch(()=>showAlert('복사 실패'));
-                                    }} style={{padding:'6px 12px',background:'#F59E0B',color:'#fff',border:'none',borderRadius:'10px',fontSize:'11px',fontWeight:800,cursor:'pointer',whiteSpace:'nowrap'}}>
-                                        📋 전체복사
-                                    </button>
+                                    {alertCustomers.length > 0 && (
+                                        <button onClick={async ()=>{
+                                            const lines = alertCustomers.map(c=>`  • ${c.name} (${c.lastVisit?.phone})`).join('\n');
+                                            const msg = `안녕하세요 😊 니지스트링입니다!\n\n스트링 교체 시기가 지나셨어요 🎾\n오래된 스트링은 컨트롤이 떨어지고 부상 위험이 있어요!\n\n빠른 예약 받고 있으니 편하게 연락주세요 😊\n감사합니다!\n\n[대상고객]\n${lines}`;
+                                            try {
+                                                await navigator.clipboard.writeText(msg);
+                                                // 전체 발송 처리
+                                                for (const c of alertCustomers) { await saveDmSent(c.name); }
+                                                showAlert(`✅ ${alertCustomers.length}명 메시지 복사 완료!\n카카오톡에 붙여넣기 하세요 😊\n배너에서 제거됩니다.`);
+                                            } catch(e) { showAlert('복사 실패'); }
+                                        }} style={{padding:'6px 12px',background:'#F59E0B',color:'#fff',border:'none',borderRadius:'10px',fontSize:'11px',fontWeight:800,cursor:'pointer',whiteSpace:'nowrap'}}>
+                                            📋 전체복사
+                                        </button>
+                                    )}
                                 </div>
-                                <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
-                                    {alertCustomers.map(c=>(
-                                        <div key={c.name} style={{background:'#fff',borderRadius:'8px',padding:'4px 10px',border:'1px solid #FDE68A',display:'flex',alignItems:'center',gap:'5px'}}>
-                                            <span style={{fontSize:'12px',fontWeight:700,color:'#92400E'}}>{c.name}</span>
-                                            {c.lastVisit?.phone && (
-                                                <a href={`sms:${c.lastVisit.phone}?body=${encodeURIComponent(`안녕하세요 ${c.name}님 😊\n니지스트링입니다!\n\n스트링 교체 시기가 지나셨어요 🎾\n교체 예약 편하게 연락주세요!\n감사합니다!`)}`}
-                                                    style={{fontSize:'10px',background:'#16A34A',color:'#fff',padding:'2px 7px',borderRadius:'6px',textDecoration:'none',fontWeight:700}}>문자</a>
-                                            )}
+
+                                {/* 미발송 고객 */}
+                                {alertCustomers.length > 0 && (
+                                    <div style={{display:'flex',flexWrap:'wrap',gap:'5px',marginBottom: sentToday.length>0 ? '8px' : '0'}}>
+                                        {alertCustomers.map(c=>(
+                                            <div key={c.name} style={{background:'#fff',borderRadius:'8px',padding:'5px 10px',border:'1px solid #FDE68A',display:'flex',alignItems:'center',gap:'5px'}}>
+                                                <span style={{fontSize:'12px',fontWeight:700,color:'#92400E'}}>{c.name}</span>
+                                                <a href={`sms:${c.lastVisit.phone}?body=${encodeURIComponent(dmMsgFor(c.name))}`}
+                                                    onClick={()=>setTimeout(()=>saveDmSent(c.name), 1500)}
+                                                    style={{fontSize:'10px',background:'#16A34A',color:'#fff',padding:'2px 8px',borderRadius:'6px',textDecoration:'none',fontWeight:800}}>💬 문자</a>
+                                                <button onClick={async ()=>{
+                                                    try {
+                                                        await navigator.clipboard.writeText(dmMsgFor(c.name));
+                                                        await saveDmSent(c.name);
+                                                        showAlert(`✅ ${c.name}님 카톡 메시지 복사!\n카카오톡에 붙여넣기 하세요 😊`);
+                                                    } catch(e) { showAlert('복사 실패'); }
+                                                }} style={{fontSize:'10px',background:'#FEE500',color:'#111',padding:'2px 8px',borderRadius:'6px',border:'none',fontWeight:800,cursor:'pointer'}}>💛 카톡</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* 오늘 발송 완료 고객 */}
+                                {sentToday.length > 0 && (
+                                    <div style={{borderTop: alertCustomers.length>0 ? '1px solid #FDE68A' : 'none', paddingTop: alertCustomers.length>0 ? '8px':'0'}}>
+                                        <div style={{fontSize:'11px',fontWeight:700,color:'#16A34A',marginBottom:'5px'}}>✅ 오늘 발송 완료</div>
+                                        <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
+                                            {sentToday.map(c=>(
+                                                <div key={c.name} style={{background:'#F0FDF4',borderRadius:'8px',padding:'4px 10px',border:'1px solid #BBF7D0',display:'flex',alignItems:'center',gap:'5px'}}>
+                                                    <span style={{fontSize:'12px',fontWeight:700,color:'#15803D'}}>{c.name}</span>
+                                                    <span style={{fontSize:'10px',color:'#16A34A',fontWeight:600}}>✓ 발송완료</span>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
+                                    </div>
+                                )}
                             </div>
                         );
                     })()}
@@ -2098,19 +2174,25 @@ const StringingApp = ({ sport, uid }) => {
                                                         <span className="card-label" style={{color:'#16A34A'}}>📱연락처</span>
                                                         <span className="card-val" style={{color:'#15803D',fontSize:'14px'}}>{latest.phone}</span>
                                                         <div style={{display:'flex',gap:'5px',flexShrink:0}}>
+                                                            {isDmSent(name) && (
+                                                                <span style={{fontSize:'10px',color:'#16A34A',fontWeight:700,padding:'3px 7px',background:'#DCFCE7',borderRadius:'6px'}}>✅ {isDmSent(name)} 발송</span>
+                                                            )}
                                                             <a href={`sms:${latest.phone}?body=${encodeURIComponent(`안녕하세요 ${latest.name}님 😊\n니지스트링입니다!\n\n마지막 스트링 교체 후 시간이 지났어요 🎾\n스트링이 늘어나면 컨트롤이 떨어지고 부상 위험도 있어요!\n\n교체 예약은 아래로 연락주세요 😊\n감사합니다!`)}`}
+                                                                onClick={()=>setTimeout(()=>saveDmSent(name), 1500)}
                                                                 style={{padding:'5px 10px',background:'#16A34A',color:'#fff',borderRadius:'8px',fontSize:'11px',fontWeight:800,textDecoration:'none',display:'flex',alignItems:'center',gap:'3px'}}>
                                                                 💬 문자
                                                             </a>
-                                                            <a href={`https://open.kakao.com/o/search?q=${encodeURIComponent(latest.phone)}`}
-                                                                onClick={(e)=>{
-                                                                    e.preventDefault();
+                                                            <button onClick={async ()=>{
                                                                     const msg = `안녕하세요 ${latest.name}님 😊\n니지스트링입니다!\n\n마지막 스트링 교체 후 시간이 지났어요 🎾\n스트링이 늘어나면 컨트롤이 떨어지고 부상 위험도 있어요!\n\n교체 예약은 아래로 연락주세요 😊\n감사합니다!`;
-                                                                    navigator.clipboard.writeText(msg).then(()=>showAlert('✅ 카톡 메시지가 복사됐어요!\n카카오톡 열고 붙여넣기 하세요 😊')).catch(()=>showAlert('복사 실패. 직접 전달해 주세요.'));
+                                                                    try {
+                                                                        await navigator.clipboard.writeText(msg);
+                                                                        await saveDmSent(name);
+                                                                        showAlert('✅ 카톡 메시지가 복사됐어요!\n카카오톡 열고 붙여넣기 하세요 😊');
+                                                                    } catch(e) { showAlert('복사 실패. 직접 전달해 주세요.'); }
                                                                 }}
-                                                                style={{padding:'5px 10px',background:'#FEE500',color:'#111',borderRadius:'8px',fontSize:'11px',fontWeight:800,textDecoration:'none',display:'flex',alignItems:'center',gap:'3px'}}>
+                                                                style={{padding:'5px 10px',background:'#FEE500',color:'#111',borderRadius:'8px',fontSize:'11px',fontWeight:800,border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:'3px'}}>
                                                                 💛 카톡복사
-                                                            </a>
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 )}
