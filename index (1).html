@@ -903,7 +903,7 @@ const HELP_SECTIONS = [
         {q:'고객 정보를 수정하거나 삭제하려면?', a:'카드 오른쪽에 있는 ✏️ 버튼을 누르면 수정, 🗑️ 버튼을 누르면 삭제할 수 있어요.'},
         {q:'고객 검색은 어떻게 하나요?', a:'화면 위 검색창에 고객 이름을 입력하면 바로 찾아줘요. 초성 검색도 돼요! (예: "ㄱㄷ" → 김도영)'},
         {q:'⭐ VIP 표시는 어떻게 붙나요?', a:'같은 고객이 5회 이상 방문하면 자동으로 ⭐ VIP 표시가 붙어요.'},
-        {q:'🔔 교체 알림은 뭔가요?', a:'마지막 방문일로부터 60일이 지난 고객에게 자동으로 🔔 교체 알림 배지가 표시돼요.'},
+        {q:'🔔 교체 알림은 뭔가요?', a:'마지막 방문일로부터 교체주기(기본 60일)가 지난 고객에게 자동으로 🔔 교체 알림 배지가 표시돼요.\n\n고객 카드 오른쪽의 ⏱️ 버튼을 누르면 해당 고객의 교체주기를 개별로 설정할 수 있어요. (예: 김철수님 → 45일)\n설정하지 않으면 기본값 60일이 자동으로 사용돼요.'},
     ]},
     { key:'dm', icon:'📱', title:'연락처 & DM 발송 (신기능)', items:[
         {q:'연락처는 어디에 입력하나요?', a:'➕ 등록 버튼을 눌러 등록 폼을 열면 고객명 아래 📱 연락처 항목이 있어요. 010-0000-0000 형식으로 입력하면 돼요. 기존 고객은 카드의 ✏️ 수정 버튼을 눌러 추가할 수 있어요.'},
@@ -1013,6 +1013,9 @@ const StringingApp = ({ sport, uid }) => {
     const [newExtraItemPrice, setNewExtraItemPrice] = useState('');
     const [saveStatus, setSaveStatus] = useState('');
     const [dmSentList, setDmSentList] = useState({}); // { 고객명: 'YYYY-MM-DD' }
+    const [customerCycles, setCustomerCycles] = useState({}); // { 고객명: 일수 }
+    const [showCycleModal, setShowCycleModal] = useState(null); // null 또는 고객명
+    const [cycleInput, setCycleInput] = useState('');
 
     const stringPrices = {...config.defaultStrings, ...customStrings};
 
@@ -1044,7 +1047,7 @@ const StringingApp = ({ sport, uid }) => {
         const couponsRef = db.ref(dbPath(uid, sport, 'coupons'));
         const extrasRef  = db.ref(dbPath(uid, sport, 'extraItems'));
 
-        let loaded = {records:false, strings:false, coupons:false, extras:false, dmSent:false};
+        let loaded = {records:false, strings:false, coupons:false, extras:false, dmSent:false, cycles:false};
         const checkAllLoaded = () => {
             if (Object.values(loaded).every(Boolean)) setDbLoading(false);
         };
@@ -1124,6 +1127,18 @@ const StringingApp = ({ sport, uid }) => {
         };
         dmRef.on('value', dmListener);
 
+        // customerCycles 리스너 (고객별 교체주기)
+        const cyclesRef = db.ref(dbPath(uid, sport, 'customerCycles'));
+        const cyclesListener = snap => {
+            const val = snap.val() || {};
+            const restored = {};
+            Object.entries(val).forEach(([key, days]) => { restored[fromSafeKey(key)] = days; });
+            setCustomerCycles(restored);
+            loaded.cycles = true;
+            checkAllLoaded();
+        };
+        cyclesRef.on('value', cyclesListener);
+
         // 폼 초기화
         setFormData(makeEmptyForm());
         setAppliedCoupon(null);
@@ -1143,6 +1158,7 @@ const StringingApp = ({ sport, uid }) => {
             couponsRef.off('value', couListener);
             extrasRef.off('value', extListener);
             dmRef.off('value', dmListener);
+            cyclesRef.off('value', cyclesListener);
         };
     }, [uid, sport]);
 
@@ -1180,6 +1196,23 @@ const StringingApp = ({ sport, uid }) => {
     const isDmSent = (customerName) => {
         const safeKey = toSafeKey(customerName);
         return dmSentList[safeKey] || null; // null 또는 날짜 문자열
+    };
+
+    // 고객별 교체주기 저장/삭제
+    const saveCustomerCycle = async (customerName, days) => {
+        const safeKey = toSafeKey(customerName);
+        try {
+            if (days === null || days === '') {
+                await db.ref(dbPath(uid, sport, 'customerCycles')).child(safeKey).remove();
+            } else {
+                await db.ref(dbPath(uid, sport, 'customerCycles')).child(safeKey).set(parseInt(days));
+            }
+        } catch(e) { console.error('교체주기 저장 실패', e); }
+    };
+
+    // 해당 고객의 교체주기 반환 (설정 없으면 기본 60일)
+    const getCustomerCycle = (customerName) => {
+        return customerCycles[customerName] || 60;
     };
 
     // Firebase 키로 사용할 수 없는 특수문자(. # $ / [ ]) → 안전 문자로 변환
@@ -1680,6 +1713,46 @@ const StringingApp = ({ sport, uid }) => {
                 </div>
             )}
 
+            {/* ── 교체주기 설정 모달 ── */}
+            {showCycleModal && (
+                <div className="modal-overlay">
+                    <div className="modal-card">
+                        <div className="modal-title">⏱️ 교체주기 설정</div>
+                        <p style={{fontSize:'13px',color:'#616161',marginBottom:'12px',fontWeight:600}}>
+                            <span style={{fontWeight:800,color:'#111'}}>{showCycleModal}</span>님의 개별 교체주기를 입력하세요.<br/>
+                            <span style={{fontSize:'11px',color:'#9E9E9E'}}>비워두면 기본값(60일)이 사용돼요.</span>
+                        </p>
+                        <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px'}}>
+                            <input type="number" value={cycleInput} onChange={e=>setCycleInput(e.target.value)}
+                                placeholder="예) 45"
+                                className="modal-input" style={{marginBottom:0,flex:1}}
+                                autoFocus/>
+                            <span style={{fontSize:'14px',fontWeight:700,color:'#555',flexShrink:0}}>일</span>
+                        </div>
+                        <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'12px'}}>
+                            {[30,45,60,90].map(d=>(
+                                <button key={d} type="button" onClick={()=>setCycleInput(String(d))}
+                                    style={{padding:'5px 14px',background:cycleInput===String(d)?'#22C55E':'#F0F0F0',color:cycleInput===String(d)?'#fff':'#555',borderRadius:'20px',border:'none',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>
+                                    {d}일
+                                </button>
+                            ))}
+                        </div>
+                        <div className="modal-btn-row">
+                            <button onClick={()=>setShowCycleModal(null)} className="modal-btn-cancel">취소</button>
+                            {customerCycles[showCycleModal] && (
+                                <button onClick={async()=>{await saveCustomerCycle(showCycleModal,null);setShowCycleModal(null);}}
+                                    style={{flex:1,padding:'13px',borderRadius:'13px',background:'#FEE2E2',color:'#DC2626',fontSize:'14px',fontWeight:700,border:'none',cursor:'pointer'}}>기본값</button>
+                            )}
+                            <button onClick={async()=>{
+                                if(!cycleInput||isNaN(parseInt(cycleInput))||parseInt(cycleInput)<1){showAlert('1 이상의 숫자를 입력하세요.');return;}
+                                await saveCustomerCycle(showCycleModal, cycleInput);
+                                setShowCycleModal(null);
+                            }} className="modal-btn-ok">저장</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ── 추가작업 항목 모달 ── */}
             {showAddExtraItemModal && (
                 <div className="modal-overlay">
@@ -1765,12 +1838,14 @@ const StringingApp = ({ sport, uid }) => {
                         // DM 아직 안 보낸 교체알림 고객만 필터
                         const alertCustomers = getCustomerStats().filter(c => {
                             const daysSince = c.lastVisit ? Math.floor((new Date()-new Date(c.lastVisit.date))/(1000*60*60*24)) : 0;
-                            return daysSince >= 60 && c.lastVisit?.phone && !isDmSent(c.name);
+                            const cycle = getCustomerCycle(c.name);
+                            return daysSince >= cycle && c.lastVisit?.phone && !isDmSent(c.name);
                         });
                         // DM 발송 완료 고객 (오늘 발송)
                         const sentToday = getCustomerStats().filter(c => {
                             const daysSince = c.lastVisit ? Math.floor((new Date()-new Date(c.lastVisit.date))/(1000*60*60*24)) : 0;
-                            return daysSince >= 60 && c.lastVisit?.phone && isDmSent(c.name) === getTodayKST();
+                            const cycle = getCustomerCycle(c.name);
+                            return daysSince >= cycle && c.lastVisit?.phone && isDmSent(c.name) === getTodayKST();
                         });
 
                         if (alertCustomers.length === 0 && sentToday.length === 0) return null;
@@ -2138,7 +2213,8 @@ const StringingApp = ({ sport, uid }) => {
                             const isOpen = expandedCustomers[name];
                             const daysSince = latest.date ? Math.floor((new Date()-new Date(latest.date))/(1000*60*60*24)) : 0;
                             const isVIP = visitCount >= 5;
-                            const needsReplace = daysSince >= 60;
+                            const cycle = getCustomerCycle(name);
+                            const needsReplace = daysSince >= cycle;
                             return (
                                 <div key={name} className="customer-card">
                                     {/* ── 카드 헤더 (이름 + 날짜만, 클릭으로 펼치기) ── */}
@@ -2153,10 +2229,12 @@ const StringingApp = ({ sport, uid }) => {
                                             </div>
                                             <div style={{fontSize:'11px',color:'rgba(255,255,255,0.55)',marginTop:'3px',fontWeight:600}}>
                                                 방문 {visitCount}회 · 최근 {latest.date}
+                                                {customerCycles[name] && <span style={{marginLeft:'6px',background:'rgba(251,191,36,0.25)',color:'#FCD34D',padding:'1px 7px',borderRadius:'12px',fontSize:'10px',fontWeight:800}}>⏱ {customerCycles[name]}일</span>}
                                             </div>
                                         </div>
                                         <div className="card-actions">
                                             <span style={{fontSize:'18px',color:'rgba(255,255,255,0.5)',marginRight:'4px'}}>{isOpen?'▲':'▼'}</span>
+                                            <button onClick={e=>{e.stopPropagation();setCycleInput(customerCycles[name]?String(customerCycles[name]):'');setShowCycleModal(name);}} className="card-action-btn" title="교체주기 설정">⏱️</button>
                                             <button onClick={e=>{e.stopPropagation();handleEdit(latest);}} className="card-action-btn">✏️</button>
                                             <button onClick={e=>{e.stopPropagation();handleDelete(latest);}} className="card-action-btn">🗑️</button>
                                         </div>
