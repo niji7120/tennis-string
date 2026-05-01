@@ -144,39 +144,20 @@
         .today-stat-val.green { color: #4ade80; }
         .today-stat-unit { font-size:12px; color:#555; font-weight:700; margin-left:2px; }
         .today-stat-recent { font-size:12px; color:#4ade80; font-weight:800; }
-        .new-work-btn {
-            background: linear-gradient(135deg, #16A34A, #22C55E);
-            color: #fff; font-size: 14px; font-weight: 800;
-            padding: 12px 18px; border-radius: 14px;
-            border: none; cursor: pointer; white-space: nowrap;
-            box-shadow: 0 4px 16px var(--green-glow);
-            transition: all 0.2s; letter-spacing: 0.3px;
-            animation: pulse-green 2.5s infinite;
+        /* ══ 통계 서브탭 ══ */
+        .stat-subtab-row {
+            display: flex; gap: 8px;
+            padding: 12px 12px 0;
         }
-        .new-work-btn:active { transform: scale(0.96); }
-
-        /* ══ 메인 탭 바 ══ */
-        .main-tabs {
-            display: flex; gap: 6px;
-            padding: 14px 12px 10px;
-            overflow-x: auto; background: var(--gray-bg);
-        }
-        .main-tabs::-webkit-scrollbar { display: none; }
-        .main-tab {
-            flex-shrink: 0;
-            padding: 8px 16px; border-radius: 22px;
-            font-size: 12px; font-weight: 700;
-            border: 1.5px solid transparent; cursor: pointer;
+        .stat-subtab {
+            flex: 1; padding: 9px 0; border-radius: 12px;
+            font-size: 13px; font-weight: 700;
+            border: 1.5px solid #E8E8E8; cursor: pointer;
             background: #fff; color: #888;
-            transition: all 0.18s;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            transition: all 0.18s; text-align:center;
         }
-        .main-tab.active { background: var(--black2); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        .main-tab.active-green { background: linear-gradient(135deg,#16A34A,#22C55E); color: #fff; border-color:transparent; box-shadow: 0 4px 12px var(--green-glow); }
-        .main-tab.active-pink { background: #EC4899; color: #fff; border-color:transparent; }
-        .main-tab.active-yellow { background: #D97706; color: #fff; border-color:transparent; }
-        .main-tab.active-orange { background: #EA580C; color: #fff; border-color:transparent; }
-        .main-tab.active-purple { background: #7C3AED; color: #fff; border-color:transparent; }
+        .stat-subtab.active-orange { background: linear-gradient(135deg,#C2410C,#EA580C); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(234,88,12,0.3); }
+        .stat-subtab.active-purple { background: linear-gradient(135deg,#5B21B6,#7C3AED); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(124,58,237,0.3); }
 
         /* ══ 검색 바 ══ */
         .search-row {
@@ -450,6 +431,7 @@
             width: 40px; height: 40px; border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
             font-size: 19px; transition: all 0.2s;
+            background: #F5F5F5;
         }
         .nav-item.active .nav-icon {
             background: linear-gradient(135deg,#15803D,#22C55E);
@@ -464,6 +446,10 @@
         }
         .nav-item.active .nav-label { color: var(--green-dark); }
         .nav-item.active-blue .nav-label { color: var(--blue-dark); }
+        .nav-item.active-pink .nav-icon { background: linear-gradient(135deg,#be185d,#EC4899); box-shadow: 0 4px 12px rgba(236,72,153,0.4); }
+        .nav-item.active-pink .nav-label { color: #be185d; }
+        .nav-item.active-yellow .nav-icon { background: linear-gradient(135deg,#B45309,#D97706); box-shadow: 0 4px 12px rgba(217,119,6,0.4); }
+        .nav-item.active-yellow .nav-label { color: #B45309; }
 
         /* ══ 등록 중앙 버튼 ══ */
         .nav-center-btn {
@@ -657,28 +643,6 @@
             background: rgba(251,191,36,0.15); color:#F59E0B;
             border:1px solid rgba(251,191,36,0.25); white-space:nowrap;
         }
-
-        /* ══ 원가/마진 관리자 전용 ══ */
-        .cost-section {
-            border: 2px solid #FEF3C7; border-radius: 14px;
-            padding: 14px; background: #FFFBEB; margin-bottom: 10px;
-            position: relative;
-        }
-        .cost-section-badge {
-            position: absolute; top: -10px; left: 14px;
-            background: linear-gradient(135deg, #D97706, #F59E0B);
-            color: #fff; font-size: 10px; font-weight: 900;
-            padding: 2px 10px; border-radius: 20px; letter-spacing: 0.5px;
-        }
-        .margin-positive { color: #16A34A; }
-        .margin-negative { color: #DC2626; }
-        .stat-margin-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 11px 18px; background: #FFFBEB;
-            border-top: 1.5px dashed #FDE68A;
-        }
-        .stat-margin-label { font-size: 12px; color: #92400E; font-weight: 800; }
-        .stat-margin-val { font-size: 16px; font-weight: 900; }
     </style>
 </head>
 <body>
@@ -701,10 +665,6 @@ const db = firebase.database();
 
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
-
-// ── 관리자 이메일 (원가/마진 정보 열람 권한) ──
-// 아래 이메일을 본인 관리자 이메일로 변경하세요
-const ADMIN_EMAIL = 'rucci7120@gmail.com'; // ← 여기에 관리자 이메일 입력
 
 // ── 초성 검색 ──────────────────────────────────────
 const getChosung = (str) => {
@@ -886,6 +846,14 @@ const RecordCard = ({r, visitCount, records, color, statColor, handleEdit, handl
                 <span className="card-val">{r.racket}</span>
                 <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600,flexShrink:0}}>{r.pattern}</span>
             </div>
+            {r.phone && (
+                <div className="card-row" style={{alignItems:'center'}}>
+                    <span className="card-label">📱연락처</span>
+                    <span className="card-val" style={{color:'#15803D',fontSize:'13px'}}>{r.phone}</span>
+                    <a href={`sms:${r.phone}?body=${encodeURIComponent(`안녕하세요 ${r.name}님 😊\n니지스트링입니다!\n\n스트링 교체 시기가 지나셨어요 🎾\n교체 예약 편하게 연락주세요!\n감사합니다!`)}`}
+                        style={{padding:'3px 8px',background:'#16A34A',color:'#fff',borderRadius:'6px',fontSize:'10px',fontWeight:800,textDecoration:'none',flexShrink:0}}>문자</a>
+                </div>
+            )}
             <div className="card-row">
                 <span className="card-label">스트링</span>
                 <div style={{flex:1}}>
@@ -925,16 +893,88 @@ const RecordCard = ({r, visitCount, records, color, statColor, handleEdit, handl
     </div>
 );
 
-const StringingApp = ({ sport, uid, isAdmin }) => {
+// ══════════════════════════════════════════════
+// 📖 사용 설명서 컴포넌트 (훅 규칙 준수를 위해 별도 컴포넌트)
+// ══════════════════════════════════════════════
+const HELP_SECTIONS = [
+    { key:'customer', icon:'🏠', title:'고객관리 탭', items:[
+        {q:'고객을 어떻게 등록하나요?', a:'화면 오른쪽 위 ➕ 등록 버튼을 누르면 등록 폼이 펼쳐져요. 날짜·고객명·연락처·라켓·스트링·텐션·공임을 입력하고 ✅ 등록 완료를 누르세요.'},
+        {q:'고객 카드를 어떻게 열어보나요?', a:'카드를 손가락으로 탭(터치)하면 상세 내용이 펼쳐지고, 다시 탭하면 닫혀요. 이름과 날짜만 보이는 게 기본 상태예요.'},
+        {q:'고객 정보를 수정하거나 삭제하려면?', a:'카드 오른쪽에 있는 ✏️ 버튼을 누르면 수정, 🗑️ 버튼을 누르면 삭제할 수 있어요.'},
+        {q:'고객 검색은 어떻게 하나요?', a:'화면 위 검색창에 고객 이름을 입력하면 바로 찾아줘요. 초성 검색도 돼요! (예: "ㄱㄷ" → 김도영)'},
+        {q:'⭐ VIP 표시는 어떻게 붙나요?', a:'같은 고객이 5회 이상 방문하면 자동으로 ⭐ VIP 표시가 붙어요.'},
+        {q:'🔔 교체 알림은 뭔가요?', a:'마지막 방문일로부터 교체주기(기본 60일)가 지난 고객에게 자동으로 🔔 교체 알림 배지가 표시돼요.\n\n고객 카드 오른쪽의 ⏱️ 버튼을 누르면 해당 고객의 교체주기를 개별로 설정할 수 있어요. (예: 김철수님 → 45일)\n설정하지 않으면 기본값 60일이 자동으로 사용돼요.'},
+    ]},
+    { key:'dm', icon:'📱', title:'연락처 & DM 발송 (신기능)', items:[
+        {q:'연락처는 어디에 입력하나요?', a:'➕ 등록 버튼을 눌러 등록 폼을 열면 고객명 아래 📱 연락처 항목이 있어요. 010-0000-0000 형식으로 입력하면 돼요. 기존 고객은 카드의 ✏️ 수정 버튼을 눌러 추가할 수 있어요.'},
+        {q:'연락처를 꼭 입력해야 하나요?', a:'아니요, 선택 사항이에요! 입력하지 않아도 등록은 정상적으로 돼요. 하지만 연락처가 있어야 문자·카톡 DM 발송 버튼이 나타나요.'},
+        {q:'고객 카드에서 DM을 어떻게 보내나요?', a:'카드를 탭해서 열면 연락처 옆에 두 개의 버튼이 나타나요.\n\n💬 문자 → 누르면 문자 앱이 바로 열리고 메시지가 자동 입력돼요.\n\n💛 카톡복사 → 카톡 메시지가 클립보드에 복사돼요. 카카오톡을 열고 붙여넣기 하면 돼요.'},
+        {q:'DM을 보내면 어떻게 기록되나요?', a:'문자 또는 카톡복사 버튼을 누르면 발송 날짜가 자동으로 저장돼요. 카드를 열면 연락처 옆에 ✅ 2026-04-20 발송 처럼 날짜가 표시돼요.'},
+        {q:'상단 노란 배너는 뭔가요?', a:'교체 시기(60일)가 지난 고객 중 연락처가 등록된 분들이 자동으로 모여요. 배너에서 바로 문자 발송이 가능해요.\n\n🔴 빨간 숫자 = 아직 DM 안 보낸 고객 수\n🟢 초록 숫자 = 오늘 발송 완료한 고객 수'},
+        {q:'📋 전체복사는 어떻게 쓰나요?', a:'배너 오른쪽 📋 전체복사 버튼을 누르면 미발송 고객 전체에게 보낼 메시지가 한 번에 복사돼요. 카카오톡 단체 채팅방이나 공지에 붙여넣기 하면 편리해요. 전체복사 후 모든 고객이 발송 완료 처리돼요.'},
+        {q:'DM을 보낸 고객이 배너에서 사라지는 건가요?', a:'맞아요! 발송 완료된 고객은 빨간(미발송) 영역에서 사라지고 초록(발송완료) 영역으로 이동해요. 다음 날이 되면 발송 기록이 초기화되어 다시 미발송으로 나타나요.'},
+    ]},
+    { key:'stats', icon:'📊', title:'매출통계 탭', items:[
+        {q:'월별/연도별 매출을 볼 수 있나요?', a:'매출통계 탭을 누르면 월별 매출이 기본으로 보여요. 위쪽 버튼으로 📅 월별 / 📈 연도별 전환이 가능해요.'},
+        {q:'통계에서 뭘 볼 수 있나요?', a:'스트링비 합계, 공임비 합계, 추가작업비 합계를 따로 확인할 수 있어요. 월별 작업 건수도 표시돼요.'},
+    ]},
+    { key:'strings', icon:'🎯', title:'스트링 탭', items:[
+        {q:'스트링 목록은 어디서 관리하나요?', a:'아래 탭 메뉴에서 🎯 스트링을 누르면 스트링 목록 화면이 나와요. 여기서 스트링 이름과 가격을 등록·수정·삭제할 수 있어요.'},
+        {q:'스트링을 추가하려면?', a:'➕ 새 스트링 추가 버튼을 누르면 이름과 가격 입력창이 떠요. 입력 후 저장하면 등록 폼에서 선택 가능해져요.'},
+    ]},
+    { key:'coupon', icon:'🎫', title:'쿠폰 탭', items:[
+        {q:'쿠폰은 어떻게 만드나요?', a:'쿠폰 탭에서 ➕ 1장 등록(직접 입력) 또는 🎟️ 일괄 발행(여러 장 한번에)을 선택할 수 있어요.'},
+        {q:'쿠폰을 고객한테 어떻게 보내나요?', a:'쿠폰 목록에서 💬 복사 버튼을 누르면 카카오톡에 붙여넣기 할 수 있는 메시지가 복사돼요.'},
+        {q:'작업 등록 시 쿠폰을 적용하려면?', a:'등록 폼 아래쪽에 쿠폰번호 입력창이 있어요. 번호를 입력하고 적용 버튼을 누르면 할인 금액이 자동으로 반영돼요.'},
+    ]},
+    { key:'excel', icon:'📂', title:'엑셀 내보내기/불러오기', items:[
+        {q:'엑셀 내보내기는 무엇인가요?', a:'설정 탭의 📤 엑셀 내보내기를 누르면 지금까지 등록한 모든 고객 작업 데이터를 엑셀 파일(.xlsx)로 다운로드할 수 있어요. 백업용으로 쓰기 좋아요. 연락처 컬럼도 함께 내보내져요.'},
+        {q:'엑셀 불러오기는 어떻게 하나요?', a:'📥 엑셀 불러오기를 누르고 엑셀 파일을 선택하면 데이터가 앱으로 들어와요. 이전에 내보낸 파일을 다시 가져올 때 사용해요.'},
+    ]},
+];
+const HelpSection = () => {
+    const [openSection, setOpenSection] = useState(null);
+    const toggle = (k) => setOpenSection(prev => prev===k ? null : k);
+    return (
+        <div className="stat-card" style={{marginTop:'12px'}}>
+            <div className="section-header">
+                <span className="section-title">📖 사용 설명서</span>
+                <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>탭을 눌러 펼쳐보세요</span>
+            </div>
+            {HELP_SECTIONS.map(sec=>(
+                <div key={sec.key} style={{borderBottom:'1px solid #F5F5F5'}}>
+                    <button onClick={()=>toggle(sec.key)}
+                        style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',background:'none',border:'none',cursor:'pointer',textAlign:'left'}}>
+                        <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                            <span style={{fontSize:'18px'}}>{sec.icon}</span>
+                            <span style={{fontSize:'14px',fontWeight:800,color:'#111'}}>{sec.title}</span>
+                            {sec.key==='dm' && <span style={{fontSize:'10px',fontWeight:800,color:'#fff',background:'linear-gradient(135deg,#16A34A,#22C55E)',padding:'2px 7px',borderRadius:'20px',letterSpacing:'0.3px'}}>NEW</span>}
+                        </div>
+                        <span style={{fontSize:'16px',color:'#bbb',fontWeight:700}}>{openSection===sec.key?'▲':'▼'}</span>
+                    </button>
+                    {openSection===sec.key && (
+                        <div style={{background:'#FAFAFA',borderTop:'1px solid #F0F0F0'}}>
+                            {sec.items.map((item,i)=>(
+                                <div key={i} style={{padding:'14px 16px',borderBottom:i<sec.items.length-1?'1px solid #F0F0F0':'none'}}>
+                                    <div style={{fontSize:'13px',fontWeight:800,color:'#16A34A',marginBottom:'6px'}}>Q. {item.q}</div>
+                                    <div style={{fontSize:'13px',color:'#444',fontWeight:600,lineHeight:'1.6',whiteSpace:'pre-line'}}>{item.a}</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            ))}
+        </div>
+    );
+};
+
+const StringingApp = ({ sport, uid }) => {
     const config = SPORTS_CONFIG[sport];
     const color = config.color;
     const DEFAULT_EXTRA_ITEMS = ['스텐실 작업','범퍼 교체','오버그립','그립테이프','진동방지구','기타'];
 
     // ── State ──────────────────────────────────
     const [records, setRecords] = useState([]);
-    // 원가 관련 (관리자 전용)
-    const [stringCostPrice, setStringCostPrice] = useState(''); // 스트링 원가
-    const [extraCostPrice, setExtraCostPrice] = useState('');   // 추가용품 원가
     const [customStrings, setCustomStrings] = useState({});
     const [coupons, setCoupons] = useState([]);
     const [savedExtraItems, setSavedExtraItems] = useState(DEFAULT_EXTRA_ITEMS.map(n=>({name:n,price:''})));
@@ -972,6 +1012,18 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
     const [newExtraItemName, setNewExtraItemName] = useState('');
     const [newExtraItemPrice, setNewExtraItemPrice] = useState('');
     const [saveStatus, setSaveStatus] = useState('');
+    const [dmSentList, setDmSentList] = useState({}); // { 고객명: 'YYYY-MM-DD' }
+    const [customerCycles, setCustomerCycles] = useState({}); // { 고객명: 일수 }
+    const [showCycleModal, setShowCycleModal] = useState(null); // null 또는 고객명
+    const [cycleInput, setCycleInput] = useState('');
+
+    // ── 원가 관리 (관리자 전용) ─────────────────
+    const [stringCosts, setStringCosts] = useState({}); // { 스트링이름: 원가 }
+    const [adminUnlocked, setAdminUnlocked] = useState(false);
+    const [showAdminModal, setShowAdminModal] = useState(false);
+    const [adminPinInput, setAdminPinInput] = useState('');
+    const [adminPinError, setAdminPinError] = useState('');
+    const ADMIN_PIN = '1234'; // ← 원하는 번호로 바꾸세요
 
     const stringPrices = {...config.defaultStrings, ...customStrings};
 
@@ -982,14 +1034,9 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
         labor: config.defaultLabors[0],
         quantity:1, tension:'',
         isHybrid:false, hybridString2:'', hybridPrice2:'',
+        phone:'',
     });
     const [formData, setFormData] = useState(makeEmptyForm());
-
-    // 원가 필드 폼 초기화
-    const resetCostFields = () => {
-        setStringCostPrice('');
-        setExtraCostPrice('');
-    };
 
     // ── 저장 상태 토스트 ────────────────────────
     const showSaveStatus = (status) => {
@@ -1008,7 +1055,7 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
         const couponsRef = db.ref(dbPath(uid, sport, 'coupons'));
         const extrasRef  = db.ref(dbPath(uid, sport, 'extraItems'));
 
-        let loaded = {records:false, strings:false, coupons:false, extras:false};
+        let loaded = {records:false, strings:false, coupons:false, extras:false, dmSent:false, cycles:false, costs:false};
         const checkAllLoaded = () => {
             if (Object.values(loaded).every(Boolean)) setDbLoading(false);
         };
@@ -1040,7 +1087,13 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
 
         // strings 리스너
         const strListener = snap => {
-            setCustomStrings(snap.val() || {});
+            const raw = snap.val() || {};
+            // 안전 키를 원래 이름으로 복원
+            const restored = {};
+            Object.entries(raw).forEach(([key, price]) => {
+                restored[fromSafeKey(key)] = price;
+            });
+            setCustomStrings(restored);
             loaded.strings = true;
             checkAllLoaded();
         };
@@ -1073,6 +1126,39 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
         };
         extrasRef.on('value', extListener);
 
+        // dmSent 리스너
+        const dmRef = db.ref(dbPath(uid, sport, 'dmSent'));
+        const dmListener = snap => {
+            setDmSentList(snap.val() || {});
+            loaded.dmSent = true;
+            checkAllLoaded();
+        };
+        dmRef.on('value', dmListener);
+
+        // customerCycles 리스너 (고객별 교체주기)
+        const cyclesRef = db.ref(dbPath(uid, sport, 'customerCycles'));
+        const cyclesListener = snap => {
+            const val = snap.val() || {};
+            const restored = {};
+            Object.entries(val).forEach(([key, days]) => { restored[fromSafeKey(key)] = days; });
+            setCustomerCycles(restored);
+            loaded.cycles = true;
+            checkAllLoaded();
+        };
+        cyclesRef.on('value', cyclesListener);
+
+        // stringCosts 구독
+        const costsRef = db.ref(dbPath(uid, sport, 'stringCosts'));
+        const costsListener = snap => {
+            const val = snap.val() || {};
+            const restored = {};
+            Object.entries(val).forEach(([key, cost]) => { restored[fromSafeKey(key)] = cost; });
+            setStringCosts(restored);
+            loaded.costs = true;
+            checkAllLoaded();
+        };
+        costsRef.on('value', costsListener);
+
         // 폼 초기화
         setFormData(makeEmptyForm());
         setAppliedCoupon(null);
@@ -1084,8 +1170,6 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
         setEditingId(null);
         setViewMode('customers');
         setSearchTerm('');
-        setStringCostPrice('');
-        setExtraCostPrice('');
 
         // 구독 해제 (리스너 함수를 정확히 넘겨야 중복 방지)
         return () => {
@@ -1093,6 +1177,9 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
             stringsRef.off('value', strListener);
             couponsRef.off('value', couListener);
             extrasRef.off('value', extListener);
+            dmRef.off('value', dmListener);
+            cyclesRef.off('value', cyclesListener);
+            costsRef.off('value', costsListener);
         };
     }, [uid, sport]);
 
@@ -1119,9 +1206,50 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
         } catch(e) { showSaveStatus('error'); showAlert('삭제 실패: ' + e.message); }
     };
 
+    // DM 발송 기록 저장 (고객명을 안전 키로 변환)
+    const saveDmSent = async (customerName) => {
+        const safeKey = toSafeKey(customerName);
+        try {
+            await db.ref(dbPath(uid, sport, 'dmSent')).child(safeKey).set(getTodayKST());
+        } catch(e) { console.error('DM 저장 실패', e); }
+    };
+
+    const isDmSent = (customerName) => {
+        const safeKey = toSafeKey(customerName);
+        return dmSentList[safeKey] || null; // null 또는 날짜 문자열
+    };
+
+    // 고객별 교체주기 저장/삭제
+    const saveCustomerCycle = async (customerName, days) => {
+        const safeKey = toSafeKey(customerName);
+        try {
+            if (days === null || days === '') {
+                await db.ref(dbPath(uid, sport, 'customerCycles')).child(safeKey).remove();
+            } else {
+                await db.ref(dbPath(uid, sport, 'customerCycles')).child(safeKey).set(parseInt(days));
+            }
+        } catch(e) { console.error('교체주기 저장 실패', e); }
+    };
+
+    // 해당 고객의 교체주기 반환 (설정 없으면 기본 60일)
+    const getCustomerCycle = (customerName) => {
+        return customerCycles[customerName] || 60;
+    };
+
+    // Firebase 키로 사용할 수 없는 특수문자(. # $ / [ ]) → 안전 문자로 변환
+    const toSafeKey = (name) => name.replace(/\./g,'_DOT_').replace(/#/g,'_HASH_').replace(/\$/g,'_DOLLAR_').replace(/\//g,'_SLASH_').replace(/\[/g,'_LB_').replace(/\]/g,'_RB_');
+    const fromSafeKey = (key) => key.replace(/_DOT_/g,'.').replace(/_HASH_/g,'#').replace(/_DOLLAR_/g,'$').replace(/_SLASH_/g,'/').replace(/_LB_/g,'[').replace(/_RB_/g,']');
+
     const saveCustomStrings = async (newStrings) => {
         setCustomStrings(newStrings);
-        try { await db.ref(dbPath(uid, sport, 'strings')).set(newStrings); } catch(e) { showAlert('스트링 저장 실패: ' + e.message); }
+        try {
+            // 키를 안전하게 변환해서 Firebase에 저장
+            const safeObj = {};
+            Object.entries(newStrings).forEach(([name, price]) => {
+                safeObj[toSafeKey(name)] = price;
+            });
+            await db.ref(dbPath(uid, sport, 'strings')).set(safeObj);
+        } catch(e) { showAlert('스트링 저장 실패: ' + e.message); }
     };
 
     const saveCoupon = async (coupon) => {
@@ -1162,6 +1290,27 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
         } catch(e) {}
     };
 
+    // ── 원가 저장 함수 ──────────────────────────
+    const saveStringCost = async (stringName, cost) => {
+        try {
+            const safeKey = toSafeKey(stringName);
+            await db.ref(dbPath(uid, sport, 'stringCosts')).child(safeKey).set(cost === '' ? null : Number(cost));
+        } catch(e) { showAlert('원가 저장 실패: ' + e.message); }
+    };
+
+    // ── 관리자 PIN 확인 ─────────────────────────
+    const handleAdminUnlock = () => {
+        if (adminPinInput === ADMIN_PIN) {
+            setAdminUnlocked(true);
+            setShowAdminModal(false);
+            setAdminPinInput('');
+            setAdminPinError('');
+        } else {
+            setAdminPinError('PIN이 틀렸습니다. 다시 확인해주세요.');
+            setAdminPinInput('');
+        }
+    };
+
     // ── 계산 ───────────────────────────────────
     const calcExtraTotal = (works) => (works||[]).reduce((s,w)=>s+(parseFloat(w.price)||0), 0);
 
@@ -1194,9 +1343,6 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
             couponCode: appliedCoupon ? appliedCoupon.code : (existingRec?.couponCode || ''),
             couponDiscount: appliedCoupon ? appliedCoupon.discount : (existingRec?.couponDiscount || 0),
             createdAt: existingRec?.createdAt || Date.now(),
-            // 원가 정보 (관리자만 입력/조회 가능)
-            stringCostPrice: isAdmin ? (parseFloat(stringCostPrice)||0) : (existingRec?.stringCostPrice||0),
-            extraCostPrice:  isAdmin ? (parseFloat(extraCostPrice)||0)  : (existingRec?.extraCostPrice||0),
         };
         await saveRecord(rec);
 
@@ -1218,7 +1364,6 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
         setEditingId(null);
         setExtraWorks([]);
         setShowExtraSection(false);
-        resetCostFields();
     };
 
     // ── 수정: fbKey 기준으로 통일 ───────────────
@@ -1231,14 +1376,9 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
             isHybrid: rec.isHybrid||false,
             hybridString2: rec.hybridString2||'',
             hybridPrice2: rec.hybridPrice2||'',
+            phone: rec.phone||'',
         });
-        // 관리자면 원가 필드도 불러오기
-        if (isAdmin) {
-            setStringCostPrice((rec.stringCostPrice||0).toString());
-            setExtraCostPrice((rec.extraCostPrice||0).toString());
-        }
         const ew = rec.extraWorks || [];
-        setExtraWorks(ew);
         setExtraWorks(ew);
         setShowExtraSection(ew.length>0);
         setEditingId(rec.fbKey);   // ← fbKey(문자열)로 통일
@@ -1278,6 +1418,7 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
                 isHybrid: last.isHybrid||false,
                 hybridString2: last.hybridString2||'',
                 hybridPrice2: last.hybridPrice2||'',
+                phone: last.phone||'',
             });
         } else {
             setFormData(prev=>({...prev, name}));
@@ -1363,6 +1504,7 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
             .map(r => ({
                 '날짜': r.date,
                 '고객명': r.name,
+                '연락처': r.phone||'',
                 '라켓명': r.racket,
                 '패턴': r.pattern,
                 '스트링': r.stringType,
@@ -1467,6 +1609,7 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
                                     createdAt: Date.now()+i,
                                     date: parseExcelDate(row['날짜']),
                                     name: String(row['고객명']||'').trim(),
+                                    phone: String(row['연락처']||'').trim(),
                                     racket: String(row['라켓명']||'').trim(),
                                     pattern: String(row['패턴']||config.patterns[0]).trim(),
                                     stringType: String(row['스트링']||'').trim(),
@@ -1533,18 +1676,21 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
             map[m].stringTotal += (sp+hybrid)*qty;
             map[m].laborTotal += (parseFloat(r.labor)||0)*qty;
             map[m].extraTotal += (r.extraWorks||[]).reduce((s,w)=>s+(parseFloat(w.price)||0),0);
-            // 원가 합산
-            map[m].costTotal += (parseFloat(r.stringCostPrice)||0)*qty + (parseFloat(r.extraCostPrice)||0);
+            // 원가 계산
+            const cost1 = stringCosts[r.stringType] || 0;
+            const cost2 = r.isHybrid && r.hybridString2 ? (stringCosts[r.hybridString2] || 0) : 0;
+            map[m].costTotal += (cost1 + cost2) * qty;
         });
-        return Object.values(map).sort((a,b)=>b.month.localeCompare(a.month));
+        return Object.values(map).map(s=>({...s, profit: s.total - s.costTotal})).sort((a,b)=>b.month.localeCompare(a.month));
     };
 
     const getYearlyStats = () => {
         const map = {};
         records.forEach(r => {
             const y = r.date.substring(0,4);
-            if (!map[y]) map[y]={year:y, total:0, stringTotal:0, laborTotal:0, extraTotal:0, count:0, costTotal:0};
+            if (!map[y]) map[y]={year:y, total:0, stringTotal:0, laborTotal:0, extraTotal:0, count:0, months:new Set(), costTotal:0};
             map[y].total += (r.total||0); map[y].count++;
+            map[y].months.add(r.date.substring(0,7));
             const qty = parseInt(r.quantity)||1;
             let sp = parseFloat(r.stringPrice)||0;
             if (r.isHybrid && r.hybridPrice2) sp=(sp+(parseFloat(r.hybridPrice2)||0))/2;
@@ -1552,10 +1698,12 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
             map[y].stringTotal += (sp+hybrid)*qty;
             map[y].laborTotal += (parseFloat(r.labor)||0)*qty;
             map[y].extraTotal += (r.extraWorks||[]).reduce((s,w)=>s+(parseFloat(w.price)||0),0);
-            // 원가 합산
-            map[y].costTotal += (parseFloat(r.stringCostPrice)||0)*qty + (parseFloat(r.extraCostPrice)||0);
+            // 원가 계산
+            const cost1 = stringCosts[r.stringType] || 0;
+            const cost2 = r.isHybrid && r.hybridString2 ? (stringCosts[r.hybridString2] || 0) : 0;
+            map[y].costTotal += (cost1 + cost2) * qty;
         });
-        return Object.values(map).sort((a,b)=>b.year.localeCompare(a.year));
+        return Object.values(map).map(s=>({...s, monthCount:s.months.size, profit: s.total - s.costTotal})).sort((a,b)=>b.year.localeCompare(a.year));
     };
 
     const sortedRecords = [...records].sort((a,b)=>{ if(b.date!==a.date) return b.date.localeCompare(a.date); return (b.createdAt||0)-(a.createdAt||0); });
@@ -1598,6 +1746,33 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
     return (
         <div style={{maxWidth:'640px',margin:'0 auto'}}>
             {/* ── 확인/알림 모달 ── */}
+            {/* ── 관리자 PIN 모달 ── */}
+            {showAdminModal && (
+                <div className="modal-overlay">
+                    <div className="modal-card">
+                        <div className="modal-title">🔐 관리자 확인</div>
+                        <p style={{fontSize:'13px',color:'#9E9E9E',textAlign:'center',marginBottom:'14px'}}>원가 정보는 관리자만 볼 수 있어요<br/>PIN 번호를 입력해주세요</p>
+                        <input
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={8}
+                            value={adminPinInput}
+                            onChange={e=>setAdminPinInput(e.target.value)}
+                            onKeyDown={e=>{if(e.key==='Enter') handleAdminUnlock();}}
+                            placeholder="PIN 번호 입력"
+                            autoFocus
+                            className="form-input"
+                            style={{textAlign:'center',fontSize:'20px',letterSpacing:'6px',marginBottom:'8px'}}
+                        />
+                        {adminPinError && <p style={{color:'#DC2626',fontSize:'12px',textAlign:'center',marginBottom:'8px',fontWeight:700}}>{adminPinError}</p>}
+                        <div className="modal-btn-row">
+                            <button onClick={()=>{setShowAdminModal(false);setAdminPinInput('');setAdminPinError('');}} className="modal-btn-cancel">취소</button>
+                            <button onClick={handleAdminUnlock} style={{flex:1,padding:'13px',background:'#111',color:'#fff',border:'none',borderRadius:'13px',fontWeight:800,fontSize:'14px',cursor:'pointer'}}>✅ 확인</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {confirmModal && (
                 <div className="modal-overlay">
                     <div className="modal-card">
@@ -1610,6 +1785,46 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
                                 className={`modal-btn-ok ${confirmModal.okLabel==='삭제'?'modal-btn-ok-red':''} ${(confirmModal.cancelLabel===null||confirmModal.cancelLabel===undefined)?'modal-btn-ok-only':''}`}>
                                 {confirmModal.okLabel||'확인'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── 교체주기 설정 모달 ── */}
+            {showCycleModal && (
+                <div className="modal-overlay">
+                    <div className="modal-card">
+                        <div className="modal-title">⏱️ 교체주기 설정</div>
+                        <p style={{fontSize:'13px',color:'#616161',marginBottom:'12px',fontWeight:600}}>
+                            <span style={{fontWeight:800,color:'#111'}}>{showCycleModal}</span>님의 개별 교체주기를 입력하세요.<br/>
+                            <span style={{fontSize:'11px',color:'#9E9E9E'}}>비워두면 기본값(60일)이 사용돼요.</span>
+                        </p>
+                        <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px'}}>
+                            <input type="number" value={cycleInput} onChange={e=>setCycleInput(e.target.value)}
+                                placeholder="예) 45"
+                                className="modal-input" style={{marginBottom:0,flex:1}}
+                                autoFocus/>
+                            <span style={{fontSize:'14px',fontWeight:700,color:'#555',flexShrink:0}}>일</span>
+                        </div>
+                        <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'12px'}}>
+                            {[30,45,60,90].map(d=>(
+                                <button key={d} type="button" onClick={()=>setCycleInput(String(d))}
+                                    style={{padding:'5px 14px',background:cycleInput===String(d)?'#22C55E':'#F0F0F0',color:cycleInput===String(d)?'#fff':'#555',borderRadius:'20px',border:'none',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>
+                                    {d}일
+                                </button>
+                            ))}
+                        </div>
+                        <div className="modal-btn-row">
+                            <button onClick={()=>setShowCycleModal(null)} className="modal-btn-cancel">취소</button>
+                            {customerCycles[showCycleModal] && (
+                                <button onClick={async()=>{await saveCustomerCycle(showCycleModal,null);setShowCycleModal(null);}}
+                                    style={{flex:1,padding:'13px',borderRadius:'13px',background:'#FEE2E2',color:'#DC2626',fontSize:'14px',fontWeight:700,border:'none',cursor:'pointer'}}>기본값</button>
+                            )}
+                            <button onClick={async()=>{
+                                if(!cycleInput||isNaN(parseInt(cycleInput))||parseInt(cycleInput)<1){showAlert('1 이상의 숫자를 입력하세요.');return;}
+                                await saveCustomerCycle(showCycleModal, cycleInput);
+                                setShowCycleModal(null);
+                            }} className="modal-btn-ok">저장</button>
                         </div>
                     </div>
                 </div>
@@ -1665,9 +1880,6 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
                                 <div className="today-greeting">✦ NIJI STRING PRO</div>
                                 <div className="today-date-label">{(()=>{const d=new Date();const days=['일','월','화','수','목','금','토'];return `${d.getMonth()+1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;})()}</div>
                             </div>
-                            <button className="new-work-btn" onClick={()=>{if(!showForm){setShowForm(true);setEditingId(null);setFormData(makeEmptyForm());setExtraWorks([]);setShowExtraSection(false);setAppliedCoupon(null);setCouponInput('');setCouponMsg('');}}}>
-                                ＋ 새 작업
-                            </button>
                         </div>
                         <div className="today-stats">
                             <div className="today-stat-item">
@@ -1687,23 +1899,99 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
                 </div>
             )}
 
-            {/* ── 메인 탭 바 ── */}
-            <div className="main-tabs">
-                {[
-                    ['customers','👥 고객','active'],
-                    ['coupons','🎫 쿠폰','active-pink'],
-                    ['strings','🎯 스트링','active-yellow'],
-                    ['monthly','📅 월별','active-orange'],
-                    ['yearly','📈 연도별','active-purple'],
-                ].map(([mode, label, activeCls])=>(
-                    <button key={mode} onClick={()=>setViewMode(mode)}
-                        className={`main-tab ${viewMode===mode?activeCls:''}`}>{label}</button>
-                ))}
-            </div>
+            {/* ── 통계 서브탭 (월별/연도별) ── */}
+            {(viewMode==='monthly'||viewMode==='yearly') && (
+                <div className="stat-subtab-row">
+                    <button onClick={()=>setViewMode('monthly')} className={`stat-subtab ${viewMode==='monthly'?'active-orange':''}`}>📅 월별 매출</button>
+                    <button onClick={()=>setViewMode('yearly')} className={`stat-subtab ${viewMode==='yearly'?'active-purple':''}`}>📈 연도별 매출</button>
+                </div>
+            )}
 
             {/* ── 검색 + 버튼 ── */}
             {viewMode==='customers' && (
                 <div style={{padding:'0 12px 4px'}}>
+                    {/* 교체알림 고객 DM 배너 */}
+                    {(()=>{
+                        // DM 아직 안 보낸 교체알림 고객만 필터
+                        const alertCustomers = getCustomerStats().filter(c => {
+                            const daysSince = c.lastVisit ? Math.floor((new Date()-new Date(c.lastVisit.date))/(1000*60*60*24)) : 0;
+                            const cycle = getCustomerCycle(c.name);
+                            return daysSince >= cycle && c.lastVisit?.phone && !isDmSent(c.name);
+                        });
+                        // DM 발송 완료 고객 (오늘 발송)
+                        const sentToday = getCustomerStats().filter(c => {
+                            const daysSince = c.lastVisit ? Math.floor((new Date()-new Date(c.lastVisit.date))/(1000*60*60*24)) : 0;
+                            const cycle = getCustomerCycle(c.name);
+                            return daysSince >= cycle && c.lastVisit?.phone && isDmSent(c.name) === getTodayKST();
+                        });
+
+                        if (alertCustomers.length === 0 && sentToday.length === 0) return null;
+
+                        const dmMsgFor = (name) => `안녕하세요 ${name}님 😊\n니지스트링입니다!\n\n스트링 교체 시기가 지나셨어요 🎾\n오래된 스트링은 컨트롤이 떨어지고 부상 위험이 있어요!\n\n교체 예약 편하게 연락주세요 😊\n감사합니다!`;
+
+                        return (
+                            <div style={{background:'linear-gradient(135deg,#FFF7ED,#FEF3C7)',border:'1.5px solid #FCD34D',borderRadius:'14px',padding:'12px 14px',marginBottom:'10px'}}>
+                                {/* 헤더 */}
+                                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
+                                    <div>
+                                        <span style={{fontSize:'13px',fontWeight:800,color:'#92400E'}}>🔔 교체알림</span>
+                                        {alertCustomers.length > 0 && <span style={{fontSize:'12px',fontWeight:800,color:'#DC2626',marginLeft:'6px',background:'#FEE2E2',padding:'1px 8px',borderRadius:'20px'}}>{alertCustomers.length}명 미발송</span>}
+                                        {sentToday.length > 0 && <span style={{fontSize:'12px',fontWeight:800,color:'#16A34A',marginLeft:'4px',background:'#DCFCE7',padding:'1px 8px',borderRadius:'20px'}}>오늘 {sentToday.length}명 발송 ✅</span>}
+                                    </div>
+                                    {alertCustomers.length > 0 && (
+                                        <button onClick={async ()=>{
+                                            const lines = alertCustomers.map(c=>`  • ${c.name} (${c.lastVisit?.phone})`).join('\n');
+                                            const msg = `안녕하세요 😊 니지스트링입니다!\n\n스트링 교체 시기가 지나셨어요 🎾\n오래된 스트링은 컨트롤이 떨어지고 부상 위험이 있어요!\n\n빠른 예약 받고 있으니 편하게 연락주세요 😊\n감사합니다!\n\n[대상고객]\n${lines}`;
+                                            try {
+                                                await navigator.clipboard.writeText(msg);
+                                                // 전체 발송 처리
+                                                for (const c of alertCustomers) { await saveDmSent(c.name); }
+                                                showAlert(`✅ ${alertCustomers.length}명 메시지 복사 완료!\n카카오톡에 붙여넣기 하세요 😊\n배너에서 제거됩니다.`);
+                                            } catch(e) { showAlert('복사 실패'); }
+                                        }} style={{padding:'6px 12px',background:'#F59E0B',color:'#fff',border:'none',borderRadius:'10px',fontSize:'11px',fontWeight:800,cursor:'pointer',whiteSpace:'nowrap'}}>
+                                            📋 전체복사
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* 미발송 고객 */}
+                                {alertCustomers.length > 0 && (
+                                    <div style={{display:'flex',flexWrap:'wrap',gap:'5px',marginBottom: sentToday.length>0 ? '8px' : '0'}}>
+                                        {alertCustomers.map(c=>(
+                                            <div key={c.name} style={{background:'#fff',borderRadius:'8px',padding:'5px 10px',border:'1px solid #FDE68A',display:'flex',alignItems:'center',gap:'5px'}}>
+                                                <span style={{fontSize:'12px',fontWeight:700,color:'#92400E'}}>{c.name}</span>
+                                                <a href={`sms:${c.lastVisit.phone}?body=${encodeURIComponent(dmMsgFor(c.name))}`}
+                                                    onClick={()=>setTimeout(()=>saveDmSent(c.name), 1500)}
+                                                    style={{fontSize:'10px',background:'#16A34A',color:'#fff',padding:'2px 8px',borderRadius:'6px',textDecoration:'none',fontWeight:800}}>💬 문자</a>
+                                                <button onClick={async ()=>{
+                                                    try {
+                                                        await navigator.clipboard.writeText(dmMsgFor(c.name));
+                                                        await saveDmSent(c.name);
+                                                        showAlert(`✅ ${c.name}님 카톡 메시지 복사!\n카카오톡에 붙여넣기 하세요 😊`);
+                                                    } catch(e) { showAlert('복사 실패'); }
+                                                }} style={{fontSize:'10px',background:'#FEE500',color:'#111',padding:'2px 8px',borderRadius:'6px',border:'none',fontWeight:800,cursor:'pointer'}}>💛 카톡</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* 오늘 발송 완료 고객 */}
+                                {sentToday.length > 0 && (
+                                    <div style={{borderTop: alertCustomers.length>0 ? '1px solid #FDE68A' : 'none', paddingTop: alertCustomers.length>0 ? '8px':'0'}}>
+                                        <div style={{fontSize:'11px',fontWeight:700,color:'#16A34A',marginBottom:'5px'}}>✅ 오늘 발송 완료</div>
+                                        <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
+                                            {sentToday.map(c=>(
+                                                <div key={c.name} style={{background:'#F0FDF4',borderRadius:'8px',padding:'4px 10px',border:'1px solid #BBF7D0',display:'flex',alignItems:'center',gap:'5px'}}>
+                                                    <span style={{fontSize:'12px',fontWeight:700,color:'#15803D'}}>{c.name}</span>
+                                                    <span style={{fontSize:'10px',color:'#16A34A',fontWeight:600}}>✓ 발송완료</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
                     <div className="search-row" style={{padding:0,marginBottom:'8px'}}>
                         <input type="text" placeholder="🔍  고객 검색..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
                             className="search-input"/>
@@ -1712,13 +2000,7 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
                             {showForm?'✕ 취소':'➕ 등록'}
                         </button>
                     </div>
-                    <div className="excel-row" style={{padding:0}}>
-                        <button onClick={handleExportExcel} className="excel-btn excel-btn-export">📤 엑셀 내보내기</button>
-                        <label className="excel-btn excel-btn-import" style={{cursor:'pointer'}}>
-                            📥 엑셀 불러오기
-                            <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} style={{display:'none'}}/>
-                        </label>
-                    </div>
+
                 </div>
             )}
 
@@ -1752,6 +2034,14 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
                                     <p style={{fontSize:'11px',color:'#16A34A',marginTop:'3px',fontWeight:600}}>✓ 이전 기록 자동 입력</p>
                                 )}
                             </div>
+                        </div>
+
+                        {/* 연락처 */}
+                        <div className="form-group">
+                            <label className="form-label">📱 연락처 (카톡/문자 DM용)</label>
+                            <input type="tel" value={formData.phone||''} onChange={e=>setFormData(prev=>({...prev,phone:e.target.value}))}
+                                placeholder="010-1234-5678"
+                                className="form-input"/>
                         </div>
 
                         {/* 라켓명 / 패턴 */}
@@ -1929,47 +2219,6 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
                             )}
                         </div>
 
-                        {/* 원가 입력 (관리자 전용) */}
-                        {isAdmin && (
-                            <div className="cost-section">
-                                <span className="cost-section-badge">🔒 관리자 전용 · 원가</span>
-                                <div className="form-grid-2" style={{marginTop:'6px'}}>
-                                    <div>
-                                        <label className="form-label">스트링 원가 (원)</label>
-                                        <input type="number" value={stringCostPrice}
-                                            onChange={e=>setStringCostPrice(e.target.value)}
-                                            placeholder="예) 7000"
-                                            className="form-input" style={{borderColor:'#FDE68A',background:'#FFFDF0'}}/>
-                                    </div>
-                                    <div>
-                                        <label className="form-label">추가용품 원가 (원)</label>
-                                        <input type="number" value={extraCostPrice}
-                                            onChange={e=>setExtraCostPrice(e.target.value)}
-                                            placeholder="예) 2000"
-                                            className="form-input" style={{borderColor:'#FDE68A',background:'#FFFDF0'}}/>
-                                    </div>
-                                </div>
-                                {(stringCostPrice || extraCostPrice) && (() => {
-                                    const qty = parseInt(formData.quantity)||1;
-                                    const costSum = (parseFloat(stringCostPrice)||0)*qty + (parseFloat(extraCostPrice)||0);
-                                    const margin = calcTotalWithCoupon() - costSum;
-                                    const marginRate = calcTotalWithCoupon() > 0 ? Math.round(margin/calcTotalWithCoupon()*100) : 0;
-                                    return (
-                                        <div style={{marginTop:'10px',padding:'8px 12px',background:'rgba(255,255,255,0.8)',borderRadius:'10px',border:'1px solid #FDE68A'}}>
-                                            <div style={{display:'flex',justifyContent:'space-between',fontSize:'12px',fontWeight:700}}>
-                                                <span style={{color:'#92400E'}}>원가 합계</span>
-                                                <span style={{color:'#92400E'}}>{costSum.toLocaleString()}원</span>
-                                            </div>
-                                            <div style={{display:'flex',justifyContent:'space-between',fontSize:'13px',fontWeight:900,marginTop:'4px'}}>
-                                                <span style={{color:margin>=0?'#16A34A':'#DC2626'}}>마진</span>
-                                                <span style={{color:margin>=0?'#16A34A':'#DC2626'}}>{margin.toLocaleString()}원 ({marginRate}%)</span>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-                        )}
-
                         {/* 합계 */}
                         <div className={`total-box ${color==='blue'?'blue':''}`}>
                             <span className="total-box-label">💰 예상 금액</span>
@@ -2013,7 +2262,7 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
                             <div className="empty-state">
                                 <div style={{fontSize:'48px',marginBottom:'8px'}}>{sport==='tennis'?'🎾':'🏸'}</div>
                                 {searchTerm ? <p>"{searchTerm}" 검색 결과가 없습니다.</p>
-                                    : <><p>등록된 작업이 없습니다.</p><p style={{fontSize:'12px',marginTop:'4px',color:'#9E9E9E'}}>위에서 ➕ 새 작업 버튼을 눌러 시작하세요.</p></>}
+                                    : <><p>등록된 작업이 없습니다.</p><p style={{fontSize:'12px',marginTop:'4px',color:'#9E9E9E'}}>아래 ＋ 버튼을 눌러 등록하세요.</p></>}
                             </div>
                         </div>
                     )}
@@ -2041,100 +2290,125 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
                             const isOpen = expandedCustomers[name];
                             const daysSince = latest.date ? Math.floor((new Date()-new Date(latest.date))/(1000*60*60*24)) : 0;
                             const isVIP = visitCount >= 5;
-                            const needsReplace = daysSince >= 60;
+                            const cycle = getCustomerCycle(name);
+                            const needsReplace = daysSince >= cycle;
                             return (
                                 <div key={name} className="customer-card">
-                                    {/* ── 카드 헤더 ── */}
-                                    <div className={`customer-card-header ${color}`}>
+                                    {/* ── 카드 헤더 (이름 + 날짜만, 클릭으로 펼치기) ── */}
+                                    <div className={`customer-card-header ${color}`}
+                                        onClick={()=>toggleCustomerHistory(name)}
+                                        style={{cursor:'pointer'}}>
                                         <div>
                                             <div className="customer-name-row">
                                                 <div className="customer-name">{latest.name}</div>
                                                 {isVIP && <span className="vip-star">⭐</span>}
+                                                {needsReplace && <span className="replace-alert">🔔 교체알림</span>}
                                             </div>
-                                            <div className="customer-badges">
-                                                <span className="badge">👤 {visitCount}회 방문</span>
-                                                {latest.couponCode && <span className="badge">🎫 쿠폰</span>}
-                                                {latest.isHybrid && <span className="badge">하이브리드</span>}
-                                                {needsReplace && <span className="replace-alert">🔔 교체 알림</span>}
+                                            <div style={{fontSize:'11px',color:'rgba(255,255,255,0.55)',marginTop:'3px',fontWeight:600}}>
+                                                방문 {visitCount}회 · 최근 {latest.date}
+                                                {customerCycles[name] && <span style={{marginLeft:'6px',background:'rgba(251,191,36,0.25)',color:'#FCD34D',padding:'1px 7px',borderRadius:'12px',fontSize:'10px',fontWeight:800}}>⏱ {customerCycles[name]}일</span>}
                                             </div>
                                         </div>
                                         <div className="card-actions">
-                                            <span className="card-date">{latest.date}</span>
-                                            <button onClick={()=>handleEdit(latest)} className="card-action-btn">✏️</button>
-                                            <button onClick={()=>handleDelete(latest)} className="card-action-btn">🗑️</button>
+                                            <span style={{fontSize:'18px',color:'rgba(255,255,255,0.5)',marginRight:'4px'}}>{isOpen?'▲':'▼'}</span>
+                                            <button onClick={e=>{e.stopPropagation();setCycleInput(customerCycles[name]?String(customerCycles[name]):'');setShowCycleModal(name);}} className="card-action-btn" title="교체주기 설정">⏱️</button>
+                                            <button onClick={e=>{e.stopPropagation();handleEdit(latest);}} className="card-action-btn">✏️</button>
+                                            <button onClick={e=>{e.stopPropagation();handleDelete(latest);}} className="card-action-btn">🗑️</button>
                                         </div>
                                     </div>
 
-                                    {/* ── 최근 작업 내용 (항상 표시) ── */}
-                                    <div className="customer-card-body">
-                                        <div className="card-row">
-                                            <span className="card-label">라켓</span>
-                                            <span className="card-val">{latest.racket}</span>
-                                            <span style={{fontSize:'11px',color:'#bbb',fontWeight:600,flexShrink:0}}>{latest.pattern}</span>
-                                        </div>
-                                        <div className="card-row">
-                                            <span className="card-label">스트링</span>
-                                            <div style={{flex:1}}>
-                                                <span className="card-val">{latest.stringType}</span>
-                                                {latest.isHybrid&&latest.hybridString2&&<span style={{fontSize:'11px',color:'#7C3AED',fontWeight:600}}> + {latest.hybridString2}</span>}
-                                                <span style={{fontSize:'11px',color:'#bbb',marginLeft:'4px'}}>{parseInt(latest.stringPrice||0).toLocaleString()}원</span>
-                                            </div>
-                                        </div>
-                                        {latest.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {latest.tension} lbs</span></div>}
-                                        <div className="card-row" style={{marginBottom:0}}>
-                                            <span className="card-label">공임</span>
-                                            <span className="card-val" style={{color:'#616161'}}>{parseInt(latest.labor||0).toLocaleString()}원</span>
-                                            <span style={{fontSize:'11px',color:'#bbb',marginLeft:'12px'}}>수량</span>
-                                            <span className="card-val" style={{color:'#616161',marginLeft:'4px'}}>{latest.quantity}개</span>
-                                        </div>
-                                        {latest.extraWorks&&latest.extraWorks.length>0 && (
-                                            <div className="extra-works-box" style={{marginTop:'8px'}}>
-                                                <div className="extra-works-label">🛠️ 추가작업</div>
-                                                <div>{latest.extraWorks.map((w,i)=>(<span key={i} className="extra-chip">{w.name} {parseInt(w.price||0).toLocaleString()}원</span>))}</div>
-                                            </div>
-                                        )}
-                                        {latest.couponCode && <div style={{marginTop:'6px'}}><span className="coupon-discount">🎫 쿠폰 -{parseInt(latest.couponDiscount||0).toLocaleString()}원</span></div>}
-                                        <div className="card-total-row">
-                                            <span className="card-total-label">최종 금액</span>
-                                            <span className={`card-total-val ${color==='green'?'green':'blue'}`}>{(latest.total||0).toLocaleString()}원</span>
-                                        </div>
-
-                                        {/* ── 이전 방문 드롭다운 버튼 ── */}
-                                        {history.length > 0 && (
-                                            <button onClick={()=>toggleCustomerHistory(name)} className="history-toggle-btn">
-                                                <span>{isOpen ? '▲' : '▼'}</span>
-                                                <span style={{color: isOpen?'#888':'#16A34A', fontWeight:800}}>
-                                                    {isOpen ? '이전 방문 닫기' : `이전 방문 ${history.length}건 보기`}
-                                                </span>
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* ── 이전 방문 기록 (드롭다운) ── */}
-                                    {isOpen && history.map((r,idx)=>(
-                                        <div key={r.fbKey||r.id} style={{borderTop:'1px solid #F0F0F0'}}>
-                                            <div style={{padding:'8px 14px',background:'#FAFAFA',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                                                <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:700}}>📅 {r.date}</span>
-                                                <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
-                                                    {r.couponCode && <span style={{fontSize:'10px',background:'#FCE7F3',color:'#DB2777',padding:'2px 7px',borderRadius:'10px',fontWeight:700}}>🎫쿠폰</span>}
-                                                    {r.isHybrid && <span style={{fontSize:'10px',background:'#F3E8FF',color:'#7C3AED',padding:'2px 7px',borderRadius:'10px',fontWeight:700}}>하이브리드</span>}
-                                                    <button onClick={()=>handleEdit(r)} style={{width:'28px',height:'28px',background:'none',border:'none',cursor:'pointer',fontSize:'13px',minHeight:0}}>✏️</button>
-                                                    <button onClick={()=>handleDelete(r)} style={{width:'28px',height:'28px',background:'none',border:'none',cursor:'pointer',fontSize:'13px',minHeight:0}}>🗑️</button>
+                                    {/* ── 펼쳤을 때만 상세 내용 표시 ── */}
+                                    {isOpen && (
+                                        <div>
+                                            {/* 최근 작업 */}
+                                            <div className="customer-card-body">
+                                                <div style={{fontSize:'11px',fontWeight:800,color:'#bbb',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.5px'}}>📋 최근 작업</div>
+                                                {/* 연락처 + DM 버튼 */}
+                                                {latest.phone && (
+                                                    <div className="card-row" style={{alignItems:'center',marginBottom:'10px',background:'#F0FDF4',borderRadius:'10px',padding:'8px 10px'}}>
+                                                        <span className="card-label" style={{color:'#16A34A'}}>📱연락처</span>
+                                                        <span className="card-val" style={{color:'#15803D',fontSize:'14px'}}>{latest.phone}</span>
+                                                        <div style={{display:'flex',gap:'5px',flexShrink:0}}>
+                                                            {isDmSent(name) && (
+                                                                <span style={{fontSize:'10px',color:'#16A34A',fontWeight:700,padding:'3px 7px',background:'#DCFCE7',borderRadius:'6px'}}>✅ {isDmSent(name)} 발송</span>
+                                                            )}
+                                                            <a href={`sms:${latest.phone}?body=${encodeURIComponent(`안녕하세요 ${latest.name}님 😊\n니지스트링입니다!\n\n마지막 스트링 교체 후 시간이 지났어요 🎾\n스트링이 늘어나면 컨트롤이 떨어지고 부상 위험도 있어요!\n\n교체 예약은 아래로 연락주세요 😊\n감사합니다!`)}`}
+                                                                onClick={()=>setTimeout(()=>saveDmSent(name), 1500)}
+                                                                style={{padding:'5px 10px',background:'#16A34A',color:'#fff',borderRadius:'8px',fontSize:'11px',fontWeight:800,textDecoration:'none',display:'flex',alignItems:'center',gap:'3px'}}>
+                                                                💬 문자
+                                                            </a>
+                                                            <button onClick={async ()=>{
+                                                                    const msg = `안녕하세요 ${latest.name}님 😊\n니지스트링입니다!\n\n마지막 스트링 교체 후 시간이 지났어요 🎾\n스트링이 늘어나면 컨트롤이 떨어지고 부상 위험도 있어요!\n\n교체 예약은 아래로 연락주세요 😊\n감사합니다!`;
+                                                                    try {
+                                                                        await navigator.clipboard.writeText(msg);
+                                                                        await saveDmSent(name);
+                                                                        showAlert('✅ 카톡 메시지가 복사됐어요!\n카카오톡 열고 붙여넣기 하세요 😊');
+                                                                    } catch(e) { showAlert('복사 실패. 직접 전달해 주세요.'); }
+                                                                }}
+                                                                style={{padding:'5px 10px',background:'#FEE500',color:'#111',borderRadius:'8px',fontSize:'11px',fontWeight:800,border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:'3px'}}>
+                                                                💛 카톡복사
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div className="card-row">
+                                                    <span className="card-label">라켓</span>
+                                                    <span className="card-val">{latest.racket}</span>
+                                                    <span style={{fontSize:'11px',color:'#bbb',fontWeight:600,flexShrink:0}}>{latest.pattern}</span>
+                                                </div>
+                                                <div className="card-row">
+                                                    <span className="card-label">스트링</span>
+                                                    <div style={{flex:1}}>
+                                                        <span className="card-val">{latest.stringType}</span>
+                                                        {latest.isHybrid&&latest.hybridString2&&<span style={{fontSize:'11px',color:'#7C3AED',fontWeight:600}}> + {latest.hybridString2}</span>}
+                                                        <span style={{fontSize:'11px',color:'#bbb',marginLeft:'4px'}}>{parseInt(latest.stringPrice||0).toLocaleString()}원</span>
+                                                    </div>
+                                                </div>
+                                                {latest.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {latest.tension} lbs</span></div>}
+                                                <div className="card-row" style={{marginBottom:0}}>
+                                                    <span className="card-label">공임</span>
+                                                    <span className="card-val" style={{color:'#616161'}}>{parseInt(latest.labor||0).toLocaleString()}원</span>
+                                                    <span style={{fontSize:'11px',color:'#bbb',marginLeft:'12px'}}>수량</span>
+                                                    <span className="card-val" style={{color:'#616161',marginLeft:'4px'}}>{latest.quantity}개</span>
+                                                </div>
+                                                {latest.extraWorks&&latest.extraWorks.length>0 && (
+                                                    <div className="extra-works-box" style={{marginTop:'8px'}}>
+                                                        <div className="extra-works-label">🛠️ 추가작업</div>
+                                                        <div>{latest.extraWorks.map((w,i)=>(<span key={i} className="extra-chip">{w.name} {parseInt(w.price||0).toLocaleString()}원</span>))}</div>
+                                                    </div>
+                                                )}
+                                                {latest.couponCode && <div style={{marginTop:'6px'}}><span className="coupon-discount">🎫 쿠폰 -{parseInt(latest.couponDiscount||0).toLocaleString()}원</span></div>}
+                                                <div className="card-total-row">
+                                                    <span className="card-total-label">최종 금액</span>
+                                                    <span className={`card-total-val ${color==='green'?'green':'blue'}`}>{(latest.total||0).toLocaleString()}원</span>
                                                 </div>
                                             </div>
-                                            <div style={{padding:'8px 14px 12px'}}>
-                                                <div className="card-row"><span className="card-label">라켓</span><span className="card-val" style={{fontSize:'11px'}}>{r.racket}</span><span style={{fontSize:'11px',color:'#bbb'}}>{r.pattern}</span></div>
-                                                <div className="card-row"><span className="card-label">스트링</span><span style={{fontSize:'11px',color:'#111',fontWeight:600,flex:1}}>{r.stringType}{r.isHybrid&&r.hybridString2&&<span style={{color:'#7C3AED'}}> + {r.hybridString2}</span>}<span style={{color:'#bbb',marginLeft:'4px'}}>{parseInt(r.stringPrice||0).toLocaleString()}원</span></span></div>
-                                                {r.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {r.tension} lbs</span></div>}
-                                                <div className="card-row" style={{marginBottom:0}}><span className="card-label">공임</span><span style={{fontSize:'11px',color:'#616161',fontWeight:600}}>{parseInt(r.labor||0).toLocaleString()}원</span><span style={{fontSize:'11px',color:'#bbb',marginLeft:'10px'}}>수량 {r.quantity}개</span></div>
-                                                {r.couponCode && <div style={{fontSize:'11px',color:'#DB2777',fontWeight:600,marginTop:'4px'}}>🎫 -{parseInt(r.couponDiscount||0).toLocaleString()}원</div>}
-                                                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:'8px',marginTop:'4px',borderTop:'1px solid #F0F0F0'}}>
-                                                    <span style={{fontSize:'11px',color:'#bbb',fontWeight:600}}>금액</span>
-                                                    <span style={{fontSize:'14px',fontWeight:800,color:color==='green'?'#16A34A':'#1D4ED8'}}>{(r.total||0).toLocaleString()}원</span>
+
+                                            {/* 이전 방문 기록 */}
+                                            {history.length > 0 && (
+                                                <div style={{borderTop:'1px solid #F0F0F0'}}>
+                                                    <div style={{padding:'10px 16px 4px',fontSize:'11px',fontWeight:800,color:'#bbb',textTransform:'uppercase',letterSpacing:'0.5px'}}>
+                                                        🕐 이전 방문 {history.length}건
+                                                    </div>
+                                                    {history.map((r,idx)=>(
+                                                        <div key={r.fbKey||r.id} style={{borderTop:'1px solid #F8F8F8'}}>
+                                                            <div style={{padding:'10px 16px 4px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                                                                <span style={{fontSize:'12px',fontWeight:800,color:'#555'}}>{r.date}</span>
+                                                                <span style={{fontSize:'12px',fontWeight:700,color:color==='green'?'#16A34A':'#1D4ED8'}}>{(r.total||0).toLocaleString()}원</span>
+                                                            </div>
+                                                            <div style={{padding:'0 16px 10px'}}>
+                                                                <div className="card-row"><span className="card-label">라켓</span><span className="card-val" style={{fontSize:'11px'}}>{r.racket}</span><span style={{fontSize:'11px',color:'#bbb'}}>{r.pattern}</span></div>
+                                                                <div className="card-row"><span className="card-label">스트링</span><span style={{fontSize:'11px',color:'#111',fontWeight:600,flex:1}}>{r.stringType}{r.isHybrid&&r.hybridString2&&<span style={{color:'#7C3AED'}}> + {r.hybridString2}</span>}<span style={{color:'#bbb',marginLeft:'4px'}}>{parseInt(r.stringPrice||0).toLocaleString()}원</span></span></div>
+                                                                {r.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {r.tension} lbs</span></div>}
+                                                                <div className="card-row" style={{marginBottom:0}}><span className="card-label">공임</span><span style={{fontSize:'11px',color:'#616161',fontWeight:600}}>{parseInt(r.labor||0).toLocaleString()}원</span><span style={{fontSize:'11px',color:'#bbb',marginLeft:'10px'}}>수량 {r.quantity}개</span></div>
+                                                                {r.couponCode && <div style={{fontSize:'11px',color:'#DB2777',fontWeight:600,marginTop:'4px'}}>🎫 -{parseInt(r.couponDiscount||0).toLocaleString()}원</div>}
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            </div>
+                                            )}
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             );
                         });
@@ -2145,13 +2419,15 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
             {/* ── 월별 매출 ── */}
             {viewMode==='monthly' && (
                 <div style={{padding:'0 12px 80px'}}>
-                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'4px 0 12px'}}>📅 월별 매출 현황</div>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 0 10px'}}>
+                        <div style={{fontSize:'16px',fontWeight:800,color:'#111'}}>📅 월별 매출 현황</div>
+                        {adminUnlocked
+                            ? <button onClick={()=>setAdminUnlocked(false)} style={{padding:'5px 12px',background:'#F3F4F6',color:'#616161',border:'none',borderRadius:'20px',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>🔒 원가 숨기기</button>
+                            : <button onClick={()=>{setShowAdminModal(true);setAdminPinInput('');setAdminPinError('');}} style={{padding:'5px 12px',background:'#111',color:'#fff',border:'none',borderRadius:'20px',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>🔓 원가 보기</button>
+                        }
+                    </div>
                     {getMonthlyStats().length===0 && <div className="empty-state">데이터가 없습니다.</div>}
-                    {getMonthlyStats().map(stat=>{
-                        const margin = stat.total - stat.costTotal;
-                        const marginRate = stat.total > 0 ? Math.round(margin/stat.total*100) : 0;
-                        const hasCostData = stat.costTotal > 0;
-                        return (
+                    {getMonthlyStats().map(stat=>(
                         <div key={stat.month} className="stat-card">
                             <div className="stat-card-header">
                                 <div>
@@ -2164,42 +2440,34 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
                                 <div className="stat-row"><span className="stat-row-label">🎯 스트링비</span><span className="stat-row-val" style={{color:'#EA580C'}}>{stat.stringTotal.toLocaleString()}원</span></div>
                                 <div className="stat-row"><span className="stat-row-label">🔧 공임비</span><span className="stat-row-val" style={{color:'#2563EB'}}>{stat.laborTotal.toLocaleString()}원</span></div>
                                 <div className="stat-row"><span className="stat-row-label">🛠️ 추가작업비</span><span className="stat-row-val" style={{color:'#4F46E5'}}>{(stat.extraTotal||0).toLocaleString()}원</span></div>
+                                {adminUnlocked && (<>
+                                    <div style={{borderTop:'1px dashed #E5E7EB',margin:'6px 0'}}/>
+                                    <div className="stat-row"><span className="stat-row-label">🔒 스트링 원가</span><span className="stat-row-val" style={{color:'#9E9E9E'}}>{(stat.costTotal||0).toLocaleString()}원</span></div>
+                                    <div className="stat-row"><span className="stat-row-label">💰 순이익 (매출-원가)</span><span className="stat-row-val" style={{color: stat.profit>=0?'#16A34A':'#DC2626', fontWeight:800}}>{(stat.profit||0).toLocaleString()}원</span></div>
+                                </>)}
                             </div>
-                            {isAdmin && hasCostData && (
-                                <div className="stat-margin-row">
-                                    <div>
-                                        <div className="stat-margin-label">🔒 원가 합계</div>
-                                        <div style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600,marginTop:'2px'}}>마진 = 매출 - 원가</div>
-                                    </div>
-                                    <div style={{textAlign:'right'}}>
-                                        <div style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>{stat.costTotal.toLocaleString()}원</div>
-                                        <div className={`stat-margin-val ${margin>=0?'margin-positive':'margin-negative'}`}>
-                                            {margin.toLocaleString()}원 ({marginRate}%)
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                         </div>
-                        );
-                    })}
+                    ))}
                 </div>
             )}
 
             {/* ── 연도별 매출 ── */}
             {viewMode==='yearly' && (
                 <div style={{padding:'0 12px 80px'}}>
-                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'4px 0 12px'}}>📈 연도별 매출 현황</div>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 0 10px'}}>
+                        <div style={{fontSize:'16px',fontWeight:800,color:'#111'}}>📈 연도별 매출 현황</div>
+                        {adminUnlocked
+                            ? <button onClick={()=>setAdminUnlocked(false)} style={{padding:'5px 12px',background:'#F3F4F6',color:'#616161',border:'none',borderRadius:'20px',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>🔒 원가 숨기기</button>
+                            : <button onClick={()=>{setShowAdminModal(true);setAdminPinInput('');setAdminPinError('');}} style={{padding:'5px 12px',background:'#111',color:'#fff',border:'none',borderRadius:'20px',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>🔓 원가 보기</button>
+                        }
+                    </div>
                     {getYearlyStats().length===0 && <div className="empty-state">데이터가 없습니다.</div>}
-                    {getYearlyStats().map(stat=>{
-                        const margin = stat.total - stat.costTotal;
-                        const marginRate = stat.total > 0 ? Math.round(margin/stat.total*100) : 0;
-                        const hasCostData = stat.costTotal > 0;
-                        return (
+                    {getYearlyStats().map(stat=>(
                         <div key={stat.year} className="stat-card">
                             <div className="stat-card-header">
                                 <div>
                                     <div className="stat-month">{stat.year}년</div>
-                                    <div className="stat-count">총 {stat.count}건 · 월평균 {Math.round(stat.total/12).toLocaleString()}원</div>
+                                    <div className="stat-count">총 {stat.count}건 · 월평균 {Math.round(stat.total/(stat.monthCount||12)).toLocaleString()}원</div>
                                 </div>
                                 <div className="stat-total purple">{stat.total.toLocaleString()}원</div>
                             </div>
@@ -2207,30 +2475,21 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
                                 <div className="stat-row"><span className="stat-row-label">🎯 스트링비 합계</span><span className="stat-row-val" style={{color:'#EA580C'}}>{stat.stringTotal.toLocaleString()}원</span></div>
                                 <div className="stat-row"><span className="stat-row-label">🔧 공임비 합계</span><span className="stat-row-val" style={{color:'#2563EB'}}>{stat.laborTotal.toLocaleString()}원</span></div>
                                 <div className="stat-row"><span className="stat-row-label">🛠️ 추가작업비 합계</span><span className="stat-row-val" style={{color:'#4F46E5'}}>{(stat.extraTotal||0).toLocaleString()}원</span></div>
+                                {adminUnlocked && (<>
+                                    <div style={{borderTop:'1px dashed #E5E7EB',margin:'6px 0'}}/>
+                                    <div className="stat-row"><span className="stat-row-label">🔒 스트링 원가 합계</span><span className="stat-row-val" style={{color:'#9E9E9E'}}>{(stat.costTotal||0).toLocaleString()}원</span></div>
+                                    <div className="stat-row"><span className="stat-row-label">💰 연간 순이익</span><span className="stat-row-val" style={{color: stat.profit>=0?'#16A34A':'#DC2626', fontWeight:800}}>{(stat.profit||0).toLocaleString()}원</span></div>
+                                </>)}
                             </div>
-                            {isAdmin && hasCostData && (
-                                <div className="stat-margin-row">
-                                    <div>
-                                        <div className="stat-margin-label">🔒 연간 원가 합계</div>
-                                        <div style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600,marginTop:'2px'}}>총마진 = 매출 - 원가</div>
-                                    </div>
-                                    <div style={{textAlign:'right'}}>
-                                        <div style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>{stat.costTotal.toLocaleString()}원</div>
-                                        <div className={`stat-margin-val ${margin>=0?'margin-positive':'margin-negative'}`}>
-                                            {margin.toLocaleString()}원 ({marginRate}%)
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                         </div>
-                        );
-                    })}
+                    ))}
                 </div>
             )}
 
             {/* ── 쿠폰 관리 ── */}
             {viewMode==='coupons' && (
                 <div style={{padding:'0 12px 80px'}}>
+                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'12px 0 8px'}}>🎫 쿠폰 관리</div>
                     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
                         <button onClick={()=>{setShowBulkForm(!showBulkForm);setShowCouponForm(false);setBulkResult(null);}}
                             style={{padding:'12px',background:showBulkForm?'#9E9E9E':'#A855F7',color:'#fff',borderRadius:'13px',border:'none',fontWeight:700,fontSize:'13px',cursor:'pointer'}}>
@@ -2374,6 +2633,7 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
             {/* ── 스트링 관리 ── */}
             {viewMode==='strings' && (
                 <div style={{padding:'0 12px 80px'}}>
+                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'12px 0 8px'}}>🎯 스트링 관리</div>
                     <button onClick={()=>{setShowAddModal(true);setModalStringName('');setModalStringPrice('');}}
                         style={{width:'100%',padding:'13px',background:'#EAB308',color:'#fff',borderRadius:'13px',border:'none',fontWeight:800,fontSize:'14px',cursor:'pointer',marginBottom:'10px',boxShadow:'0 4px 12px rgba(234,179,8,0.3)'}}>
                         ➕ 새 스트링 추가
@@ -2416,30 +2676,111 @@ const StringingApp = ({ sport, uid, isAdmin }) => {
                             </div>
                         ))}
                     </div>
+
+                    {/* ── 원가 관리 (관리자 전용) ── */}
+                    <div className="stat-card" style={{marginTop:'12px'}}>
+                        <div className="section-header">
+                            <span className="section-title">🔒 원가 관리 (관리자 전용)</span>
+                            {adminUnlocked
+                                ? <button onClick={()=>setAdminUnlocked(false)} style={{padding:'4px 12px',background:'#E5E7EB',color:'#616161',border:'none',borderRadius:'20px',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>🔒 잠금</button>
+                                : <button onClick={()=>{setShowAdminModal(true);setAdminPinInput('');setAdminPinError('');}} style={{padding:'4px 12px',background:'#111',color:'#fff',border:'none',borderRadius:'20px',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>🔓 열기</button>
+                            }
+                        </div>
+                        {!adminUnlocked && (
+                            <div style={{padding:'20px',textAlign:'center',color:'#9E9E9E',fontSize:'13px'}}>
+                                <div style={{fontSize:'28px',marginBottom:'8px'}}>🔒</div>
+                                <div style={{fontWeight:700}}>관리자 PIN이 필요합니다</div>
+                                <div style={{fontSize:'12px',marginTop:'4px'}}>위 🔓 열기 버튼을 눌러 PIN을 입력하세요</div>
+                            </div>
+                        )}
+                        {adminUnlocked && (
+                            <div>
+                                <div style={{padding:'10px 16px 6px',fontSize:'12px',color:'#9E9E9E',fontWeight:600}}>
+                                    💡 각 스트링의 구매 원가를 입력하면 통계에서 순이익을 볼 수 있어요
+                                </div>
+                                {Object.entries(customStrings).sort((a,b)=>a[0].localeCompare(b[0],'ko')).map(([name])=>(
+                                    <div key={name} style={{display:'flex',alignItems:'center',padding:'10px 16px',borderBottom:'1px solid #F5F5F5',gap:'10px'}}>
+                                        <div style={{flex:1,fontSize:'13px',fontWeight:700,color:'#111'}}>{name}</div>
+                                        <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                                            <input
+                                                type="number"
+                                                value={stringCosts[name] !== undefined ? stringCosts[name] : ''}
+                                                onChange={e => {
+                                                    const v = e.target.value;
+                                                    setStringCosts(prev=>({...prev,[name]: v===''?undefined:Number(v)}));
+                                                }}
+                                                onBlur={e => saveStringCost(name, e.target.value)}
+                                                placeholder="원가"
+                                                style={{width:'90px',padding:'7px 10px',border:'1px solid #E2E2E2',borderRadius:'9px',fontSize:'13px',textAlign:'right'}}
+                                            />
+                                            <span style={{fontSize:'12px',color:'#9E9E9E',fontWeight:600}}>원</span>
+                                        </div>
+                                    </div>
+                                ))}
+                                {Object.keys(customStrings).length === 0 && (
+                                    <div style={{padding:'16px',textAlign:'center',color:'#9E9E9E',fontSize:'13px'}}>등록된 스트링이 없습니다.</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ── 설정 ── */}
+            {viewMode==='settings' && (
+                <div style={{padding:'0 12px 80px'}}>
+                    <div style={{fontSize:'16px',fontWeight:800,color:'#111',padding:'12px 0 8px'}}>⚙️ 설정</div>
+                    <div className="stat-card" style={{marginBottom:'12px'}}>
+                        <div className="section-header">
+                            <span className="section-title">📊 데이터 관리</span>
+                        </div>
+                        <div style={{padding:'16px'}}>
+                            <p style={{fontSize:'12px',color:'#9E9E9E',marginBottom:'12px',fontWeight:600}}>고객 데이터를 엑셀 파일로 내보내거나 가져올 수 있어요.</p>
+                            <button onClick={handleExportExcel} className="excel-btn excel-btn-export" style={{width:'100%',marginBottom:'10px',padding:'14px',borderRadius:'13px',fontSize:'14px',fontWeight:800}}>
+                                📤 엑셀 내보내기
+                            </button>
+                            <label className="excel-btn excel-btn-import" style={{cursor:'pointer',width:'100%',padding:'14px',borderRadius:'13px',fontSize:'14px',fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
+                                📥 엑셀 불러오기
+                                <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} style={{display:'none'}}/>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* 사용 설명서 - 별도 컴포넌트 사용 (IIFE 안에서 useState 쓰면 React 훅 규칙 위반) */}
+                    <HelpSection />
                 </div>
             )}
             {/* ══ 하단 고정 메뉴바 ══ */}
             <div className="bottom-nav">
-                <button className="nav-item" onClick={()=>{setViewMode('customers');setShowForm(false);}}>
-                    <div className="nav-icon" style={(viewMode==='customers'&&!showForm)?{background:'linear-gradient(135deg,#15803D,#22C55E)',boxShadow:'0 4px 12px rgba(34,197,94,0.4)'}:{background:'#F5F5F5'}}>🏠</div>
-                    <span className="nav-label" style={(viewMode==='customers'&&!showForm)?{color:'#16A34A'}:{}}>홈</span>
+                {/* 고객관리 */}
+                <button className={`nav-item ${viewMode==='customers'&&!showForm?'active':''}`}
+                    onClick={()=>{setViewMode('customers');setShowForm(false);setSearchTerm('');}}>
+                    <div className="nav-icon">🏠</div>
+                    <span className="nav-label">고객관리</span>
                 </button>
-                <button className="nav-item" onClick={()=>{setViewMode('customers');setShowForm(false);}}>
-                    <div className="nav-icon" style={{background:'#F5F5F5'}}>👥</div>
-                    <span className="nav-label">고객</span>
+                {/* 매출통계 */}
+                <button className="nav-item"
+                    onClick={()=>{setViewMode('monthly');setShowForm(false);}}>
+                    <div className="nav-icon" style={(viewMode==='monthly'||viewMode==='yearly')?{background:'linear-gradient(135deg,#C2410C,#EA580C)',boxShadow:'0 4px 12px rgba(234,88,12,0.4)'}:{}}>📊</div>
+                    <span className="nav-label" style={(viewMode==='monthly'||viewMode==='yearly')?{color:'#EA580C'}:{}}>매출통계</span>
                 </button>
-                <button className="nav-center-btn" style={{background:'none',border:'none'}}
-                    onClick={()=>{if(showForm&&editingId){resetForm();}else{setShowForm(!showForm);}if(!showForm){setEditingId(null);setFormData(makeEmptyForm());setExtraWorks([]);setShowExtraSection(false);setAppliedCoupon(null);setCouponInput('');setCouponMsg('');setViewMode('customers');}}}>
-                    <div className={`nav-center-inner ${showForm?'cancel':''}`}>{showForm?'✕':'＋'}</div>
-                    <span className="nav-center-label">{showForm?'취소':'등록'}</span>
+                {/* 스트링 관리 */}
+                <button className={`nav-item ${viewMode==='strings'?'active-yellow':''}`}
+                    onClick={()=>{setViewMode('strings');setShowForm(false);}}>
+                    <div className="nav-icon" style={viewMode==='strings'?{background:'linear-gradient(135deg,#B45309,#D97706)',boxShadow:'0 4px 12px rgba(217,119,6,0.4)'}:{}}>🎯</div>
+                    <span className="nav-label" style={viewMode==='strings'?{color:'#B45309'}:{}}>스트링</span>
                 </button>
-                <button className="nav-item" onClick={()=>{setViewMode('monthly');setShowForm(false);}}>
-                    <div className="nav-icon" style={(viewMode==='monthly'||viewMode==='yearly')?{background:'linear-gradient(135deg,#EA580C,#F97316)',boxShadow:'0 4px 12px rgba(249,115,22,0.4)'}:{background:'#F5F5F5'}}>📊</div>
-                    <span className="nav-label" style={(viewMode==='monthly'||viewMode==='yearly')?{color:'#EA580C'}:{}}>통계</span>
+                {/* 쿠폰 */}
+                <button className={`nav-item ${viewMode==='coupons'?'active-pink':''}`}
+                    onClick={()=>{setViewMode('coupons');setShowForm(false);}}>
+                    <div className="nav-icon" style={viewMode==='coupons'?{background:'linear-gradient(135deg,#be185d,#EC4899)',boxShadow:'0 4px 12px rgba(236,72,153,0.4)'}:{}}>🎫</div>
+                    <span className="nav-label" style={viewMode==='coupons'?{color:'#be185d'}:{}}>쿠폰</span>
                 </button>
-                <button className="nav-item" onClick={()=>{setViewMode('coupons');setShowForm(false);}}>
-                    <div className="nav-icon" style={(viewMode==='coupons'||viewMode==='strings')?{background:'linear-gradient(135deg,#be185d,#EC4899)',boxShadow:'0 4px 12px rgba(236,72,153,0.4)'}:{background:'#F5F5F5'}}>⚙️</div>
-                    <span className="nav-label" style={(viewMode==='coupons'||viewMode==='strings')?{color:'#be185d'}:{}}>설정</span>
+                {/* 설정 */}
+                <button className={`nav-item ${viewMode==='settings'?'active-yellow':''}`}
+                    onClick={()=>{setViewMode('settings');setShowForm(false);}}>
+                    <div className="nav-icon" style={viewMode==='settings'?{background:'linear-gradient(135deg,#0F766E,#0D9488)',boxShadow:'0 4px 12px rgba(13,148,136,0.4)'}:{}}>⚙️</div>
+                    <span className="nav-label" style={viewMode==='settings'?{color:'#0F766E'}:{}}>설정</span>
                 </button>
             </div>
         </div>
@@ -2477,8 +2818,6 @@ const App = () => {
 
     if (!user) return <LoginScreen />;
 
-    const isAdmin = user.email === ADMIN_EMAIL;
-
     return (
         <div style={{minHeight:'100vh',background:'#F5F5F5'}}>
             <div className="app-header">
@@ -2487,7 +2826,7 @@ const App = () => {
                         <div className="header-logo">N</div>
                         <div>
                             <div className="header-title">NIJI STRING PRO</div>
-                            <div className="header-subtitle">{user.email}{isAdmin && <span style={{marginLeft:'6px',fontSize:'9px',background:'#F59E0B',color:'#fff',padding:'1px 6px',borderRadius:'10px',fontWeight:900}}>ADMIN</span>}</div>
+                            <div className="header-subtitle">{user.email}</div>
                         </div>
                     </div>
                     <button onClick={handleLogout} className="logout-btn">로그아웃</button>
@@ -2497,7 +2836,7 @@ const App = () => {
                     <button onClick={()=>setSport('badminton')} className={`sport-tab ${sport==='badminton'?'active-blue':''}`}>🏸 배드민턴</button>
                 </div>
             </div>
-            <StringingApp key={`${user.uid}-${sport}`} sport={sport} uid={user.uid} isAdmin={isAdmin} />
+            <StringingApp key={`${user.uid}-${sport}`} sport={sport} uid={user.uid} />
         </div>
     );
 };
