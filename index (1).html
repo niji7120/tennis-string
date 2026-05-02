@@ -1035,6 +1035,7 @@ const StringingApp = ({ sport, uid }) => {
         quantity:1, tension:'',
         isHybrid:false, hybridString2:'', hybridPrice2:'',
         phone:'',
+        serviceType: 'none', // 'grip' | 'parking' | 'none'
     });
     const [formData, setFormData] = useState(makeEmptyForm());
 
@@ -1679,7 +1680,11 @@ const StringingApp = ({ sport, uid }) => {
             // 원가 계산
             const cost1 = stringCosts[r.stringType] || 0;
             const cost2 = r.isHybrid && r.hybridString2 ? (stringCosts[r.hybridString2] || 0) : 0;
-            map[m].costTotal += (cost1 + cost2) * qty;
+            // 서비스 원가 계산 (스트링값 0=고객스트링, >0=샵스트링)
+            const isShopString = (parseFloat(r.stringPrice)||0) > 0;
+            const svcCost = r.serviceType === 'grip' ? (isShopString ? 1400 : 900)
+                          : r.serviceType === 'parking' ? 1000 : 0;
+            map[m].costTotal += (cost1 + cost2) * qty + svcCost;
         });
         return Object.values(map).map(s=>({...s, profit: s.total - s.costTotal})).sort((a,b)=>b.month.localeCompare(a.month));
     };
@@ -1701,7 +1706,11 @@ const StringingApp = ({ sport, uid }) => {
             // 원가 계산
             const cost1 = stringCosts[r.stringType] || 0;
             const cost2 = r.isHybrid && r.hybridString2 ? (stringCosts[r.hybridString2] || 0) : 0;
-            map[y].costTotal += (cost1 + cost2) * qty;
+            // 서비스 원가 계산
+            const isShopStringY = (parseFloat(r.stringPrice)||0) > 0;
+            const svcCostY = r.serviceType === 'grip' ? (isShopStringY ? 1400 : 900)
+                           : r.serviceType === 'parking' ? 1000 : 0;
+            map[y].costTotal += (cost1 + cost2) * qty + svcCostY;
         });
         return Object.values(map).map(s=>({...s, monthCount:s.months.size, profit: s.total - s.costTotal})).sort((a,b)=>b.year.localeCompare(a.year));
     };
@@ -2148,6 +2157,36 @@ const StringingApp = ({ sport, uid }) => {
                             </div>
                         </div>
 
+                        {/* 서비스 선택 */}
+                        <div style={{marginBottom:'12px'}}>
+                            <label className="form-label">🎁 서비스 제공</label>
+                            <div style={{display:'flex',gap:'8px',marginTop:'6px'}}>
+                                {[
+                                    {val:'grip', label:'🎾 그립'},
+                                    {val:'parking', label:'🅿️ 주차권'},
+                                    {val:'none', label:'없음'},
+                                ].map(opt=>(
+                                    <button key={opt.val} type="button"
+                                        onClick={()=>setFormData(prev=>({...prev,serviceType:opt.val}))}
+                                        style={{
+                                            flex:1, padding:'10px 4px', borderRadius:'10px', border:'2px solid',
+                                            borderColor: formData.serviceType===opt.val ? '#4F46E5' : '#E5E7EB',
+                                            background: formData.serviceType===opt.val ? '#EEF2FF' : '#F9FAFB',
+                                            color: formData.serviceType===opt.val ? '#4F46E5' : '#6B7280',
+                                            fontWeight: formData.serviceType===opt.val ? 800 : 500,
+                                            fontSize:'13px', cursor:'pointer',
+                                        }}>
+                                        {opt.label}
+                                        <div style={{fontSize:'10px',marginTop:'2px',color:'#9CA3AF',fontWeight:400}}>
+                                            {opt.val==='grip'
+                                                ? ((parseFloat(formData.stringPrice)||0)>0 ? '원가 1,400원' : '원가 900원')
+                                                : opt.val==='parking' ? '원가 1,000원' : ''}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         {/* 쿠폰 */}
                         {!editingId && (
                             <div className="coupon-box">
@@ -2400,7 +2439,8 @@ const StringingApp = ({ sport, uid }) => {
                                                                 <div className="card-row"><span className="card-label">라켓</span><span className="card-val" style={{fontSize:'11px'}}>{r.racket}</span><span style={{fontSize:'11px',color:'#bbb'}}>{r.pattern}</span></div>
                                                                 <div className="card-row"><span className="card-label">스트링</span><span style={{fontSize:'11px',color:'#111',fontWeight:600,flex:1}}>{r.stringType}{r.isHybrid&&r.hybridString2&&<span style={{color:'#7C3AED'}}> + {r.hybridString2}</span>}<span style={{color:'#bbb',marginLeft:'4px'}}>{parseInt(r.stringPrice||0).toLocaleString()}원</span></span></div>
                                                                 {r.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {r.tension} lbs</span></div>}
-                                                                <div className="card-row" style={{marginBottom:0}}><span className="card-label">공임</span><span style={{fontSize:'11px',color:'#616161',fontWeight:600}}>{parseInt(r.labor||0).toLocaleString()}원</span><span style={{fontSize:'11px',color:'#bbb',marginLeft:'10px'}}>수량 {r.quantity}개</span></div>
+                                                                <div className="card-row"><span className="card-label">공임</span><span style={{fontSize:'11px',color:'#616161',fontWeight:600}}>{parseInt(r.labor||0).toLocaleString()}원</span><span style={{fontSize:'11px',color:'#bbb',marginLeft:'10px'}}>수량 {r.quantity}개</span></div>
+                                                                {r.serviceType && r.serviceType!=='none' && <div className="card-row" style={{marginBottom:0}}><span className="card-label">서비스</span><span style={{fontSize:'11px',color:'#4F46E5',fontWeight:600}}>{r.serviceType==='grip'?'🎾 그립':r.serviceType==='parking'?'🅿️ 주차권':''}</span></div>}
                                                                 {r.couponCode && <div style={{fontSize:'11px',color:'#DB2777',fontWeight:600,marginTop:'4px'}}>🎫 -{parseInt(r.couponDiscount||0).toLocaleString()}원</div>}
                                                             </div>
                                                         </div>
@@ -2442,7 +2482,7 @@ const StringingApp = ({ sport, uid }) => {
                                 <div className="stat-row"><span className="stat-row-label">🛠️ 추가작업비</span><span className="stat-row-val" style={{color:'#4F46E5'}}>{(stat.extraTotal||0).toLocaleString()}원</span></div>
                                 {adminUnlocked && (<>
                                     <div style={{borderTop:'1px dashed #E5E7EB',margin:'6px 0'}}/>
-                                    <div className="stat-row"><span className="stat-row-label">🔒 스트링 원가</span><span className="stat-row-val" style={{color:'#9E9E9E'}}>{(stat.costTotal||0).toLocaleString()}원</span></div>
+                                    <div className="stat-row"><span className="stat-row-label">🔒 원가 합계 (스트링+서비스)</span><span className="stat-row-val" style={{color:'#9E9E9E'}}>{(stat.costTotal||0).toLocaleString()}원</span></div>
                                     <div className="stat-row"><span className="stat-row-label">💰 순이익 (매출-원가)</span><span className="stat-row-val" style={{color: stat.profit>=0?'#16A34A':'#DC2626', fontWeight:800}}>{(stat.profit||0).toLocaleString()}원</span></div>
                                 </>)}
                             </div>
@@ -2477,7 +2517,7 @@ const StringingApp = ({ sport, uid }) => {
                                 <div className="stat-row"><span className="stat-row-label">🛠️ 추가작업비 합계</span><span className="stat-row-val" style={{color:'#4F46E5'}}>{(stat.extraTotal||0).toLocaleString()}원</span></div>
                                 {adminUnlocked && (<>
                                     <div style={{borderTop:'1px dashed #E5E7EB',margin:'6px 0'}}/>
-                                    <div className="stat-row"><span className="stat-row-label">🔒 스트링 원가 합계</span><span className="stat-row-val" style={{color:'#9E9E9E'}}>{(stat.costTotal||0).toLocaleString()}원</span></div>
+                                    <div className="stat-row"><span className="stat-row-label">🔒 원가 합계 (스트링+서비스)</span><span className="stat-row-val" style={{color:'#9E9E9E'}}>{(stat.costTotal||0).toLocaleString()}원</span></div>
                                     <div className="stat-row"><span className="stat-row-label">💰 연간 순이익</span><span className="stat-row-val" style={{color: stat.profit>=0?'#16A34A':'#DC2626', fontWeight:800}}>{(stat.profit||0).toLocaleString()}원</span></div>
                                 </>)}
                             </div>
