@@ -450,6 +450,8 @@
         .nav-item.active-pink .nav-label { color: #be185d; }
         .nav-item.active-yellow .nav-icon { background: linear-gradient(135deg,#B45309,#D97706); box-shadow: 0 4px 12px rgba(217,119,6,0.4); }
         .nav-item.active-yellow .nav-label { color: #B45309; }
+        .nav-item.active-teal .nav-icon { background: linear-gradient(135deg,#0F766E,#0D9488); box-shadow: 0 4px 12px rgba(13,148,136,0.4); }
+        .nav-item.active-teal .nav-label { color: #0F766E; }
 
         /* ══ 등록 중앙 버튼 ══ */
         .nav-center-btn {
@@ -1014,6 +1016,16 @@ const StringingApp = ({ sport, uid }) => {
     const [saveStatus, setSaveStatus] = useState('');
     const [dmSentList, setDmSentList] = useState({}); // { 고객명: 'YYYY-MM-DD' }
     const [customerCycles, setCustomerCycles] = useState({}); // { 고객명: 일수 }
+
+    // ── 용품 판매 관련 State ─────────────────────
+    const [productSales, setProductSales] = useState([]); // 용품 판매 기록
+    const [productItems, setProductItems] = useState([]); // 용품 카탈로그 (이름, 원가, 판매가)
+    const [showProductSaleForm, setShowProductSaleForm] = useState(false);
+    const [productSaleForm, setProductSaleForm] = useState({date:'', productName:'', salePrice:'', costPrice:'', qty:1, memo:''});
+    const [showProductItemForm, setShowProductItemForm] = useState(false);
+    const [productItemForm, setProductItemForm] = useState({name:'', salePrice:'', costPrice:''});
+    const [editingProductSaleKey, setEditingProductSaleKey] = useState(null);
+    const [showProductDropdown, setShowProductDropdown] = useState(false);
     const [showCycleModal, setShowCycleModal] = useState(null); // null 또는 고객명
     const [cycleInput, setCycleInput] = useState('');
 
@@ -1056,7 +1068,7 @@ const StringingApp = ({ sport, uid }) => {
         const couponsRef = db.ref(dbPath(uid, sport, 'coupons'));
         const extrasRef  = db.ref(dbPath(uid, sport, 'extraItems'));
 
-        let loaded = {records:false, strings:false, coupons:false, extras:false, dmSent:false, cycles:false, costs:false};
+        let loaded = {records:false, strings:false, coupons:false, extras:false, dmSent:false, cycles:false, costs:false, productSales:false, productItems:false};
         const checkAllLoaded = () => {
             if (Object.values(loaded).every(Boolean)) setDbLoading(false);
         };
@@ -1160,6 +1172,33 @@ const StringingApp = ({ sport, uid }) => {
         };
         costsRef.on('value', costsListener);
 
+        // productSales 리스너
+        const productSalesRef = db.ref(dbPath(uid, sport, 'productSales'));
+        const productSalesListener = snap => {
+            const val = snap.val();
+            if (val) {
+                const arr = Object.entries(val).map(([fbKey, v]) => ({...v, fbKey}));
+                arr.sort((a,b) => { if(b.date!==a.date) return b.date.localeCompare(a.date); return (b.createdAt||0)-(a.createdAt||0); });
+                setProductSales(arr);
+            } else { setProductSales([]); }
+            loaded.productSales = true;
+            checkAllLoaded();
+        };
+        productSalesRef.on('value', productSalesListener);
+
+        // productItems 리스너 (용품 카탈로그)
+        const productItemsRef = db.ref(dbPath(uid, sport, 'productItems'));
+        const productItemsListener = snap => {
+            const val = snap.val();
+            if (val) {
+                const arr = Array.isArray(val) ? val : Object.values(val);
+                setProductItems(arr.filter(Boolean));
+            } else { setProductItems([]); }
+            loaded.productItems = true;
+            checkAllLoaded();
+        };
+        productItemsRef.on('value', productItemsListener);
+
         // 폼 초기화
         setFormData(makeEmptyForm());
         setAppliedCoupon(null);
@@ -1181,6 +1220,8 @@ const StringingApp = ({ sport, uid }) => {
             dmRef.off('value', dmListener);
             cyclesRef.off('value', cyclesListener);
             costsRef.off('value', costsListener);
+            productSalesRef.off('value', productSalesListener);
+            productItemsRef.off('value', productItemsListener);
         };
     }, [uid, sport]);
 
@@ -1297,6 +1338,73 @@ const StringingApp = ({ sport, uid }) => {
             const safeKey = toSafeKey(stringName);
             await db.ref(dbPath(uid, sport, 'stringCosts')).child(safeKey).set(cost === '' ? null : Number(cost));
         } catch(e) { showAlert('원가 저장 실패: ' + e.message); }
+    };
+
+    // ── 용품 판매 CRUD ──────────────────────────
+    const saveProductSale = async (rec) => {
+        showSaveStatus('saving');
+        try {
+            const ref = db.ref(dbPath(uid, sport, 'productSales'));
+            if (rec.fbKey) {
+                await ref.child(rec.fbKey).set(rec);
+            } else {
+                const newKey = ref.push().key;
+                await ref.child(newKey).set({...rec, fbKey:newKey});
+            }
+            showSaveStatus('saved');
+        } catch(e) { showSaveStatus('error'); showAlert('저장 실패: ' + e.message); }
+    };
+
+    const deleteProductSale = async (fbKey) => {
+        showSaveStatus('saving');
+        try {
+            await db.ref(dbPath(uid, sport, 'productSales')).child(fbKey).remove();
+            showSaveStatus('saved');
+        } catch(e) { showSaveStatus('error'); showAlert('삭제 실패: ' + e.message); }
+    };
+
+    const saveProductItems = async (items) => {
+        setProductItems(items);
+        try {
+            const obj = {};
+            items.forEach((item, i) => { obj[i] = item; });
+            await db.ref(dbPath(uid, sport, 'productItems')).set(obj);
+        } catch(e) { showAlert('용품 저장 실패: ' + e.message); }
+    };
+
+    const handleProductSaleSubmit = async () => {
+        if (!productSaleForm.productName.trim() || !productSaleForm.salePrice) { showAlert('용품명과 판매가를 입력해주세요.'); return; }
+        const rec = {
+            ...productSaleForm,
+            qty: parseInt(productSaleForm.qty)||1,
+            salePrice: parseFloat(productSaleForm.salePrice)||0,
+            costPrice: parseFloat(productSaleForm.costPrice)||0,
+            total: (parseFloat(productSaleForm.salePrice)||0) * (parseInt(productSaleForm.qty)||1),
+            totalCost: (parseFloat(productSaleForm.costPrice)||0) * (parseInt(productSaleForm.qty)||1),
+            date: productSaleForm.date || getTodayKST(),
+            createdAt: editingProductSaleKey ? (productSales.find(p=>p.fbKey===editingProductSaleKey)?.createdAt||Date.now()) : Date.now(),
+            fbKey: editingProductSaleKey || null,
+        };
+        await saveProductSale(rec);
+        setShowProductSaleForm(false);
+        setEditingProductSaleKey(null);
+        setProductSaleForm({date:'', productName:'', salePrice:'', costPrice:'', qty:1, memo:''});
+    };
+
+    const handleProductItemAdd = async () => {
+        if (!productItemForm.name.trim()) { showAlert('용품명을 입력해주세요.'); return; }
+        const newItems = [...productItems, {name:productItemForm.name.trim(), salePrice:parseFloat(productItemForm.salePrice)||0, costPrice:parseFloat(productItemForm.costPrice)||0}];
+        await saveProductItems(newItems);
+        setProductItemForm({name:'', salePrice:'', costPrice:''});
+        setShowProductItemForm(false);
+    };
+
+    const handleProductItemDelete = (idx) => {
+        setConfirmModal({
+            msg: `'${productItems[idx].name}' 용품을 삭제할까요?`,
+            onOk: async () => { const u=[...productItems]; u.splice(idx,1); await saveProductItems(u); setConfirmModal(null); },
+            okLabel: '삭제', cancelLabel: '취소',
+        });
     };
 
     // ── 관리자 PIN 확인 ─────────────────────────
@@ -1668,7 +1776,7 @@ const StringingApp = ({ sport, uid }) => {
         const map = {};
         records.forEach(r => {
             const m = r.date.substring(0,7);
-            if (!map[m]) map[m]={month:m, total:0, stringTotal:0, laborTotal:0, extraTotal:0, count:0, costTotal:0};
+            if (!map[m]) map[m]={month:m, total:0, stringTotal:0, laborTotal:0, extraTotal:0, count:0, costTotal:0, productTotal:0, productCostTotal:0, productCount:0};
             map[m].total += (r.total||0); map[m].count++;
             const qty = parseInt(r.quantity)||1;
             let sp = parseFloat(r.stringPrice)||0;
@@ -1677,23 +1785,32 @@ const StringingApp = ({ sport, uid }) => {
             map[m].stringTotal += (sp+hybrid)*qty;
             map[m].laborTotal += (parseFloat(r.labor)||0)*qty;
             map[m].extraTotal += (r.extraWorks||[]).reduce((s,w)=>s+(parseFloat(w.price)||0),0);
-            // 원가 계산
             const cost1 = stringCosts[r.stringType] || 0;
             const cost2 = r.isHybrid && r.hybridString2 ? (stringCosts[r.hybridString2] || 0) : 0;
-            // 서비스 원가 계산 (스트링값 0=고객스트링, >0=샵스트링)
             const isShopString = (parseFloat(r.stringPrice)||0) > 0;
             const svcCost = r.serviceType === 'grip' ? (isShopString ? 1400 : 900)
                           : r.serviceType === 'parking' ? 1000 : 0;
             map[m].costTotal += (cost1 + cost2) * qty + svcCost;
         });
-        return Object.values(map).map(s=>({...s, profit: s.total - s.costTotal})).sort((a,b)=>b.month.localeCompare(a.month));
+        // 용품 판매 통계 합산
+        productSales.forEach(p => {
+            const m = p.date.substring(0,7);
+            if (!map[m]) map[m]={month:m, total:0, stringTotal:0, laborTotal:0, extraTotal:0, count:0, costTotal:0, productTotal:0, productCostTotal:0, productCount:0};
+            map[m].productTotal += (p.total||0);
+            map[m].productCostTotal += (p.totalCost||0);
+            map[m].productCount += (parseInt(p.qty)||1);
+        });
+        return Object.values(map).map(s=>({...s,
+            grandTotal: s.total + s.productTotal,
+            profit: (s.total + s.productTotal) - (s.costTotal + s.productCostTotal)
+        })).sort((a,b)=>b.month.localeCompare(a.month));
     };
 
     const getYearlyStats = () => {
         const map = {};
         records.forEach(r => {
             const y = r.date.substring(0,4);
-            if (!map[y]) map[y]={year:y, total:0, stringTotal:0, laborTotal:0, extraTotal:0, count:0, months:new Set(), costTotal:0};
+            if (!map[y]) map[y]={year:y, total:0, stringTotal:0, laborTotal:0, extraTotal:0, count:0, months:new Set(), costTotal:0, productTotal:0, productCostTotal:0};
             map[y].total += (r.total||0); map[y].count++;
             map[y].months.add(r.date.substring(0,7));
             const qty = parseInt(r.quantity)||1;
@@ -1703,16 +1820,24 @@ const StringingApp = ({ sport, uid }) => {
             map[y].stringTotal += (sp+hybrid)*qty;
             map[y].laborTotal += (parseFloat(r.labor)||0)*qty;
             map[y].extraTotal += (r.extraWorks||[]).reduce((s,w)=>s+(parseFloat(w.price)||0),0);
-            // 원가 계산
             const cost1 = stringCosts[r.stringType] || 0;
             const cost2 = r.isHybrid && r.hybridString2 ? (stringCosts[r.hybridString2] || 0) : 0;
-            // 서비스 원가 계산
             const isShopStringY = (parseFloat(r.stringPrice)||0) > 0;
             const svcCostY = r.serviceType === 'grip' ? (isShopStringY ? 1400 : 900)
                            : r.serviceType === 'parking' ? 1000 : 0;
             map[y].costTotal += (cost1 + cost2) * qty + svcCostY;
         });
-        return Object.values(map).map(s=>({...s, monthCount:s.months.size, profit: s.total - s.costTotal})).sort((a,b)=>b.year.localeCompare(a.year));
+        productSales.forEach(p => {
+            const y = p.date.substring(0,4);
+            if (!map[y]) map[y]={year:y, total:0, stringTotal:0, laborTotal:0, extraTotal:0, count:0, months:new Set(), costTotal:0, productTotal:0, productCostTotal:0};
+            map[y].productTotal += (p.total||0);
+            map[y].productCostTotal += (p.totalCost||0);
+        });
+        return Object.values(map).map(s=>({...s,
+            monthCount:s.months.size,
+            grandTotal: s.total + s.productTotal,
+            profit: (s.total + s.productTotal) - (s.costTotal + s.productCostTotal)
+        })).sort((a,b)=>b.year.localeCompare(a.year));
     };
 
     const sortedRecords = [...records].sort((a,b)=>{ if(b.date!==a.date) return b.date.localeCompare(a.date); return (b.createdAt||0)-(a.createdAt||0); });
@@ -2480,9 +2605,16 @@ const StringingApp = ({ sport, uid }) => {
                                 <div className="stat-row"><span className="stat-row-label">🎯 스트링비</span><span className="stat-row-val" style={{color:'#EA580C'}}>{stat.stringTotal.toLocaleString()}원</span></div>
                                 <div className="stat-row"><span className="stat-row-label">🔧 공임비</span><span className="stat-row-val" style={{color:'#2563EB'}}>{stat.laborTotal.toLocaleString()}원</span></div>
                                 <div className="stat-row"><span className="stat-row-label">🛠️ 추가작업비</span><span className="stat-row-val" style={{color:'#4F46E5'}}>{(stat.extraTotal||0).toLocaleString()}원</span></div>
+                                {(stat.productTotal||0) > 0 && (
+                                    <div className="stat-row"><span className="stat-row-label">🛒 용품 판매</span><span className="stat-row-val" style={{color:'#0F766E'}}>{stat.productTotal.toLocaleString()}원 ({stat.productCount||0}건)</span></div>
+                                )}
+                                {(stat.productTotal||0) > 0 && (
+                                    <div className="stat-row"><span className="stat-row-label">📦 합계 (스트링+용품)</span><span className="stat-row-val" style={{color:'#111',fontWeight:800}}>{(stat.grandTotal||stat.total).toLocaleString()}원</span></div>
+                                )}
                                 {adminUnlocked && (<>
                                     <div style={{borderTop:'1px dashed #E5E7EB',margin:'6px 0'}}/>
                                     <div className="stat-row"><span className="stat-row-label">🔒 원가 합계 (스트링+서비스)</span><span className="stat-row-val" style={{color:'#9E9E9E'}}>{(stat.costTotal||0).toLocaleString()}원</span></div>
+                                    {(stat.productCostTotal||0) > 0 && <div className="stat-row"><span className="stat-row-label">🔒 용품 원가</span><span className="stat-row-val" style={{color:'#9E9E9E'}}>{stat.productCostTotal.toLocaleString()}원</span></div>}
                                     <div className="stat-row"><span className="stat-row-label">💰 순이익 (매출-원가)</span><span className="stat-row-val" style={{color: stat.profit>=0?'#16A34A':'#DC2626', fontWeight:800}}>{(stat.profit||0).toLocaleString()}원</span></div>
                                 </>)}
                             </div>
@@ -2790,6 +2922,202 @@ const StringingApp = ({ sport, uid }) => {
                     <HelpSection />
                 </div>
             )}
+
+            {/* ── 용품 판매 ── */}
+            {viewMode==='products' && (
+                <div style={{padding:'0 12px 80px'}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 0 8px'}}>
+                        <div style={{fontSize:'16px',fontWeight:800,color:'#111'}}>🛒 용품 판매</div>
+                        <button onClick={()=>{setShowProductSaleForm(true);setEditingProductSaleKey(null);setProductSaleForm({date:getTodayKST(),productName:'',salePrice:'',costPrice:'',qty:1,memo:'',fbKey:null});}}
+                            style={{padding:'8px 14px',background:'linear-gradient(135deg,#0F766E,#0D9488)',color:'#fff',border:'none',borderRadius:'12px',fontSize:'13px',fontWeight:800,cursor:'pointer',boxShadow:'0 3px 10px rgba(13,148,136,0.3)'}}>
+                            ➕ 판매 등록
+                        </button>
+                    </div>
+
+                    {/* 판매 등록 폼 */}
+                    {showProductSaleForm && (
+                        <div className="stat-card" style={{marginBottom:'12px',padding:'16px'}}>
+                            <div style={{fontSize:'14px',fontWeight:800,color:'#111',marginBottom:'14px'}}>{editingProductSaleKey?'✏️ 판매 수정':'➕ 판매 등록'}</div>
+
+                            {/* 날짜 */}
+                            <div className="form-group">
+                                <label className="form-label">날짜</label>
+                                <input type="date" value={productSaleForm.date} onChange={e=>setProductSaleForm(prev=>({...prev,date:e.target.value}))} className="form-input"/>
+                            </div>
+
+                            {/* 용품명 */}
+                            <div className="form-group" style={{position:'relative'}}>
+                                <label className="form-label">용품명</label>
+                                <input type="text" value={productSaleForm.productName}
+                                    onChange={e=>{setProductSaleForm(prev=>({...prev,productName:e.target.value}));setShowProductDropdown(true);}}
+                                    onFocus={()=>setShowProductDropdown(true)}
+                                    onBlur={()=>setTimeout(()=>setShowProductDropdown(false),300)}
+                                    placeholder="예) 오버그립, 테니스공, 라켓그립"
+                                    className="form-input"/>
+                                {showProductDropdown && productItems.filter(p=>p.name.includes(productSaleForm.productName)).length>0 && (
+                                    <div className="dropdown-list" onMouseDown={e=>e.preventDefault()}>
+                                        {productItems.filter(p=>!productSaleForm.productName||p.name.toLowerCase().includes(productSaleForm.productName.toLowerCase())).map((p,i)=>(
+                                            <button key={i} type="button" className="dropdown-item"
+                                                onClick={()=>{setProductSaleForm(prev=>({...prev,productName:p.name,salePrice:String(p.salePrice),costPrice:String(p.costPrice)}));setShowProductDropdown(false);}}
+                                                style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                                                <span>{p.name}</span>
+                                                <span style={{fontSize:'11px',color:'#9E9E9E'}}>{p.salePrice.toLocaleString()}원</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 판매가 / 원가 */}
+                            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
+                                <div>
+                                    <label className="form-label">판매가 (원)</label>
+                                    <input type="number" value={productSaleForm.salePrice} onChange={e=>setProductSaleForm(prev=>({...prev,salePrice:e.target.value}))} placeholder="판매가" className="form-input"/>
+                                </div>
+                                <div>
+                                    <label className="form-label">원가 (원)</label>
+                                    <input type="number" value={productSaleForm.costPrice} onChange={e=>setProductSaleForm(prev=>({...prev,costPrice:e.target.value}))} placeholder="원가" className="form-input"/>
+                                </div>
+                            </div>
+
+                            {/* 수량 / 메모 */}
+                            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'12px'}}>
+                                <div>
+                                    <label className="form-label">수량</label>
+                                    <input type="number" value={productSaleForm.qty} min="1" onChange={e=>setProductSaleForm(prev=>({...prev,qty:e.target.value}))} className="form-input"/>
+                                </div>
+                                <div>
+                                    <label className="form-label">메모 (선택)</label>
+                                    <input type="text" value={productSaleForm.memo} onChange={e=>setProductSaleForm(prev=>({...prev,memo:e.target.value}))} placeholder="고객명 등" className="form-input"/>
+                                </div>
+                            </div>
+
+                            {/* 합계 미리보기 */}
+                            {productSaleForm.salePrice && (
+                                <div style={{background:'#F0FDF4',border:'1px solid #BBF7D0',borderRadius:'12px',padding:'10px 14px',marginBottom:'12px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                                    <div>
+                                        <div style={{fontSize:'11px',color:'#6B7280',fontWeight:600}}>예상 매출 / 마진</div>
+                                        <div style={{fontSize:'18px',fontWeight:900,color:'#16A34A'}}>{((parseFloat(productSaleForm.salePrice)||0)*(parseInt(productSaleForm.qty)||1)).toLocaleString()}원</div>
+                                    </div>
+                                    {productSaleForm.costPrice && (
+                                        <div style={{textAlign:'right'}}>
+                                            <div style={{fontSize:'11px',color:'#6B7280',fontWeight:600}}>마진</div>
+                                            <div style={{fontSize:'16px',fontWeight:800,color:'#0F766E'}}>
+                                                {(((parseFloat(productSaleForm.salePrice)||0)-(parseFloat(productSaleForm.costPrice)||0))*(parseInt(productSaleForm.qty)||1)).toLocaleString()}원
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div style={{display:'flex',gap:'8px'}}>
+                                <button onClick={()=>{setShowProductSaleForm(false);setEditingProductSaleKey(null);}} style={{flex:1,padding:'12px',background:'#F0F0F0',color:'#616161',borderRadius:'12px',border:'none',fontWeight:700,fontSize:'14px',cursor:'pointer'}}>취소</button>
+                                <button onClick={handleProductSaleSubmit} style={{flex:2,padding:'12px',background:'linear-gradient(135deg,#0F766E,#0D9488)',color:'#fff',borderRadius:'12px',border:'none',fontWeight:800,fontSize:'14px',cursor:'pointer',boxShadow:'0 4px 12px rgba(13,148,136,0.3)'}}>✅ {editingProductSaleKey?'수정 완료':'등록 완료'}</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 이번달 요약 */}
+                    {(()=>{
+                        const thisMonth = getTodayKST().substring(0,7);
+                        const thisMonthSales = productSales.filter(p=>p.date.startsWith(thisMonth));
+                        const thisMonthTotal = thisMonthSales.reduce((s,p)=>s+(p.total||0),0);
+                        const thisMonthProfit = thisMonthSales.reduce((s,p)=>s+((p.total||0)-(p.totalCost||0)),0);
+                        if(thisMonthSales.length===0) return null;
+                        return (
+                            <div style={{background:'linear-gradient(135deg,#0f2318,#162d1e)',border:'1px solid rgba(34,197,94,0.18)',borderRadius:'16px',padding:'14px 16px',marginBottom:'12px'}}>
+                                <div style={{fontSize:'11px',color:'#4ade80',fontWeight:700,marginBottom:'8px'}}>📅 이번달 용품 판매 현황</div>
+                                <div style={{display:'flex',gap:'0',background:'rgba(0,0,0,0.2)',borderRadius:'10px',overflow:'hidden'}}>
+                                    <div style={{flex:1,padding:'10px 12px',borderRight:'1px solid rgba(255,255,255,0.06)'}}>
+                                        <div style={{fontSize:'10px',color:'#666',marginBottom:'3px',fontWeight:700}}>판매건수</div>
+                                        <div style={{fontSize:'20px',fontWeight:900,color:'#fff'}}>{thisMonthSales.length}<span style={{fontSize:'11px',color:'#555',marginLeft:'2px'}}>건</span></div>
+                                    </div>
+                                    <div style={{flex:1,padding:'10px 12px',borderRight:'1px solid rgba(255,255,255,0.06)'}}>
+                                        <div style={{fontSize:'10px',color:'#666',marginBottom:'3px',fontWeight:700}}>매출</div>
+                                        <div style={{fontSize:'18px',fontWeight:900,color:'#4ade80'}}>{thisMonthTotal.toLocaleString()}<span style={{fontSize:'11px',color:'#555',marginLeft:'2px'}}>원</span></div>
+                                    </div>
+                                    <div style={{flex:1,padding:'10px 12px'}}>
+                                        <div style={{fontSize:'10px',color:'#666',marginBottom:'3px',fontWeight:700}}>마진</div>
+                                        <div style={{fontSize:'18px',fontWeight:900,color:'#34d399'}}>{thisMonthProfit.toLocaleString()}<span style={{fontSize:'11px',color:'#555',marginLeft:'2px'}}>원</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    {/* 판매 기록 목록 */}
+                    <div className="stat-card" style={{marginBottom:'12px'}}>
+                        <div className="section-header">
+                            <span className="section-title">🛒 판매 기록</span>
+                            <span className="section-count">{productSales.length}건</span>
+                        </div>
+                        {productSales.length===0 && <div className="empty-state"><div className="empty-state-icon">🛒</div>판매 기록이 없습니다.<br/>위 버튼으로 판매를 등록해주세요!</div>}
+                        {productSales.map(p=>(
+                            <div key={p.fbKey} style={{padding:'12px 16px',borderBottom:'1px solid #F5F5F5',display:'flex',alignItems:'center',gap:'10px'}}>
+                                <div style={{flex:1}}>
+                                    <div style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:'3px'}}>
+                                        <span style={{fontSize:'14px',fontWeight:800,color:'#111'}}>{p.productName}</span>
+                                        {p.qty>1 && <span style={{fontSize:'11px',background:'#F3F4F6',color:'#6B7280',padding:'1px 7px',borderRadius:'20px',fontWeight:700}}>×{p.qty}</span>}
+                                    </div>
+                                    <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+                                        <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>{p.date}</span>
+                                        {p.memo && <span style={{fontSize:'11px',color:'#6B7280'}}>{p.memo}</span>}
+                                    </div>
+                                    <div style={{display:'flex',gap:'10px',marginTop:'4px',alignItems:'center'}}>
+                                        <span style={{fontSize:'13px',fontWeight:800,color:'#0F766E'}}>{(p.total||0).toLocaleString()}원</span>
+                                        {(p.totalCost||0)>0 && <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>원가 {(p.totalCost||0).toLocaleString()}원</span>}
+                                        {(p.totalCost||0)>0 && <span style={{fontSize:'11px',fontWeight:700,color:'#16A34A'}}>마진 {((p.total||0)-(p.totalCost||0)).toLocaleString()}원</span>}
+                                    </div>
+                                </div>
+                                <div style={{display:'flex',gap:'4px'}}>
+                                    <button onClick={()=>{setEditingProductSaleKey(p.fbKey);setProductSaleForm({date:p.date,productName:p.productName,salePrice:String(p.salePrice||''),costPrice:String(p.costPrice||''),qty:p.qty||1,memo:p.memo||'',fbKey:p.fbKey});setShowProductSaleForm(true);}}
+                                        style={{width:'34px',height:'34px',borderRadius:'10px',background:'#EFF6FF',color:'#2563EB',border:'none',cursor:'pointer',fontSize:'14px',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>✏️</button>
+                                    <button onClick={()=>setConfirmModal({msg:`'${p.productName}' 판매기록을 삭제할까요?`,onOk:async()=>{await deleteProductSale(p.fbKey);setConfirmModal(null);},okLabel:'삭제',cancelLabel:'취소'})}
+                                        style={{width:'34px',height:'34px',borderRadius:'10px',background:'#FEF2F2',color:'#DC2626',border:'none',cursor:'pointer',fontSize:'14px',display:'flex',alignItems:'center',justifyContent:'center'}}>🗑️</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* 용품 카탈로그 */}
+                    <div className="stat-card">
+                        <div className="section-header">
+                            <span className="section-title">📦 용품 카탈로그</span>
+                            <button onClick={()=>{setShowProductItemForm(true);setProductItemForm({name:'',salePrice:'',costPrice:'',});}}
+                                style={{fontSize:'11px',padding:'4px 12px',background:'#0D9488',color:'#fff',border:'none',borderRadius:'20px',cursor:'pointer',fontWeight:700}}>+ 추가</button>
+                        </div>
+
+                        {showProductItemForm && (
+                            <div style={{padding:'14px 16px',background:'#F0FDFA',borderBottom:'1px solid #CCFBF1'}}>
+                                <input type="text" value={productItemForm.name} onChange={e=>setProductItemForm(prev=>({...prev,name:e.target.value}))} placeholder="용품명 (예: 오버그립)" className="form-input" style={{marginBottom:'8px'}}/>
+                                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'8px'}}>
+                                    <input type="number" value={productItemForm.salePrice} onChange={e=>setProductItemForm(prev=>({...prev,salePrice:e.target.value}))} placeholder="판매가" className="form-input" style={{marginBottom:0}}/>
+                                    <input type="number" value={productItemForm.costPrice} onChange={e=>setProductItemForm(prev=>({...prev,costPrice:e.target.value}))} placeholder="원가" className="form-input" style={{marginBottom:0}}/>
+                                </div>
+                                <div style={{display:'flex',gap:'8px'}}>
+                                    <button onClick={()=>setShowProductItemForm(false)} style={{flex:1,padding:'9px',background:'#E5E7EB',color:'#6B7280',borderRadius:'10px',border:'none',fontWeight:700,fontSize:'13px',cursor:'pointer'}}>취소</button>
+                                    <button onClick={handleProductItemAdd} style={{flex:2,padding:'9px',background:'#0D9488',color:'#fff',borderRadius:'10px',border:'none',fontWeight:800,fontSize:'13px',cursor:'pointer'}}>저장</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {productItems.length===0 && !showProductItemForm && <div className="empty-state" style={{padding:'24px 20px'}}><div style={{fontSize:'36px',marginBottom:'8px'}}>📦</div>등록된 용품이 없습니다.<br/>자주 판매하는 용품을 등록하면 빠르게 입력할 수 있어요!</div>}
+                        {productItems.map((p,i)=>(
+                            <div key={i} style={{display:'flex',alignItems:'center',padding:'11px 16px',borderBottom:'1px solid #F5F5F5',gap:'10px'}}>
+                                <div style={{flex:1}}>
+                                    <div style={{fontSize:'13px',fontWeight:800,color:'#111',marginBottom:'2px'}}>{p.name}</div>
+                                    <div style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>
+                                        판매 {(p.salePrice||0).toLocaleString()}원 · 원가 {(p.costPrice||0).toLocaleString()}원
+                                        {(p.salePrice||0)>0 && (p.costPrice||0)>0 && <span style={{color:'#16A34A',marginLeft:'6px',fontWeight:700}}>마진 {((p.salePrice||0)-(p.costPrice||0)).toLocaleString()}원</span>}
+                                    </div>
+                                </div>
+                                <button onClick={()=>handleProductItemDelete(i)} style={{width:'30px',height:'30px',borderRadius:'8px',background:'#FEF2F2',color:'#DC2626',border:'none',cursor:'pointer',fontSize:'14px',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* ══ 하단 고정 메뉴바 ══ */}
             <div className="bottom-nav">
                 {/* 고객관리 */}
@@ -2804,17 +3132,17 @@ const StringingApp = ({ sport, uid }) => {
                     <div className="nav-icon" style={(viewMode==='monthly'||viewMode==='yearly')?{background:'linear-gradient(135deg,#C2410C,#EA580C)',boxShadow:'0 4px 12px rgba(234,88,12,0.4)'}:{}}>📊</div>
                     <span className="nav-label" style={(viewMode==='monthly'||viewMode==='yearly')?{color:'#EA580C'}:{}}>매출통계</span>
                 </button>
+                {/* 용품판매 */}
+                <button className={`nav-item ${viewMode==='products'?'active-teal':''}`}
+                    onClick={()=>{setViewMode('products');setShowForm(false);}}>
+                    <div className="nav-icon" style={viewMode==='products'?{background:'linear-gradient(135deg,#0F766E,#0D9488)',boxShadow:'0 4px 12px rgba(13,148,136,0.4)'}:{}}>🛒</div>
+                    <span className="nav-label" style={viewMode==='products'?{color:'#0F766E'}:{}}>용품판매</span>
+                </button>
                 {/* 스트링 관리 */}
                 <button className={`nav-item ${viewMode==='strings'?'active-yellow':''}`}
                     onClick={()=>{setViewMode('strings');setShowForm(false);}}>
                     <div className="nav-icon" style={viewMode==='strings'?{background:'linear-gradient(135deg,#B45309,#D97706)',boxShadow:'0 4px 12px rgba(217,119,6,0.4)'}:{}}>🎯</div>
                     <span className="nav-label" style={viewMode==='strings'?{color:'#B45309'}:{}}>스트링</span>
-                </button>
-                {/* 쿠폰 */}
-                <button className={`nav-item ${viewMode==='coupons'?'active-pink':''}`}
-                    onClick={()=>{setViewMode('coupons');setShowForm(false);}}>
-                    <div className="nav-icon" style={viewMode==='coupons'?{background:'linear-gradient(135deg,#be185d,#EC4899)',boxShadow:'0 4px 12px rgba(236,72,153,0.4)'}:{}}>🎫</div>
-                    <span className="nav-label" style={viewMode==='coupons'?{color:'#be185d'}:{}}>쿠폰</span>
                 </button>
                 {/* 설정 */}
                 <button className={`nav-item ${viewMode==='settings'?'active-yellow':''}`}
