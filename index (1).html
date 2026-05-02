@@ -2928,10 +2928,16 @@ const StringingApp = ({ sport, uid }) => {
                 <div style={{padding:'0 12px 80px'}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 0 8px'}}>
                         <div style={{fontSize:'16px',fontWeight:800,color:'#111'}}>🛒 용품 판매</div>
-                        <button onClick={()=>{setShowProductSaleForm(true);setEditingProductSaleKey(null);setProductSaleForm({date:getTodayKST(),productName:'',salePrice:'',costPrice:'',qty:1,memo:'',fbKey:null});}}
-                            style={{padding:'8px 14px',background:'linear-gradient(135deg,#0F766E,#0D9488)',color:'#fff',border:'none',borderRadius:'12px',fontSize:'13px',fontWeight:800,cursor:'pointer',boxShadow:'0 3px 10px rgba(13,148,136,0.3)'}}>
-                            ➕ 판매 등록
-                        </button>
+                        <div style={{display:'flex',gap:'8px'}}>
+                            {adminUnlocked
+                                ? <button onClick={()=>setAdminUnlocked(false)} style={{padding:'6px 12px',background:'#F3F4F6',color:'#616161',border:'none',borderRadius:'20px',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>🔒 원가 숨기기</button>
+                                : <button onClick={()=>{setShowAdminModal(true);setAdminPinInput('');setAdminPinError('');}} style={{padding:'6px 12px',background:'#111',color:'#fff',border:'none',borderRadius:'20px',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>🔓 원가 보기</button>
+                            }
+                            <button onClick={()=>{setShowProductSaleForm(true);setEditingProductSaleKey(null);setProductSaleForm({date:getTodayKST(),productName:'',salePrice:'',costPrice:'',qty:1,memo:'',fbKey:null});}}
+                                style={{padding:'8px 14px',background:'linear-gradient(135deg,#0F766E,#0D9488)',color:'#fff',border:'none',borderRadius:'12px',fontSize:'13px',fontWeight:800,cursor:'pointer',boxShadow:'0 3px 10px rgba(13,148,136,0.3)'}}>
+                                ➕ 판매 등록
+                            </button>
+                        </div>
                     </div>
 
                     {/* 판매 등록 폼 */}
@@ -2969,15 +2975,17 @@ const StringingApp = ({ sport, uid }) => {
                             </div>
 
                             {/* 판매가 / 원가 */}
-                            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
+                            <div style={{display:'grid',gridTemplateColumns:adminUnlocked?'1fr 1fr':'1fr',gap:'8px',marginBottom:'10px'}}>
                                 <div>
                                     <label className="form-label">판매가 (원)</label>
                                     <input type="number" value={productSaleForm.salePrice} onChange={e=>setProductSaleForm(prev=>({...prev,salePrice:e.target.value}))} placeholder="판매가" className="form-input"/>
                                 </div>
-                                <div>
-                                    <label className="form-label">원가 (원)</label>
-                                    <input type="number" value={productSaleForm.costPrice} onChange={e=>setProductSaleForm(prev=>({...prev,costPrice:e.target.value}))} placeholder="원가" className="form-input"/>
-                                </div>
+                                {adminUnlocked && (
+                                    <div>
+                                        <label className="form-label">🔒 원가 (원)</label>
+                                        <input type="number" value={productSaleForm.costPrice} onChange={e=>setProductSaleForm(prev=>({...prev,costPrice:e.target.value}))} placeholder="원가" className="form-input"/>
+                                    </div>
+                                )}
                             </div>
 
                             {/* 수량 / 메모 */}
@@ -2996,12 +3004,12 @@ const StringingApp = ({ sport, uid }) => {
                             {productSaleForm.salePrice && (
                                 <div style={{background:'#F0FDF4',border:'1px solid #BBF7D0',borderRadius:'12px',padding:'10px 14px',marginBottom:'12px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                                     <div>
-                                        <div style={{fontSize:'11px',color:'#6B7280',fontWeight:600}}>예상 매출 / 마진</div>
+                                        <div style={{fontSize:'11px',color:'#6B7280',fontWeight:600}}>예상 매출{adminUnlocked?' / 마진':''}</div>
                                         <div style={{fontSize:'18px',fontWeight:900,color:'#16A34A'}}>{((parseFloat(productSaleForm.salePrice)||0)*(parseInt(productSaleForm.qty)||1)).toLocaleString()}원</div>
                                     </div>
-                                    {productSaleForm.costPrice && (
+                                    {adminUnlocked && productSaleForm.costPrice && (
                                         <div style={{textAlign:'right'}}>
-                                            <div style={{fontSize:'11px',color:'#6B7280',fontWeight:600}}>마진</div>
+                                            <div style={{fontSize:'11px',color:'#6B7280',fontWeight:600}}>🔒 마진</div>
                                             <div style={{fontSize:'16px',fontWeight:800,color:'#0F766E'}}>
                                                 {(((parseFloat(productSaleForm.salePrice)||0)-(parseFloat(productSaleForm.costPrice)||0))*(parseInt(productSaleForm.qty)||1)).toLocaleString()}원
                                             </div>
@@ -3032,14 +3040,16 @@ const StringingApp = ({ sport, uid }) => {
                                         <div style={{fontSize:'10px',color:'#666',marginBottom:'3px',fontWeight:700}}>판매건수</div>
                                         <div style={{fontSize:'20px',fontWeight:900,color:'#fff'}}>{thisMonthSales.length}<span style={{fontSize:'11px',color:'#555',marginLeft:'2px'}}>건</span></div>
                                     </div>
-                                    <div style={{flex:1,padding:'10px 12px',borderRight:'1px solid rgba(255,255,255,0.06)'}}>
+                                    <div style={{flex:1,padding:'10px 12px',borderRight:adminUnlocked?'1px solid rgba(255,255,255,0.06)':'none'}}>
                                         <div style={{fontSize:'10px',color:'#666',marginBottom:'3px',fontWeight:700}}>매출</div>
                                         <div style={{fontSize:'18px',fontWeight:900,color:'#4ade80'}}>{thisMonthTotal.toLocaleString()}<span style={{fontSize:'11px',color:'#555',marginLeft:'2px'}}>원</span></div>
                                     </div>
-                                    <div style={{flex:1,padding:'10px 12px'}}>
-                                        <div style={{fontSize:'10px',color:'#666',marginBottom:'3px',fontWeight:700}}>마진</div>
-                                        <div style={{fontSize:'18px',fontWeight:900,color:'#34d399'}}>{thisMonthProfit.toLocaleString()}<span style={{fontSize:'11px',color:'#555',marginLeft:'2px'}}>원</span></div>
-                                    </div>
+                                    {adminUnlocked && (
+                                        <div style={{flex:1,padding:'10px 12px'}}>
+                                            <div style={{fontSize:'10px',color:'#666',marginBottom:'3px',fontWeight:700}}>🔒 마진</div>
+                                            <div style={{fontSize:'18px',fontWeight:900,color:'#34d399'}}>{thisMonthProfit.toLocaleString()}<span style={{fontSize:'11px',color:'#555',marginLeft:'2px'}}>원</span></div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -3065,8 +3075,8 @@ const StringingApp = ({ sport, uid }) => {
                                     </div>
                                     <div style={{display:'flex',gap:'10px',marginTop:'4px',alignItems:'center'}}>
                                         <span style={{fontSize:'13px',fontWeight:800,color:'#0F766E'}}>{(p.total||0).toLocaleString()}원</span>
-                                        {(p.totalCost||0)>0 && <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>원가 {(p.totalCost||0).toLocaleString()}원</span>}
-                                        {(p.totalCost||0)>0 && <span style={{fontSize:'11px',fontWeight:700,color:'#16A34A'}}>마진 {((p.total||0)-(p.totalCost||0)).toLocaleString()}원</span>}
+                                        {adminUnlocked && (p.totalCost||0)>0 && <span style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>🔒 원가 {(p.totalCost||0).toLocaleString()}원</span>}
+                                        {adminUnlocked && (p.totalCost||0)>0 && <span style={{fontSize:'11px',fontWeight:700,color:'#16A34A'}}>마진 {((p.total||0)-(p.totalCost||0)).toLocaleString()}원</span>}
                                     </div>
                                 </div>
                                 <div style={{display:'flex',gap:'4px'}}>
@@ -3107,8 +3117,9 @@ const StringingApp = ({ sport, uid }) => {
                                 <div style={{flex:1}}>
                                     <div style={{fontSize:'13px',fontWeight:800,color:'#111',marginBottom:'2px'}}>{p.name}</div>
                                     <div style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>
-                                        판매 {(p.salePrice||0).toLocaleString()}원 · 원가 {(p.costPrice||0).toLocaleString()}원
-                                        {(p.salePrice||0)>0 && (p.costPrice||0)>0 && <span style={{color:'#16A34A',marginLeft:'6px',fontWeight:700}}>마진 {((p.salePrice||0)-(p.costPrice||0)).toLocaleString()}원</span>}
+                                        판매 {(p.salePrice||0).toLocaleString()}원
+                                        {adminUnlocked && <span> · 🔒 원가 {(p.costPrice||0).toLocaleString()}원</span>}
+                                        {adminUnlocked && (p.salePrice||0)>0 && (p.costPrice||0)>0 && <span style={{color:'#16A34A',marginLeft:'6px',fontWeight:700}}>마진 {((p.salePrice||0)-(p.costPrice||0)).toLocaleString()}원</span>}
                                     </div>
                                 </div>
                                 <button onClick={()=>handleProductItemDelete(i)} style={{width:'30px',height:'30px',borderRadius:'8px',background:'#FEF2F2',color:'#DC2626',border:'none',cursor:'pointer',fontSize:'14px',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
@@ -3138,11 +3149,11 @@ const StringingApp = ({ sport, uid }) => {
                     <div className="nav-icon" style={viewMode==='products'?{background:'linear-gradient(135deg,#0F766E,#0D9488)',boxShadow:'0 4px 12px rgba(13,148,136,0.4)'}:{}}>🛒</div>
                     <span className="nav-label" style={viewMode==='products'?{color:'#0F766E'}:{}}>용품판매</span>
                 </button>
-                {/* 스트링 관리 */}
-                <button className={`nav-item ${viewMode==='strings'?'active-yellow':''}`}
-                    onClick={()=>{setViewMode('strings');setShowForm(false);}}>
-                    <div className="nav-icon" style={viewMode==='strings'?{background:'linear-gradient(135deg,#B45309,#D97706)',boxShadow:'0 4px 12px rgba(217,119,6,0.4)'}:{}}>🎯</div>
-                    <span className="nav-label" style={viewMode==='strings'?{color:'#B45309'}:{}}>스트링</span>
+                {/* 쿠폰 */}
+                <button className={`nav-item ${viewMode==='coupons'?'active-pink':''}`}
+                    onClick={()=>{setViewMode('coupons');setShowForm(false);}}>
+                    <div className="nav-icon" style={viewMode==='coupons'?{background:'linear-gradient(135deg,#be185d,#EC4899)',boxShadow:'0 4px 12px rgba(236,72,153,0.4)'}:{}}>🎫</div>
+                    <span className="nav-label" style={viewMode==='coupons'?{color:'#be185d'}:{}}>쿠폰</span>
                 </button>
                 {/* 설정 */}
                 <button className={`nav-item ${viewMode==='settings'?'active-yellow':''}`}
