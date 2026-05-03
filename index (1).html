@@ -1047,7 +1047,8 @@ const StringingApp = ({ sport, uid }) => {
         quantity:1, tension:'',
         isHybrid:false, hybridString2:'', hybridPrice2:'',
         phone:'',
-        serviceType: 'none', // 'grip' | 'parking' | 'none'
+        serviceType: 'none', // 'grip900' | 'grip1400' | 'parking' | 'custom' | 'none'
+        serviceCustomAmount: '',
     });
     const [formData, setFormData] = useState(makeEmptyForm());
 
@@ -1473,6 +1474,7 @@ const StringingApp = ({ sport, uid }) => {
         setEditingId(null);
         setExtraWorks([]);
         setShowExtraSection(false);
+        window.scrollTo({top:0, behavior:'smooth'});
     };
 
     // ── 수정: fbKey 기준으로 통일 ───────────────
@@ -1486,6 +1488,8 @@ const StringingApp = ({ sport, uid }) => {
             hybridString2: rec.hybridString2||'',
             hybridPrice2: rec.hybridPrice2||'',
             phone: rec.phone||'',
+            serviceType: rec.serviceType||'none',
+            serviceCustomAmount: rec.serviceCustomAmount||'',
         });
         const ew = rec.extraWorks || [];
         setExtraWorks(ew);
@@ -1788,8 +1792,11 @@ const StringingApp = ({ sport, uid }) => {
             const cost1 = stringCosts[r.stringType] || 0;
             const cost2 = r.isHybrid && r.hybridString2 ? (stringCosts[r.hybridString2] || 0) : 0;
             const isShopString = (parseFloat(r.stringPrice)||0) > 0;
-            const svcCost = r.serviceType === 'grip' ? (isShopString ? 1400 : 900)
-                          : r.serviceType === 'parking' ? 1000 : 0;
+            const svcCost = r.serviceType === 'grip900' ? 900
+                          : r.serviceType === 'grip1400' ? 1400
+                          : r.serviceType === 'grip' ? (isShopString ? 1400 : 900)
+                          : r.serviceType === 'parking' ? 1000
+                          : r.serviceType === 'custom' ? (parseFloat(r.serviceCustomAmount)||0) : 0;
             map[m].costTotal += (cost1 + cost2) * qty + svcCost;
         });
         // 용품 판매 통계 합산
@@ -1823,8 +1830,11 @@ const StringingApp = ({ sport, uid }) => {
             const cost1 = stringCosts[r.stringType] || 0;
             const cost2 = r.isHybrid && r.hybridString2 ? (stringCosts[r.hybridString2] || 0) : 0;
             const isShopStringY = (parseFloat(r.stringPrice)||0) > 0;
-            const svcCostY = r.serviceType === 'grip' ? (isShopStringY ? 1400 : 900)
-                           : r.serviceType === 'parking' ? 1000 : 0;
+            const svcCostY = r.serviceType === 'grip900' ? 900
+                           : r.serviceType === 'grip1400' ? 1400
+                           : r.serviceType === 'grip' ? (isShopStringY ? 1400 : 900)
+                           : r.serviceType === 'parking' ? 1000
+                           : r.serviceType === 'custom' ? (parseFloat(r.serviceCustomAmount)||0) : 0;
             map[y].costTotal += (cost1 + cost2) * qty + svcCostY;
         });
         productSales.forEach(p => {
@@ -2285,31 +2295,41 @@ const StringingApp = ({ sport, uid }) => {
                         {/* 서비스 선택 */}
                         <div style={{marginBottom:'12px'}}>
                             <label className="form-label">🎁 서비스 제공</label>
-                            <div style={{display:'flex',gap:'8px',marginTop:'6px'}}>
+                            <div style={{display:'flex',gap:'6px',marginTop:'6px',flexWrap:'wrap'}}>
                                 {[
-                                    {val:'grip', label:'🎾 그립'},
-                                    {val:'parking', label:'🅿️ 주차권'},
-                                    {val:'none', label:'없음'},
+                                    {val:'grip900', label:'🎾 그립', sub:'900원'},
+                                    {val:'grip1400', label:'🎾 그립', sub:'1,400원'},
+                                    {val:'parking', label:'🅿️ 주차권', sub:'1시간'},
+                                    {val:'custom', label:'✏️ 직접입력', sub:''},
+                                    {val:'none', label:'없음', sub:''},
                                 ].map(opt=>(
                                     <button key={opt.val} type="button"
                                         onClick={()=>setFormData(prev=>({...prev,serviceType:opt.val}))}
                                         style={{
-                                            flex:1, padding:'10px 4px', borderRadius:'10px', border:'2px solid',
+                                            flex:'1 1 calc(33% - 6px)', minWidth:'70px', padding:'8px 4px', borderRadius:'10px', border:'2px solid',
                                             borderColor: formData.serviceType===opt.val ? '#4F46E5' : '#E5E7EB',
                                             background: formData.serviceType===opt.val ? '#EEF2FF' : '#F9FAFB',
                                             color: formData.serviceType===opt.val ? '#4F46E5' : '#6B7280',
                                             fontWeight: formData.serviceType===opt.val ? 800 : 500,
-                                            fontSize:'13px', cursor:'pointer',
+                                            fontSize:'12px', cursor:'pointer',
                                         }}>
                                         {opt.label}
-                                        <div style={{fontSize:'10px',marginTop:'2px',color:'#9CA3AF',fontWeight:400}}>
-                                            {opt.val==='grip'
-                                                ? ((parseFloat(formData.stringPrice)||0)>0 ? '원가 1,400원' : '원가 900원')
-                                                : opt.val==='parking' ? '원가 1,000원' : ''}
-                                        </div>
+                                        {opt.sub && <div style={{fontSize:'10px',marginTop:'2px',color:'#9CA3AF',fontWeight:400}}>{opt.sub}</div>}
                                     </button>
                                 ))}
                             </div>
+                            {formData.serviceType==='custom' && (
+                                <div style={{marginTop:'8px'}}>
+                                    <input
+                                        type="number"
+                                        placeholder="서비스 원가 직접 입력 (원)"
+                                        value={formData.serviceCustomAmount}
+                                        onChange={e=>setFormData(prev=>({...prev,serviceCustomAmount:e.target.value}))}
+                                        className="form-input"
+                                        style={{width:'100%'}}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         {/* 쿠폰 */}
@@ -2565,7 +2585,7 @@ const StringingApp = ({ sport, uid }) => {
                                                                 <div className="card-row"><span className="card-label">스트링</span><span style={{fontSize:'11px',color:'#111',fontWeight:600,flex:1}}>{r.stringType}{r.isHybrid&&r.hybridString2&&<span style={{color:'#7C3AED'}}> + {r.hybridString2}</span>}<span style={{color:'#bbb',marginLeft:'4px'}}>{parseInt(r.stringPrice||0).toLocaleString()}원</span></span></div>
                                                                 {r.tension && <div className="card-row"><span className="card-label">텐션</span><span className="tension-badge">⚡ {r.tension} lbs</span></div>}
                                                                 <div className="card-row"><span className="card-label">공임</span><span style={{fontSize:'11px',color:'#616161',fontWeight:600}}>{parseInt(r.labor||0).toLocaleString()}원</span><span style={{fontSize:'11px',color:'#bbb',marginLeft:'10px'}}>수량 {r.quantity}개</span></div>
-                                                                {r.serviceType && r.serviceType!=='none' && <div className="card-row" style={{marginBottom:0}}><span className="card-label">서비스</span><span style={{fontSize:'11px',color:'#4F46E5',fontWeight:600}}>{r.serviceType==='grip'?'🎾 그립':r.serviceType==='parking'?'🅿️ 주차권':''}</span></div>}
+                                                                {r.serviceType && r.serviceType!=='none' && <div className="card-row" style={{marginBottom:0}}><span className="card-label">서비스</span><span style={{fontSize:'11px',color:'#4F46E5',fontWeight:600}}>{r.serviceType==='grip900'?'🎾 그립 900원':r.serviceType==='grip1400'?'🎾 그립 1,400원':r.serviceType==='grip'?'🎾 그립':r.serviceType==='parking'?'🅿️ 주차권 1시간':r.serviceType==='custom'?`✏️ 직접입력 ${(r.serviceCustomAmount||'')}원`:''}</span></div>}
                                                                 {r.couponCode && <div style={{fontSize:'11px',color:'#DB2777',fontWeight:600,marginTop:'4px'}}>🎫 -{parseInt(r.couponDiscount||0).toLocaleString()}원</div>}
                                                             </div>
                                                         </div>
