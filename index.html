@@ -1037,6 +1037,9 @@ const StringingApp = ({ sport, uid }) => {
     const [showProductDropdown, setShowProductDropdown] = useState(false);
     const [showCycleModal, setShowCycleModal] = useState(null); // null 또는 고객명
     const [cycleInput, setCycleInput] = useState('');
+    const [showDmBanner, setShowDmBanner] = useState(true); // 교체알림 배너 열기/닫기
+    const [couponGroupOpen, setCouponGroupOpen] = useState({}); // { groupKey: bool }
+    const [usedCouponOpen, setUsedCouponOpen] = useState(false); // 사용완료 쿠폰 드롭다운
 
     // ── 원가 관리 (관리자 전용) ─────────────────
     const [stringCosts, setStringCosts] = useState({}); // { 스트링이름: 원가 }
@@ -2067,7 +2070,7 @@ const StringingApp = ({ sport, uid }) => {
                 <div style={{padding:'0 12px 4px'}}>
                     {/* 교체알림 고객 DM 배너 */}
                     {(()=>{
-                        // DM 아직 안 보낸 교체알림 고객만 필터
+                        // 교체 알림 대상 (연락처 있는 고객 전체)
                         const alertCustomers = getCustomerStats().filter(c => {
                             const daysSince = c.lastVisit ? Math.floor((new Date()-new Date(c.lastVisit.date))/(1000*60*60*24)) : 0;
                             const cycle = getCustomerCycle(c.name);
@@ -2085,63 +2088,86 @@ const StringingApp = ({ sport, uid }) => {
                         const dmMsgFor = (name) => `안녕하세요 ${name}님 😊\n니지스트링입니다!\n\n스트링 교체 시기가 지나셨어요 🎾\n오래된 스트링은 컨트롤이 떨어지고 부상 위험이 있어요!\n\n교체 예약 편하게 연락주세요 😊\n감사합니다!`;
 
                         return (
-                            <div style={{background:'linear-gradient(135deg,#FFF7ED,#FEF3C7)',border:'1.5px solid #FCD34D',borderRadius:'14px',padding:'12px 14px',marginBottom:'10px'}}>
-                                {/* 헤더 */}
-                                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
-                                    <div>
-                                        <span style={{fontSize:'13px',fontWeight:800,color:'#92400E'}}>🔔 교체알림</span>
-                                        {alertCustomers.length > 0 && <span style={{fontSize:'12px',fontWeight:800,color:'#DC2626',marginLeft:'6px',background:'#FEE2E2',padding:'1px 8px',borderRadius:'20px'}}>{alertCustomers.length}명 미발송</span>}
-                                        {sentToday.length > 0 && <span style={{fontSize:'12px',fontWeight:800,color:'#16A34A',marginLeft:'4px',background:'#DCFCE7',padding:'1px 8px',borderRadius:'20px'}}>오늘 {sentToday.length}명 발송 ✅</span>}
+                            <div style={{background:'linear-gradient(135deg,#FFF7ED,#FEF3C7)',border:'1.5px solid #FCD34D',borderRadius:'14px',marginBottom:'10px',overflow:'hidden'}}>
+                                {/* 헤더 (항상 표시) */}
+                                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',cursor:'pointer'}}
+                                    onClick={()=>setShowDmBanner(p=>!p)}>
+                                    <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                                        <span style={{fontSize:'13px',fontWeight:800,color:'#92400E'}}>🔔 교체알림 명단</span>
+                                        {alertCustomers.length > 0 && <span style={{fontSize:'11px',fontWeight:800,color:'#DC2626',background:'#FEE2E2',padding:'1px 8px',borderRadius:'20px'}}>{alertCustomers.length}명 미발송</span>}
+                                        {sentToday.length > 0 && <span style={{fontSize:'11px',fontWeight:800,color:'#16A34A',background:'#DCFCE7',padding:'1px 8px',borderRadius:'20px'}}>✅ {sentToday.length}명 완료</span>}
                                     </div>
-                                    {alertCustomers.length > 0 && (
-                                        <button onClick={async ()=>{
-                                            const lines = alertCustomers.map(c=>`  • ${c.name} (${c.lastVisit?.phone})`).join('\n');
-                                            const msg = `안녕하세요 😊 니지스트링입니다!\n\n스트링 교체 시기가 지나셨어요 🎾\n오래된 스트링은 컨트롤이 떨어지고 부상 위험이 있어요!\n\n빠른 예약 받고 있으니 편하게 연락주세요 😊\n감사합니다!\n\n[대상고객]\n${lines}`;
-                                            try {
-                                                await navigator.clipboard.writeText(msg);
-                                                // 전체 발송 처리
-                                                for (const c of alertCustomers) { await saveDmSent(c.name); }
-                                                showAlert(`✅ ${alertCustomers.length}명 메시지 복사 완료!\n카카오톡에 붙여넣기 하세요 😊\n배너에서 제거됩니다.`);
-                                            } catch(e) { showAlert('복사 실패'); }
-                                        }} style={{padding:'6px 12px',background:'#F59E0B',color:'#fff',border:'none',borderRadius:'10px',fontSize:'11px',fontWeight:800,cursor:'pointer',whiteSpace:'nowrap'}}>
-                                            📋 전체복사
-                                        </button>
-                                    )}
+                                    <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                                        {alertCustomers.length > 0 && showDmBanner && (
+                                            <button onClick={async (e)=>{
+                                                e.stopPropagation();
+                                                const lines = alertCustomers.map(c=>`  • ${c.name} (${c.lastVisit?.phone})`).join('\n');
+                                                const msg = `안녕하세요 😊 니지스트링입니다!\n\n스트링 교체 시기가 지나셨어요 🎾\n오래된 스트링은 컨트롤이 떨어지고 부상 위험이 있어요!\n\n빠른 예약 받고 있으니 편하게 연락주세요 😊\n감사합니다!\n\n[대상고객]\n${lines}`;
+                                                try {
+                                                    await navigator.clipboard.writeText(msg);
+                                                    for (const c of alertCustomers) { await saveDmSent(c.name); }
+                                                    showAlert(`✅ ${alertCustomers.length}명 메시지 복사 완료!\n카카오톡에 붙여넣기 하세요 😊`);
+                                                } catch(e) { showAlert('복사 실패'); }
+                                            }} style={{padding:'5px 10px',background:'#F59E0B',color:'#fff',border:'none',borderRadius:'8px',fontSize:'11px',fontWeight:800,cursor:'pointer',whiteSpace:'nowrap'}}>
+                                                📋 전체복사
+                                            </button>
+                                        )}
+                                        <span style={{fontSize:'14px',color:'#B45309',fontWeight:700}}>{showDmBanner ? '▲' : '▼'}</span>
+                                    </div>
                                 </div>
 
-                                {/* 미발송 고객 */}
-                                {alertCustomers.length > 0 && (
-                                    <div style={{display:'flex',flexWrap:'wrap',gap:'5px',marginBottom: sentToday.length>0 ? '8px' : '0'}}>
-                                        {alertCustomers.map(c=>(
-                                            <div key={c.name} style={{background:'#fff',borderRadius:'8px',padding:'5px 10px',border:'1px solid #FDE68A',display:'flex',alignItems:'center',gap:'5px'}}>
-                                                <span style={{fontSize:'12px',fontWeight:700,color:'#92400E'}}>{c.name}</span>
-                                                <a href={`sms:${c.lastVisit.phone}?body=${encodeURIComponent(dmMsgFor(c.name))}`}
-                                                    onClick={()=>setTimeout(()=>saveDmSent(c.name), 1500)}
-                                                    style={{fontSize:'10px',background:'#16A34A',color:'#fff',padding:'2px 8px',borderRadius:'6px',textDecoration:'none',fontWeight:800}}>💬 문자</a>
-                                                <button onClick={async ()=>{
-                                                    try {
-                                                        await navigator.clipboard.writeText(dmMsgFor(c.name));
-                                                        await saveDmSent(c.name);
-                                                        showAlert(`✅ ${c.name}님 카톡 메시지 복사!\n카카오톡에 붙여넣기 하세요 😊`);
-                                                    } catch(e) { showAlert('복사 실패'); }
-                                                }} style={{fontSize:'10px',background:'#FEE500',color:'#111',padding:'2px 8px',borderRadius:'6px',border:'none',fontWeight:800,cursor:'pointer'}}>💛 카톡</button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* 오늘 발송 완료 고객 */}
-                                {sentToday.length > 0 && (
-                                    <div style={{borderTop: alertCustomers.length>0 ? '1px solid #FDE68A' : 'none', paddingTop: alertCustomers.length>0 ? '8px':'0'}}>
-                                        <div style={{fontSize:'11px',fontWeight:700,color:'#16A34A',marginBottom:'5px'}}>✅ 오늘 발송 완료</div>
-                                        <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
-                                            {sentToday.map(c=>(
-                                                <div key={c.name} style={{background:'#F0FDF4',borderRadius:'8px',padding:'4px 10px',border:'1px solid #BBF7D0',display:'flex',alignItems:'center',gap:'5px'}}>
-                                                    <span style={{fontSize:'12px',fontWeight:700,color:'#15803D'}}>{c.name}</span>
-                                                    <span style={{fontSize:'10px',color:'#16A34A',fontWeight:600}}>✓ 발송완료</span>
+                                {/* 펼쳐진 상태 */}
+                                {showDmBanner && (
+                                    <div style={{padding:'0 14px 12px',borderTop:'1px solid #FDE68A'}}>
+                                        {/* 미발송 고객 */}
+                                        {alertCustomers.length > 0 && (
+                                            <div style={{marginTop:'10px'}}>
+                                                <div style={{fontSize:'11px',fontWeight:700,color:'#92400E',marginBottom:'6px'}}>📋 미발송 ({alertCustomers.length}명)</div>
+                                                <div style={{display:'flex',flexWrap:'wrap',gap:'5px',marginBottom: sentToday.length>0 ? '8px' : '0'}}>
+                                                    {alertCustomers.map(c=>(
+                                                        <div key={c.name} style={{background:'#fff',borderRadius:'8px',padding:'5px 10px',border:'1px solid #FDE68A',display:'flex',alignItems:'center',gap:'5px'}}>
+                                                            <span style={{fontSize:'12px',fontWeight:700,color:'#92400E'}}>{c.name}</span>
+                                                            <button onClick={(e)=>{e.stopPropagation();setCycleInput(customerCycles[c.name]?String(customerCycles[c.name]):'');setShowCycleModal(c.name);}}
+                                                                style={{fontSize:'10px',background:'#FEF3C7',color:'#92400E',padding:'2px 6px',borderRadius:'6px',border:'1px solid #FDE68A',fontWeight:700,cursor:'pointer'}}>⏱️</button>
+                                                            <button onClick={(e)=>{e.stopPropagation();handleEdit(c.lastVisit);}}
+                                                                style={{fontSize:'10px',background:'#EFF6FF',color:'#2563EB',padding:'2px 6px',borderRadius:'6px',border:'none',fontWeight:700,cursor:'pointer'}}>✏️</button>
+                                                            <button onClick={(e)=>{e.stopPropagation();handleDelete(c.lastVisit);}}
+                                                                style={{fontSize:'10px',background:'#FEE2E2',color:'#DC2626',padding:'2px 6px',borderRadius:'6px',border:'none',fontWeight:700,cursor:'pointer'}}>🗑️</button>
+                                                            <a href={`sms:${c.lastVisit.phone}?body=${encodeURIComponent(dmMsgFor(c.name))}`}
+                                                                onClick={()=>setTimeout(()=>saveDmSent(c.name), 1500)}
+                                                                style={{fontSize:'10px',background:'#16A34A',color:'#fff',padding:'2px 8px',borderRadius:'6px',textDecoration:'none',fontWeight:800}}>💬 문자</a>
+                                                            <button onClick={async (e)=>{
+                                                                e.stopPropagation();
+                                                                try {
+                                                                    await navigator.clipboard.writeText(dmMsgFor(c.name));
+                                                                    await saveDmSent(c.name);
+                                                                    showAlert(`✅ ${c.name}님 카톡 메시지 복사!\n카카오톡 열고 붙여넣기 하세요 😊`);
+                                                                } catch(e) { showAlert('복사 실패'); }
+                                                            }} style={{fontSize:'10px',background:'#FEE500',color:'#111',padding:'2px 8px',borderRadius:'6px',border:'none',fontWeight:800,cursor:'pointer'}}>💛 카톡</button>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
+                                            </div>
+                                        )}
+
+                                        {/* 오늘 발송 완료 고객 */}
+                                        {sentToday.length > 0 && (
+                                            <div style={{marginTop: alertCustomers.length>0 ? '8px' : '10px',borderTop: alertCustomers.length>0 ? '1px solid #FDE68A' : 'none', paddingTop: alertCustomers.length>0 ? '8px':'0'}}>
+                                                <div style={{fontSize:'11px',fontWeight:700,color:'#16A34A',marginBottom:'5px'}}>✅ 오늘 발송 완료 ({sentToday.length}명)</div>
+                                                <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
+                                                    {sentToday.map(c=>(
+                                                        <div key={c.name} style={{background:'#F0FDF4',borderRadius:'8px',padding:'4px 10px',border:'1px solid #BBF7D0',display:'flex',alignItems:'center',gap:'5px'}}>
+                                                            <span style={{fontSize:'12px',fontWeight:700,color:'#15803D'}}>{c.name}</span>
+                                                            <button onClick={(e)=>{e.stopPropagation();setCycleInput(customerCycles[c.name]?String(customerCycles[c.name]):'');setShowCycleModal(c.name);}}
+                                                                style={{fontSize:'10px',background:'#D1FAE5',color:'#065F46',padding:'2px 6px',borderRadius:'6px',border:'1px solid #BBF7D0',fontWeight:700,cursor:'pointer'}}>⏱️</button>
+                                                            <button onClick={(e)=>{e.stopPropagation();handleEdit(c.lastVisit);}}
+                                                                style={{fontSize:'10px',background:'#EFF6FF',color:'#2563EB',padding:'2px 6px',borderRadius:'6px',border:'none',fontWeight:700,cursor:'pointer'}}>✏️</button>
+                                                            <span style={{fontSize:'10px',color:'#16A34A',fontWeight:600}}>✓ 완료</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -2633,9 +2659,10 @@ const StringingApp = ({ sport, uid }) => {
                                         {thisMonthNames.map(name => renderCustomerCard(name))}
                                     </div>
                                 )}
-                                {/* ── 지난달 이전 고객 (드롭다운 접혀서) ── */}
+                                {/* ── 지난달 이전 고객 (월별 드롭다운) ── */}
                                 {prevMonthNames.length > 0 && (
                                     <div>
+                                        {/* 전체 섹션 토글 버튼 */}
                                         <button
                                             onClick={() => setExpandedCustomers(prev => ({...prev, '__PREV_SECTION__': !prev['__PREV_SECTION__']}))}
                                             style={{
@@ -2648,7 +2675,7 @@ const StringingApp = ({ sport, uid }) => {
                                             <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
                                                 <span style={{fontSize:'15px'}}>🕐</span>
                                                 <div style={{textAlign:'left'}}>
-                                                    <div style={{fontSize:'13px',fontWeight:800,color:'#555'}}>지난달 이전 고객</div>
+                                                    <div style={{fontSize:'13px',fontWeight:800,color:'#555'}}>이전달 교체 고객 (월별)</div>
                                                     <div style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600}}>{prevMonthNames.length}명</div>
                                                 </div>
                                             </div>
@@ -2656,11 +2683,39 @@ const StringingApp = ({ sport, uid }) => {
                                                 {expandedCustomers['__PREV_SECTION__'] ? '▲' : '▼'}
                                             </span>
                                         </button>
-                                        {expandedCustomers['__PREV_SECTION__'] && (
-                                            <div>
-                                                {prevMonthNames.map(name => renderCustomerCard(name))}
-                                            </div>
-                                        )}
+                                        {expandedCustomers['__PREV_SECTION__'] && (()=>{
+                                            // 월별로 그룹핑
+                                            const monthMap = {};
+                                            prevMonthNames.forEach(name => {
+                                                const lastMonth = grouped[name][0]?.date?.substring(0,7) || '기타';
+                                                if (!monthMap[lastMonth]) monthMap[lastMonth] = [];
+                                                monthMap[lastMonth].push(name);
+                                            });
+                                            const sortedMonths = Object.keys(monthMap).sort((a,b)=>b.localeCompare(a));
+                                            return (
+                                                <div>
+                                                    {sortedMonths.map(month => {
+                                                        const monthKey = '__MONTH__' + month;
+                                                        const isOpen = expandedCustomers[monthKey] !== false; // 기본 열림
+                                                        return (
+                                                            <div key={month} style={{marginBottom:'8px'}}>
+                                                                {/* 월 헤더 드롭다운 */}
+                                                                <button onClick={()=>setExpandedCustomers(prev=>({...prev,[monthKey]:!isOpen}))}
+                                                                    style={{width:'100%',padding:'10px 14px',background:'#FFF',border:'1px solid #E0E0E0',borderRadius:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:isOpen?'6px':'0'}}>
+                                                                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                                                                        <span style={{fontSize:'13px'}}>📅</span>
+                                                                        <span style={{fontSize:'13px',fontWeight:800,color:'#333'}}>{month}</span>
+                                                                        <span style={{fontSize:'11px',fontWeight:700,color:'#9E9E9E',background:'#F5F5F5',padding:'1px 8px',borderRadius:'20px'}}>{monthMap[month].length}명</span>
+                                                                    </div>
+                                                                    <span style={{fontSize:'14px',color:'#9E9E9E'}}>{isOpen ? '▲' : '▼'}</span>
+                                                                </button>
+                                                                {isOpen && monthMap[month].map(name => renderCustomerCard(name))}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 )}
                                 {/* 아무 데이터도 없을 때 */}
@@ -2828,65 +2883,148 @@ const StringingApp = ({ sport, uid }) => {
                         </div>
                     )}
 
-                    {/* ── 미사용 쿠폰 목록 ── */}
+                    {/* ── 미사용 쿠폰 목록 (그룹별 드롭다운) ── */}
                     <div className="stat-card">
                         <div className="section-header">
                             <span className="section-title">🎫 미사용 쿠폰</span>
                             <span style={{fontSize:'12px',color:'#EC4899',fontWeight:700}}>{coupons.filter(c=>!c.used).length}개</span>
                         </div>
                         {coupons.filter(c=>!c.used).length===0 && <div className="empty-state">미사용 쿠폰이 없습니다.</div>}
-                        {coupons.filter(c=>!c.used).map(c=>{
-                            const expired = c.expiry && c.expiry < getTodayKST();
-                            return (
-                                <div key={c.fbKey||c.code} className="coupon-item" style={expired?{opacity:0.5}:{}}>
-                                    <div style={{flex:1}}>
-                                        <div style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:'2px'}}>
-                                            <span className="coupon-code">{c.code}</span>
-                                            {expired && <span style={{fontSize:'10px',background:'#FEE2E2',color:'#B91C1C',padding:'2px 7px',borderRadius:'8px',fontWeight:700}}>만료</span>}
-                                        </div>
-                                        <div className="coupon-amount">{parseInt(c.discount).toLocaleString()}원 할인</div>
-                                        <div className="coupon-meta">
-                                            {c.expiry && <span>~{c.expiry} </span>}
-                                            {c.note && <span>{c.note}</span>}
-                                        </div>
+                        {(()=>{
+                            const unused = coupons.filter(c=>!c.used);
+                            if (unused.length === 0) return null;
+                            // 그룹 키: 메모(note)가 있으면 note, 없으면 쿠폰 코드 prefix (첫 부분)
+                            const groupMap = {};
+                            unused.forEach(c => {
+                                const gKey = c.note ? c.note : (c.code.split('-')[0] || '기타');
+                                if (!groupMap[gKey]) groupMap[gKey] = [];
+                                groupMap[gKey].push(c);
+                            });
+                            const groups = Object.entries(groupMap).sort((a,b)=>a[0].localeCompare(b[0],'ko'));
+                            return groups.map(([gKey, gCoupons]) => {
+                                const isOpen = couponGroupOpen[gKey] !== false; // 기본 열림
+                                const expiredCount = gCoupons.filter(c=>c.expiry && c.expiry < getTodayKST()).length;
+                                const discount = gCoupons[0]?.discount;
+                                return (
+                                    <div key={gKey} style={{borderBottom:'1px solid #F5F5F5'}}>
+                                        {/* 그룹 헤더 */}
+                                        <button onClick={()=>setCouponGroupOpen(prev=>({...prev,[gKey]:!isOpen}))}
+                                            style={{width:'100%',padding:'12px 16px',background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',textAlign:'left'}}>
+                                            <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                                                <span style={{fontSize:'14px'}}>🎫</span>
+                                                <div>
+                                                    <div style={{fontSize:'13px',fontWeight:800,color:'#111'}}>{gKey}</div>
+                                                    <div style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600,marginTop:'1px'}}>
+                                                        {gCoupons.length}장 · {parseInt(discount).toLocaleString()}원 할인
+                                                        {expiredCount > 0 && <span style={{color:'#B91C1C',marginLeft:'6px'}}>만료 {expiredCount}장</span>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                                                <button onClick={(e)=>{
+                                                    e.stopPropagation();
+                                                    const lines = gCoupons.filter(c=>!c.expiry||c.expiry>=getTodayKST()).map((c,i)=>`  ${i+1}. ${c.code}`).join('\n');
+                                                    const expiry = gCoupons[0]?.expiry ? `\n📅 유효기간: ${gCoupons[0].expiry}까지` : '';
+                                                    const msg = `🎫 니지스트링 스트링 할인 쿠폰\n\n할인금액: ${parseInt(discount).toLocaleString()}원${expiry}\n📌 ${gKey}\n\n쿠폰번호:\n${lines}\n\n✅ 스트링 작업 시 쿠폰번호를 알려주세요!\n감사합니다 😊`;
+                                                    navigator.clipboard.writeText(msg).then(()=>showAlert('✅ 그룹 쿠폰 메시지 복사!\n카카오톡 열고 붙여넣기 하세요 😊')).catch(()=>showAlert('복사 실패'));
+                                                }} style={{padding:'4px 10px',background:'#FEE500',color:'#111',border:'none',borderRadius:'8px',fontSize:'11px',fontWeight:800,cursor:'pointer'}}>💬 묶음복사</button>
+                                                <span style={{fontSize:'14px',color:'#9E9E9E'}}>{isOpen ? '▲' : '▼'}</span>
+                                            </div>
+                                        </button>
+                                        {/* 그룹 내 쿠폰 목록 */}
+                                        {isOpen && gCoupons.map(c => {
+                                            const expired = c.expiry && c.expiry < getTodayKST();
+                                            return (
+                                                <div key={c.fbKey||c.code} className="coupon-item" style={{background:'#FAFAFA',paddingLeft:'32px',...(expired?{opacity:0.5}:{})}}>
+                                                    <div style={{flex:1}}>
+                                                        <div style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:'2px'}}>
+                                                            <span className="coupon-code">{c.code}</span>
+                                                            {expired && <span style={{fontSize:'10px',background:'#FEE2E2',color:'#B91C1C',padding:'2px 7px',borderRadius:'8px',fontWeight:700}}>만료</span>}
+                                                        </div>
+                                                        <div className="coupon-amount">{parseInt(c.discount).toLocaleString()}원 할인</div>
+                                                        {c.expiry && <div className="coupon-meta">~{c.expiry}</div>}
+                                                    </div>
+                                                    <div style={{display:'flex',flexDirection:'column',gap:'6px',alignItems:'flex-end'}}>
+                                                        <button className="kakao-copy-btn" onClick={()=>{
+                                                            const expiry = c.expiry ? `\n📅 유효기간: ${c.expiry}까지` : '';
+                                                            const note = c.note ? `\n📌 ${c.note}` : '';
+                                                            const msg = `🎫 니지스트링 스트링 할인 쿠폰\n\n쿠폰번호: ${c.code}\n할인금액: ${parseInt(c.discount).toLocaleString()}원${expiry}${note}\n\n✅ 사용방법\n스트링 작업 시 쿠폰번호를 알려주세요!\n감사합니다 😊`;
+                                                            navigator.clipboard.writeText(msg).then(()=>showAlert('✅ 카카오톡 메시지가 복사됐어요!\n카카오톡 열고 붙여넣기 하세요 😊')).catch(()=>showAlert('복사 실패'));
+                                                        }}>💬 복사</button>
+                                                        <button onClick={()=>setConfirmModal({msg:'쿠폰을 삭제할까요?', onOk:async()=>{await deleteCoupon(c.fbKey);setConfirmModal(null);}, okLabel:'삭제', cancelLabel:'취소'})}
+                                                            style={{background:'none',border:'none',color:'#EF4444',cursor:'pointer',fontSize:'18px',padding:'0 2px'}}>🗑️</button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                    <div style={{display:'flex',flexDirection:'column',gap:'6px',alignItems:'flex-end'}}>
-                                        <button className="kakao-copy-btn" onClick={()=>{
-                                            const expiry = c.expiry ? `\n📅 유효기간: ${c.expiry}까지` : '';
-                                            const note = c.note ? `\n📌 ${c.note}` : '';
-                                            const msg = `🎫 니지스트링 스트링 할인 쿠폰\n\n쿠폰번호: ${c.code}\n할인금액: ${parseInt(c.discount).toLocaleString()}원${expiry}${note}\n\n✅ 사용방법\n스트링 작업 시 쿠폰번호를 알려주세요!\n감사합니다 😊`;
-                                            navigator.clipboard.writeText(msg).then(()=>showAlert('✅ 카카오톡 메시지가 복사됐어요!\n카카오톡 열고 붙여넣기 하세요 😊')).catch(()=>showAlert('복사 실패'));
-                                        }}>💬 복사</button>
-                                        <button onClick={()=>setConfirmModal({msg:'쿠폰을 삭제할까요?', onOk:async()=>{await deleteCoupon(c.fbKey);setConfirmModal(null);}, okLabel:'삭제', cancelLabel:'취소'})}
-                                            style={{background:'none',border:'none',color:'#EF4444',cursor:'pointer',fontSize:'18px',padding:'0 2px'}}>🗑️</button>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            });
+                        })()}
                     </div>
 
-                    {/* ── 사용완료 쿠폰 ── */}
+                    {/* ── 사용완료 쿠폰 (드롭다운) ── */}
                     {coupons.filter(c=>c.used).length>0 && (
                         <div className="stat-card">
-                            <div className="section-header">
-                                <span className="section-title">✅ 사용완료 쿠폰</span>
-                                <span style={{fontSize:'12px',color:'#9E9E9E',fontWeight:600}}>{coupons.filter(c=>c.used).length}개</span>
-                            </div>
-                            {coupons.filter(c=>c.used).map(c=>(
-                                <div key={c.fbKey||c.code} style={{padding:'12px 16px',borderBottom:'1px solid #F5F5F5',opacity:0.55}}>
-                                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
-                                        <div>
-                                            <div style={{fontSize:'12px',fontWeight:700,color:'#9E9E9E',fontFamily:'monospace',textDecoration:'line-through'}}>{c.code}</div>
-                                            <div style={{fontSize:'13px',fontWeight:700,color:'#9E9E9E'}}>{parseInt(c.discount).toLocaleString()}원 할인</div>
-                                            {c.note && <div style={{fontSize:'11px',color:'#9E9E9E'}}>{c.note}</div>}
-                                        </div>
-                                        <div style={{textAlign:'right'}}>
-                                            <div style={{fontSize:'11px',color:'#9E9E9E'}}>{c.usedDate} 사용</div>
-                                            {c.usedFor && <div style={{fontSize:'11px',color:'#9E9E9E'}}>{c.usedFor}</div>}
-                                        </div>
+                            {/* 사용완료 헤더 토글 */}
+                            <button onClick={()=>setUsedCouponOpen(p=>!p)}
+                                style={{width:'100%',padding:'14px 18px',background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',textAlign:'left'}}>
+                                <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                                    <span style={{fontSize:'15px'}}>✅</span>
+                                    <div>
+                                        <div style={{fontSize:'14px',fontWeight:800,color:'#111'}}>사용완료 쿠폰</div>
+                                        <div style={{fontSize:'11px',color:'#9E9E9E',fontWeight:600,marginTop:'1px'}}>{coupons.filter(c=>c.used).length}개 사용됨</div>
                                     </div>
                                 </div>
-                            ))}
+                                <span style={{fontSize:'16px',color:'#9E9E9E',fontWeight:700}}>{usedCouponOpen ? '▲' : '▼'}</span>
+                            </button>
+                            {usedCouponOpen && (()=>{
+                                const used = coupons.filter(c=>c.used);
+                                // 월별 그룹핑
+                                const monthMap = {};
+                                used.forEach(c => {
+                                    const m = (c.usedDate||c.createdAt||'').substring(0,7) || '기타';
+                                    if (!monthMap[m]) monthMap[m] = [];
+                                    monthMap[m].push(c);
+                                });
+                                const sortedMonths = Object.keys(monthMap).sort((a,b)=>b.localeCompare(a));
+                                return (
+                                    <div style={{borderTop:'1px solid #F5F5F5'}}>
+                                        {sortedMonths.map(month => {
+                                            const mKey = '__USED__' + month;
+                                            const isOpen = couponGroupOpen[mKey] !== false;
+                                            return (
+                                                <div key={month} style={{borderBottom:'1px solid #F8F8F8'}}>
+                                                    <button onClick={()=>setCouponGroupOpen(prev=>({...prev,[mKey]:!isOpen}))}
+                                                        style={{width:'100%',padding:'10px 16px',background:'#FAFAFA',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',textAlign:'left'}}>
+                                                        <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                                                            <span style={{fontSize:'12px'}}>📅</span>
+                                                            <span style={{fontSize:'12px',fontWeight:800,color:'#555'}}>{month}</span>
+                                                            <span style={{fontSize:'11px',color:'#9E9E9E',background:'#F0F0F0',padding:'1px 7px',borderRadius:'20px',fontWeight:600}}>{monthMap[month].length}개</span>
+                                                        </div>
+                                                        <span style={{fontSize:'13px',color:'#9E9E9E'}}>{isOpen ? '▲' : '▼'}</span>
+                                                    </button>
+                                                    {isOpen && monthMap[month].map(c=>(
+                                                        <div key={c.fbKey||c.code} style={{padding:'10px 16px',borderTop:'1px solid #F5F5F5',opacity:0.6}}>
+                                                            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+                                                                <div>
+                                                                    <div style={{fontSize:'12px',fontWeight:700,color:'#9E9E9E',fontFamily:'monospace',textDecoration:'line-through'}}>{c.code}</div>
+                                                                    <div style={{fontSize:'13px',fontWeight:700,color:'#9E9E9E'}}>{parseInt(c.discount).toLocaleString()}원 할인</div>
+                                                                    {c.note && <div style={{fontSize:'11px',color:'#9E9E9E'}}>{c.note}</div>}
+                                                                </div>
+                                                                <div style={{textAlign:'right'}}>
+                                                                    <div style={{fontSize:'11px',color:'#9E9E9E'}}>{c.usedDate} 사용</div>
+                                                                    {c.usedFor && <div style={{fontSize:'11px',color:'#9E9E9E'}}>{c.usedFor}</div>}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     )}
                 </div>
